@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>App Produksi v0.7.1 (Safe Mode)</title>
+<title>App Produksi v0.7.2 (DEBUG MODE)</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-/* --- STYLE TETAP SAMA --- */
+/* --- STYLE VISUAL (SAMA) --- */
 :root { --bg-body:#f1f5f9; --bg-card:#ffffff; --text-main:#0f172a; --text-muted:#64748b; --border:#e2e8f0; --primary:#4f46e5; --primary-hover:#4338ca; --success:#10b981; --danger:#ef4444; --warning:#f59e0b; --radius:12px; }
 * { box-sizing:border-box; outline:none; }
 body { margin:0; background:var(--bg-body); color:var(--text-main); font-family:'Inter',sans-serif; }
@@ -22,7 +22,6 @@ body { margin:0; background:var(--bg-body); color:var(--text-main); font-family:
 .btn.primary { background:var(--primary); color:white; border-color:var(--primary); }
 .btn.ok { background:var(--success); color:white; border-color:var(--success); }
 .btn.danger { background:white; color:var(--danger); border-color:#fecaca; }
-.btn.danger:hover { background:#fef2f2; }
 .btn.sm { padding:6px 12px; font-size:0.8rem; border-radius:6px; }
 .input, select { width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:8px; background:#f8fafc; }
 .input:focus { background:white; border-color:var(--primary); }
@@ -53,7 +52,7 @@ tbody td { padding:8px; border-bottom:1px solid var(--border); vertical-align:mi
 <div class="wrap">
   <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:24px;">
     <div>
-      <h2>App Produksi Supabase <span style="font-weight:400; color:var(--text-muted); font-size:1rem;">v0.7.1</span></h2>
+      <h2>App Produksi Supabase <span style="font-weight:400; color:var(--text-muted); font-size:1rem;">v0.7.2</span></h2>
       <div class="muted" style="margin-top:4px;">Database: Supabase (Safe Mode)</div>
     </div>
     <div class="row">
@@ -164,7 +163,7 @@ tbody td { padding:8px; border-bottom:1px solid var(--border); vertical-align:mi
 
 <script>
 // ==========================================
-// CONFIGURATION SUPABASE (ISI DULU!)
+// KONFIGURASI SUPABASE (WAJIB DIISI)
 // ==========================================
 const SUPABASE_URL = "https://ldipyeuhjimstjxgsnbu.supabase.co"; 
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkaXB5ZXVoamltc3RqeGdzbmJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUxNzQxMzQsImV4cCI6MjA4MDc1MDEzNH0.eKbaxoLw0-OBTBInJYb3LWLJhX4ujJFm_hYL8GVBekM";
@@ -179,9 +178,8 @@ let logs = [];
 let master = [];
 
 // --- 1. INISIALISASI (SAFE MODE) ---
-// Kita bind tombol duluan, baru coba konek database
 document.addEventListener('DOMContentLoaded', () => {
-    // Event Binding
+    // Bind Tombol DULUAN
     $('btnRefresh').onclick = refreshData;
     $('btnClearFilter').onclick = () => { $('fFrom').value=''; $('fTo').value=''; renderTable(); };
     $('fFrom').onchange = renderTable; $('fTo').onchange = renderTable;
@@ -196,31 +194,36 @@ document.addEventListener('DOMContentLoaded', () => {
     $('fileCsvMaster').onchange = importCSV;
     $('btnClear').onclick = wipeLogs;
 
-    // Attach Input Listeners
+    // Attach Calculator
     const calcInputs = ['eProduk','eCavity','eCounter','eRunner','eJatah','eStok','eBalokan', 'eQtyDus','eQtyBox','eQtyDusPlus','eIsiDusPlus', 
                         'eSblm1','eSblm2','eSblm3','eSblm4','eSblm5','eSblm6',
                         'eSsdh1','eSsdh2','eSsdh3','eSsdh4','eSsdh5','eSsdh6',
                         'rBintik','rFlashing','rShort','rWarna','rLain'];
     calcInputs.forEach(id => { const el = $(id); if(el) el.oninput = () => { if(id === 'eProduk') hydrateProduk(); recalc(); }; });
 
-    // Set Default Date
     const d = new Date();
     $('fFrom').value = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0,10);
     $('fTo').value = new Date(d.getFullYear(), d.getMonth()+1, 0).toISOString().slice(0,10);
 
-    // Initialize Database
+    // Baru Coba Konek Database
     initSupabase();
 });
 
 function initSupabase() {
     if (typeof supabase === 'undefined') return alert("Gagal memuat library Supabase. Cek koneksi internet.");
-    if (SUPABASE_URL.includes("ISI_URL")) return alert("ISI API KEY SUPABASE DULU DI KODINGAN!");
+    
+    // Cek Placeholder
+    if (SUPABASE_URL.includes("ISI_URL")) {
+        $('loading').style.display='none';
+        return alert("STOP! ISI DULU SUPABASE_URL DAN KEY DI KODINGAN PALING BAWAH!");
+    }
     
     try {
         client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         refreshData();
     } catch (e) {
         alert("Error Init Supabase: " + e.message);
+        $('loading').style.display='none';
     }
 }
 
@@ -231,12 +234,12 @@ async function refreshData() {
     
     // Get Master
     const { data: mData, error: mErr } = await client.from('master').select('*');
-    if(mErr) { $('loading').style.display='none'; return alert('Error Master: ' + mErr.message); }
+    if(mErr) { $('loading').style.display='none'; console.error(mErr); return alert('Gagal ambil Master. Cek Console.'); }
     master = mData || [];
 
     // Get Logs
     const { data: lData, error: lErr } = await client.from('logs').select('*');
-    if(lErr) { $('loading').style.display='none'; return alert('Error Logs: ' + lErr.message); }
+    if(lErr) { $('loading').style.display='none'; console.error(lErr); return alert('Gagal ambil Logs. Cek Console.'); }
     logs = lData || [];
 
     renderTable();
@@ -366,12 +369,13 @@ async function saveMaster() {
     const allow = $('chkAllowDup').checked;
     if(!allow) {
         const exist = master.find(m => m.kode.toLowerCase() === kode.toLowerCase());
-        if(exist && !confirm("Kode sudah ada. Update?")) return; // Simplified flow
+        if(exist && !confirm("Kode sudah ada. Update?")) return;
     }
 
     $('loading').style.display='flex';
-    // UPSERT LOGIC: Cek dulu ada ga, kalo ada update, kalo ga insert
-    // Supabase upsert butuh ID atau Constraint. Kita pakai ID unik baru utk simpel atau cari ID lama.
+    // Logic: Kalau kode ada, update by kode (di loop), kalau ga insert.
+    // Supabase upsert best practice by PK (ID).
+    // Kita cari ID-nya dulu.
     let targetID = uid();
     const exist = master.find(m => m.kode.toLowerCase() === kode.toLowerCase());
     if(exist) targetID = exist.id;
