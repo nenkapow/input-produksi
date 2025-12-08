@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>App Produksi v0.7.4 (Kg Fix)</title>
+<title>App Produksi v0.7.5 (Anti-Macet)</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -48,14 +48,14 @@ tbody td { padding:8px; border-bottom:1px solid var(--border); vertical-align:mi
 
 <div id="loading" class="loading-overlay">
   <div class="spinner"></div>
-  <div style="margin-top:10px; font-weight:600; color:var(--text-main);">Koneksi Supabase...</div>
+  <div style="margin-top:10px; font-weight:600; color:var(--text-main);">Menghubungkan...</div>
 </div>
 
 <div class="wrap">
   <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:24px;">
     <div>
-      <h2>App Produksi Supabase <span style="font-weight:400; color:var(--text-muted); font-size:1rem;">v0.7.4</span></h2>
-      <div class="muted" style="margin-top:4px;">Database: Supabase</div>
+      <h2>App Produksi Supabase <span style="font-weight:400; color:var(--text-muted); font-size:1rem;">v0.7.5</span></h2>
+      <div class="muted" style="margin-top:4px;">Database: Supabase (Tombol Fix)</div>
     </div>
     <div class="row">
       <button id="btnRefresh" class="btn">🔄 Refresh Data</button>
@@ -153,68 +153,19 @@ tbody td { padding:8px; border-bottom:1px solid var(--border); vertical-align:mi
       <div style="grid-column:span 2"><div class="muted">Runner</div><input id="eRunner" type="number" class="input" step="0.01" readonly style="background:#e2e8f0" /></div>
       <div style="grid-column:span 2"><div class="muted">Cavity</div><input id="eCavity" type="number" class="input" /></div>
       <div style="grid-column:span 6"><div class="muted">Counter (Shot)</div><input id="eCounter" type="number" class="input" /></div>
-      
-      <div style="grid-column:span 12" class="card" style="background:#f8fafc; padding:16px;">
-        <h4 style="margin:0 0 12px; font-size:0.9rem;">Bahan (kg)</h4>
-        <div class="grid" style="grid-template-columns:repeat(8,1fr)">
-          <div style="grid-column:span 2"><div class="muted">Jatah</div><input id="eJatah" type="number" step="0.01" class="input" /></div>
-          <div style="grid-column:span 2"><div class="muted">Stok</div><input id="eStok" type="number" step="0.01" class="input" /></div>
-          <div style="grid-column:span 2"><div class="muted">Balokan</div><input id="eBalokan" type="number" step="0.01" class="input" /></div>
-          <div style="grid-column:span 2"><div class="muted">Sisa</div><input id="eSisaBahan" type="number" readonly class="input" style="background:#e2e8f0; font-weight:bold;" /></div>
-        </div>
-      </div>
-
-      <div style="grid-column:span 6; border-right:1px solid var(--border); padding-right:10px">
-        <div class="muted"><b>Sisa Sebelum</b></div>
-        <div class="grid" style="grid-template-columns:repeat(3,1fr); gap:8px;">
-          <input id="eSblm1" class="input" type="number" step="0.01" placeholder="C1" /> <input id="eSblm2" class="input" type="number" step="0.01" /> <input id="eSblm3" class="input" type="number" step="0.01" />
-          <input id="eSblm4" class="input" type="number" step="0.01" /> <input id="eSblm5" class="input" type="number" step="0.01" /> <input id="eSblm6" class="input" type="number" step="0.01" />
-        </div>
-      </div>
-      <div style="grid-column:span 6; padding-left:10px">
-        <div class="muted"><b>Sisa Sesudah</b></div>
-        <div class="grid" style="grid-template-columns:repeat(3,1fr); gap:8px;">
-          <input id="eSsdh1" class="input" type="number" step="0.01" placeholder="C1" /> <input id="eSsdh2" class="input" type="number" step="0.01" /> <input id="eSsdh3" class="input" type="number" step="0.01" />
-          <input id="eSsdh4" class="input" type="number" step="0.01" /> <input id="eSsdh5" class="input" type="number" step="0.01" /> <input id="eSsdh6" class="input" type="number" step="0.01" />
-        </div>
-      </div>
-
+      <div style="grid-column:span 12" class="card" style="background:#f8fafc; padding:16px;"><h4 style="margin:0 0 12px; font-size:0.9rem;">Bahan (kg)</h4><div class="grid" style="grid-template-columns:repeat(8,1fr)"><div style="grid-column:span 2"><div class="muted">Jatah</div><input id="eJatah" type="number" step="0.01" class="input" /></div><div style="grid-column:span 2"><div class="muted">Stok</div><input id="eStok" type="number" step="0.01" class="input" /></div><div style="grid-column:span 2"><div class="muted">Balokan</div><input id="eBalokan" type="number" step="0.01" class="input" /></div><div style="grid-column:span 2"><div class="muted">Sisa</div><input id="eSisaBahan" type="number" readonly class="input" style="background:#e2e8f0; font-weight:bold;" /></div></div></div>
+      <div style="grid-column:span 6; border-right:1px solid var(--border); padding-right:10px"><div class="muted"><b>Sisa Sebelum</b></div><div class="grid" style="grid-template-columns:repeat(3,1fr); gap:8px;"><input id="eSblm1" class="input" type="number" step="0.01" placeholder="C1" /> <input id="eSblm2" class="input" type="number" step="0.01" /> <input id="eSblm3" class="input" type="number" step="0.01" /><input id="eSblm4" class="input" type="number" step="0.01" /> <input id="eSblm5" class="input" type="number" step="0.01" /> <input id="eSblm6" class="input" type="number" step="0.01" /></div></div>
+      <div style="grid-column:span 6; padding-left:10px"><div class="muted"><b>Sisa Sesudah</b></div><div class="grid" style="grid-template-columns:repeat(3,1fr); gap:8px;"><input id="eSsdh1" class="input" type="number" step="0.01" placeholder="C1" /> <input id="eSsdh2" class="input" type="number" step="0.01" /> <input id="eSsdh3" class="input" type="number" step="0.01" /><input id="eSsdh4" class="input" type="number" step="0.01" /> <input id="eSsdh5" class="input" type="number" step="0.01" /> <input id="eSsdh6" class="input" type="number" step="0.01" /></div></div>
       <div style="grid-column:span 12; margin:8px 0; border-bottom:1px solid var(--border)"></div>
-
-      <div style="grid-column:span 12">
-        <h4 style="margin:0 0 12px; font-size:0.9rem;">Packaging</h4>
-        <div class="grid" style="grid-template-columns:repeat(12,1fr)">
-          <div style="grid-column:span 2"><div class="muted">Dus</div><input id="eQtyDus" type="number" class="input" /></div>
-          <div style="grid-column:span 2"><div class="muted">Isi/D</div><input id="eIsiDus" type="number" class="input" readonly style="background:#e2e8f0" /></div>
-          <div style="grid-column:span 2"><div class="muted">Box</div><input id="eQtyBox" type="number" class="input" /></div>
-          <div style="grid-column:span 2"><div class="muted">Isi/B</div><input id="eIsiBox" type="number" class="input" readonly style="background:#e2e8f0" /></div>
-          <div style="grid-column:span 2"><div class="muted">Dus+</div><input id="eQtyDusPlus" type="number" class="input" /></div>
-          <div style="grid-column:span 2"><div class="muted">Isi+</div><input id="eIsiDusPlus" type="number" class="input" /></div>
-          <div style="grid-column:span 12"><div class="muted">Catatan</div><input id="eCatatan" class="input" /></div>
-        </div>
-      </div>
-
-      <div style="grid-column:span 12" class="card" style="background:#fff1f2; padding:16px;">
-        <h4 style="margin:0 0 12px; color:var(--danger); font-size:0.9rem;">Reject (Pcs)</h4>
-        <div class="grid" style="grid-template-columns:repeat(10,1fr)">
-          <div style="grid-column:span 2"><div class="muted">Bintik</div><input id="rBintik" type="number" class="input" /></div>
-          <div style="grid-column:span 2"><div class="muted">Flash</div><input id="rFlashing" type="number" class="input" /></div>
-          <div style="grid-column:span 2"><div class="muted">Short</div><input id="rShort" type="number" class="input" /></div>
-          <div style="grid-column:span 2"><div class="muted">Warna</div><input id="rWarna" type="number" class="input" /></div>
-          <div style="grid-column:span 2"><div class="muted">Lain</div><input id="rLain" type="number" class="input" /></div>
-          <input id="rTotal" type="hidden" /> <input id="rMax" type="hidden" />
-        </div>
-      </div>
-      
+      <div style="grid-column:span 12"><h4 style="margin:0 0 12px; font-size:0.9rem;">Packaging</h4><div class="grid" style="grid-template-columns:repeat(12,1fr)"><div style="grid-column:span 2"><div class="muted">Dus</div><input id="eQtyDus" type="number" class="input" /></div><div style="grid-column:span 2"><div class="muted">Isi/D</div><input id="eIsiDus" type="number" class="input" readonly style="background:#e2e8f0" /></div><div style="grid-column:span 2"><div class="muted">Box</div><input id="eQtyBox" type="number" class="input" /></div><div style="grid-column:span 2"><div class="muted">Isi/B</div><input id="eIsiBox" type="number" class="input" readonly style="background:#e2e8f0" /></div><div style="grid-column:span 2"><div class="muted">Dus+</div><input id="eQtyDusPlus" type="number" class="input" /></div><div style="grid-column:span 2"><div class="muted">Isi+</div><input id="eIsiDusPlus" type="number" class="input" /></div><div style="grid-column:span 12"><div class="muted">Catatan</div><input id="eCatatan" class="input" /></div></div></div>
+      <div style="grid-column:span 12" class="card" style="background:#fff1f2; padding:16px;"><h4 style="margin:0 0 12px; color:var(--danger); font-size:0.9rem;">Reject (Pcs)</h4><div class="grid" style="grid-template-columns:repeat(10,1fr)"><div style="grid-column:span 2"><div class="muted">Bintik</div><input id="rBintik" type="number" class="input" /></div><div style="grid-column:span 2"><div class="muted">Flash</div><input id="rFlashing" type="number" class="input" /></div><div style="grid-column:span 2"><div class="muted">Short</div><input id="rShort" type="number" class="input" /></div><div style="grid-column:span 2"><div class="muted">Warna</div><input id="rWarna" type="number" class="input" /></div><div style="grid-column:span 2"><div class="muted">Lain</div><input id="rLain" type="number" class="input" /></div><input id="rTotal" type="hidden" /> <input id="rMax" type="hidden" /></div></div>
       <div style="grid-column:span 12" class="card" style="background:#f0fdf4; padding:20px; margin-bottom:0;">
         <div class="grid" style="grid-template-columns:repeat(4,1fr); text-align:center;">
           <div class="stat-box"><div class="muted">Hasil (Pcs)</div><span class="stat-value" id="vHasil" style="color:var(--primary)">0</span></div>
           <div class="stat-box"><div class="muted">OK (Pcs)</div><span class="stat-value" id="vOkPcs" style="color:var(--success)">0</span></div>
           <div class="stat-box"><div class="muted">Reject (Pcs)</div><span class="stat-value" id="vRejectPcs" style="color:var(--danger)">0</span></div>
           <div class="stat-box"><div class="muted">Yield</div><span class="stat-value" id="vYield">0%</span></div>
-          
           <div style="grid-column:span 4; height:1px; background:var(--border); margin:4px 0"></div>
-          
           <div class="stat-box"><div class="muted">OK (Kg)</div><span class="stat-value" id="vOkKg">0.00</span></div>
           <div class="stat-box"><div class="muted">Reject (Kg)</div><span class="stat-value" id="vRejectKg">0.00</span></div>
           <div class="stat-box"><div class="muted">Runner (Kg)</div><span class="stat-value" id="vRunnerKg">0.00</span></div>
@@ -228,10 +179,10 @@ tbody td { padding:8px; border-bottom:1px solid var(--border); vertical-align:mi
 
 <script>
 // ==========================================
-// CONFIGURATION SUPABASE (ISI DISINI YA)
+// KONFIGURASI SUPABASE (ISI DULU!)
 // ==========================================
-const SUPABASE_URL = "ISI_URL_SUPABASE_DISINI"; 
-const SUPABASE_KEY = "ISI_ANON_KEY_SUPABASE_DISINI";
+const SUPABASE_URL = "https://ldipyeuhjimstjxgsnbu.supabase.co"; 
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkaXB5ZXVoamltc3RqeGdzbmJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUxNzQxMzQsImV4cCI6MjA4MDc1MDEzNH0.eKbaxoLw0-OBTBInJYb3LWLJhX4ujJFm_hYL8GVBekM";
 
 const $ = id => document.getElementById(id);
 const toNum = v => isNaN(+v) ? 0 : +v;
@@ -244,6 +195,7 @@ let master = [];
 
 // --- 1. INISIALISASI (SAFE MODE) ---
 document.addEventListener('DOMContentLoaded', () => {
+    // Bind Tombol DULUAN biar gak macet
     $('btnRefresh').onclick = refreshData;
     $('btnClearFilter').onclick = () => { $('fFrom').value=''; $('fTo').value=''; renderTable(); };
     $('fFrom').onchange = renderTable; $('fTo').onchange = renderTable;
@@ -273,24 +225,42 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initSupabase() {
-    if (typeof supabase === 'undefined') return alert("Gagal memuat library Supabase. Cek koneksi internet.");
-    if (SUPABASE_URL.includes("https://ldipyeuhjimstjxgsnbu.supabase.co")) { $('loading').style.display='none'; return alert(eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkaXB5ZXVoamltc3RqeGdzbmJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUxNzQxMzQsImV4cCI6MjA4MDc1MDEzNH0.eKbaxoLw0-OBTBInJYb3LWLJhX4ujJFm_hYL8GVBekM"); }
+    if (typeof supabase === 'undefined') {
+        $('loading').style.display='none';
+        return alert("Gagal memuat library Supabase. Cek internet.");
+    }
+    
+    // Cek Placeholder
+    if (SUPABASE_URL.includes("ISI_URL")) {
+        $('loading').style.display='none';
+        return alert("STOP! ISI SUPABASE_URL DAN KEY DI KODINGAN PALING BAWAH!");
+    }
+    
     try {
         client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         refreshData();
-    } catch (e) { alert("Error Init Supabase: " + e.message); $('loading').style.display='none'; }
+    } catch (e) {
+        alert("Error Init Supabase: " + e.message);
+        $('loading').style.display='none';
+    }
 }
 
+// --- 2. CORE FUNCTIONS ---
 async function refreshData() {
     if(!client) return;
     $('loading').style.display = 'flex';
+    
     const { data: mData, error: mErr } = await client.from('master').select('*');
     if(mErr) { $('loading').style.display='none'; return alert('Error Master: ' + mErr.message); }
     master = mData || [];
+
     const { data: lData, error: lErr } = await client.from('logs').select('*');
     if(lErr) { $('loading').style.display='none'; return alert('Error Logs: ' + lErr.message); }
     logs = lData || [];
-    renderTable(); renderMaster(); seedProdukList();
+
+    renderTable();
+    renderMaster();
+    seedProdukList();
     $('loading').style.display = 'none';
 }
 
@@ -329,7 +299,7 @@ function recalc(){
     $('eSisaBahan').value = p.sisaBahan.toFixed(2);
     $('vYield').innerText = p.yieldpct.toFixed(2) + "%";
     
-    // UPDATE DISPLAY KG (ID SUDAH FIX)
+    // UPDATE DISPLAY KG
     $('vOkKg').innerText = p.okkg.toFixed(2);
     $('vRejectKg').innerText = p.rejectkg.toFixed(2);
     $('vRunnerKg').innerText = p.runnerkg.toFixed(2);
@@ -431,8 +401,7 @@ function importCSV(e) {
     const file = e.target.files[0]; if(!file) return;
     const reader = new FileReader();
     reader.onload = async (evt) => {
-        const text = evt.target.result;
-        const lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
+        const lines = evt.target.result.split(/\r?\n/).filter(l => l.trim() !== '');
         if(lines.length < 2) return alert('CSV Salah');
         const delim = lines[0].split(';').length > lines[0].split(',').length ? ';' : ',';
         const headers = lines[0].toLowerCase().split(delim).map(h=>h.trim().replace(/"/g,''));
