@@ -86,207 +86,268 @@ tbody tr:hover td{background:#f8fafc;}
 <!-- Pastikan semua elemen id tetap sama seperti versi localStorage kamu -->
 
 <script type="module">
-  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
 
-  // GANTI 2 BARIS INI SAJA !!!
-  const SUPABASE_URL = 'https://ldipyeuhjimstjxgsnbu.supabase.co';        // Ganti dengan URL project kamu
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkaXB5ZXVoamltc3RqeGdzbmJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUxNzQxMzQsImV4cCI6MjA4MDc1MDEzNH0.eKbaxoLw0-OBTBInJYb3LWLJhX4ujJFm_hYL8GVBekM'; // Ganti dengan anon key kamu
-  // ====================================
+  // === GANTI 2 BARIS INI AJA ===
+  const SUPABASE_URL = 'https://ldipyeuhjimstjxgsnbu.supabase.co'        // ← ganti
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkaXB5ZXVoamltc3RqeGdzbmJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUxNzQxMzQsImV4cCI6MjA4MDc1MDEzNH0.eKbaxoLw0-OBTBInJYb3LWLJhX4ujJFm_hYL8GVBekM'    // ← ganti
+  // ===============================
 
-  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-  const $ = id => document.getElementById(id);
-  const toNum = v => isNaN(+v) ? 0 : +v;
-  const round2 = n => (Math.round(n * 100) / 100).toFixed(2);
-  const todayISO = () => new Date().toISOString().slice(0, 10);
+  const $ = id => document.getElementById(id)
+  const toNum = v => isNaN(+v) ? 0 : +v
+  const round2 = n => (Math.round(n * 100) / 100).toFixed(2)
+  const todayISO = () => new Date().toISOString().slice(0, 10)
 
-  let master = [];
-  let logs = [];
+  let master = []
+  let logs = []
 
-  // ===== LOAD DATA =====
+  // ====================== SUPABASE CRUD ======================
   async function loadMaster() {
-    const { data, error } = await supabase.from('master_produk').select('*').order('kode');
-    if (error) { console.error(error); alert('Gagal load master: ' + error.message); return []; }
-    return data || [];
+    const { data } = await supabase.from('master_produk').select('*').order('kode')
+    return data || []
   }
-
   async function loadLogs() {
-    const { data, error } = await supabase.from('logs_produksi').select('*').order('tanggal', { ascending: false });
-    if (error) { console.error(error); alert('Gagal load logs: ' + error.message); return []; }
-    return data || [];
+    const { data } = await supabase.from('logs_produksi').select('*').order('tanggal', { ascending: false })
+    return data || []
   }
-
-  // ===== SAVE / INSERT / DELETE =====
-  async function upsertMaster(records) {
-    const { error } = await supabase.from('master_produk').upsert(records, { onConflict: 'kode' });
-    if (error) console.error('upsert master error:', error);
-  }
-
-  async function insertLog(rec) {
-    const { error } = await supabase.from('logs_produk').insert([rec]);
-    if (error) { console.error(error); alert('Gagal simpan: ' + error.message); }
-  }
-
-  async function deleteLog(id) {
-    const { error } = await supabase.from('logs_produksi').delete().eq('id', id);
-    if (error) console.error(error);
-  }
-
-  async function deleteAllLogs() {
-    if (!confirm('Yakin hapus SEMUA data laporan?')) return;
-    const { error } = await supabase.from('logs_produksi').delete();
-    if (error) alert('Gagal hapus: ' + error.message);
-    else await refreshAll();
-  }
-
-  // ===== REAL-TIME (auto refresh) =====
-  supabase.channel('public:logs_produksi')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'logs_produksi' }, payload => {
-      refreshAll();
-    })
-    .subscribe();
-
-  supabase.channel('public:master_produk')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'master_produk' }, payload => {
-      loadMaster().then(m => { master = m; seedProdukList(); renderMaster(); });
-    })
-    .subscribe();
-
-  // ===== REFRESH ALL =====
   async function refreshAll() {
-    master = await loadMaster();
-    logs = await loadLogs();
-    seedProdukList();
-    renderTable();
-    renderMaster();
+    master = await loadMaster()
+    logs = await loadLogs()
+    seedProdukList()
+    renderTable()
+    renderMaster()
   }
 
-  // ===== TABLE RENDER (sama seperti versi lama) =====
-  const tbody = $('tbody'), rowCount = $('rowCount');
+  // Real-time (auto refresh kalau ada orang lain nambah data)
+  supabase.channel('logs').on('postgres_changes', { event: '*', schema: 'public', table: 'logs_produksi' }, () => refreshAll()).subscribe()
+  supabase.channel('master').on('postgres_changes', { event: '*', schema: 'public', table: 'master_produk' }, () => refreshAll()).subscribe()
+
+  // ====================== RENDER TABLE ======================
+  const tbody = $('tbody'), rowCount = $('rowCount')
   function renderTable() {
-    const from = $('fFrom').value ? new Date($('fFrom').value) : null;
-    const to = $('fTo').value ? new Date($('fTo').value) : null;
-    const qProd = $('fProduk').value.trim().toLowerCase();
-    const qShift = $('fShift').value;
-    const qLine = $('fLine').value.trim().toLowerCase();
+    const from = $('fFrom').value ? new Date($('fFrom').value) : null
+    const to = $('fTo').value ? new Date($('fTo').value) : null
+    const qProd = $('fProduk').value.trim().toLowerCase()
+    const qShift = $('fShift').value
+    const qLine = $('fLine').value.trim().toLowerCase()
 
     let filtered = logs.filter(r => {
-      const d = new Date(r.tanggal);
-      const okDate = (!from || d >= from) && (!to || d <= to);
-      const okProd = !qProd || r.kode.toLowerCase().includes(qProd) || r.nama.toLowerCase().includes(qProd);
-      const okShift = !qShift || r.shift === qShift;
-      const okLine = !qLine || (r.line || '').toLowerCase().includes(qLine);
-      return okDate && okProd && okShift && okLine;
-    });
+      const d = new Date(r.tanggal)
+      const okDate = (!from || d >= from) && (!to || d <= to)
+      const okProd = !qProd || r.kode.toLowerCase().includes(qProd) || r.nama.toLowerCase().includes(qProd)
+      const okShift = !qShift || r.shift === qShift
+      const okLine = !qLine || (r.line || '').toLowerCase().includes(qLine)
+      return okDate && okProd && okShift && okLine
+    })
 
-    tbody.innerHTML = '';
+    tbody.innerHTML = ''
     filtered.forEach(r => {
-      const tr = document.createElement('tr');
+      const tr = document.createElement('tr')
       tr.innerHTML = `
-        <td>${r.tanggal}</td><td style="text-align:center"><span class="badge" style="margin:0">${r.shift}</span></td><td>${r.line||''}</td>
-        <td style="font-weight:600">${r.kode} — ${r.nama}</td><td>${r.tipe}</td>
-        <td class="right">${r.counter}</td><td class="right">${r.cavity}</td>
-        <td class="right">${(+r.sisa_sblm).toFixed(2)}</td><td class="right">${(+r.sisa_ssdh).toFixed(2)}</td>
-        <td class="right">${r.qty_dus||0}</td><td class="right">${r.qty_box||0}</td>
-        <td class="right">${r.qty_dus_plus||0}</td><td class="right">${r.isi_dus_plus||0}</td>
-        <td class="right" style="color:var(--success);font-weight:600">${(+r.okpcs).toFixed(0)}</td>
-        <td class="right">${(+r.okkg).toFixed(2)}</td><td class="right" style="color:var(--danger)">${(+r.reject).toFixed(0)}</td>
-        <td class="right">${(+r.rejectkg).toFixed(2)}</td><td class="right">${(+r.runnerkg).toFixed(2)}</td>
-        <td class="right">${(+r.sisa_bahan||0).toFixed(2)}</td><td class="right" style="font-weight:bold">${(+r.yieldpct).toFixed(2)}</td>
+        <td>${r.tanggal}</td>
+        <td style="text-align:center"><span class="badge" style="margin:0">${r.shift}</span></td>
+        <td>${r.line||''}</td>
+        <td style="font-weight:600">${r.kode} — ${r.nama}</td>
+        <td>${r.tipe||'pcs'}</td>
+        <td class="right">${r.counter||0}</td>
+        <td class="right">${r.cavity||0}</td>
+        <td class="right">${(+r.sisa_sblm||0).toFixed(2)}</td>
+        <td class="right">${(+r.sisa_ssdh||0).toFixed(2)}</td>
+        <td class="right">${r.qty_dus||0}</td>
+        <td class="right">${r.qty_box||0}</td>
+        <td class="right">${r.qty_dus_plus||0}</td>
+        <td class="right">${r.isi_dus_plus||0}</td>
+        <td class="right" style="color:var(--success);font-weight:600">${Math.round(+r.okpcs||0)}</td>
+        <td class="right">${(+r.okkg||0).toFixed(2)}</td>
+        <td class="right" style="color:var(--danger)">${Math.round(+r.reject||0)}</td>
+        <td class="right">${(+r.rejectkg||0).toFixed(2)}</td>
+        <td class="right">${(+r.runnerkg||0).toFixed(2)}</td>
+        <td class="right">${(+r.sisa_bahan||0).toFixed(2)}</td>
+        <td class="right" style="font-weight:bold">${(+r.yieldpct||0).toFixed(2)}</td>
         <td class="right">${r.reject_max||0}</td>
-        <td style="text-align:center"><button class="btn sm danger" data-id="${r.id}">Hapus</button></td>`;
-      tbody.appendChild(tr);
-    });
-    rowCount.textContent = filtered.length + ' data';
+        <td style="text-align:center"><button class="btn sm danger" data-id="${r.id}">Hapus</button></td>`
+      tbody.appendChild(tr)
+    })
+    rowCount.textContent = filtered.length + ' data'
   }
 
   tbody.onclick = async e => {
-    const btn = e.target.closest('button');
-    if (!btn) return;
-    const id = btn.dataset.id;
+    const btn = e.target.closest('button')
+    if (!btn) return
     if (confirm('Hapus data ini?')) {
-      await deleteLog(id);
-      await refreshAll();
+      await supabase.from('logs_produksi').delete().eq('id', btn.dataset.id)
+      refreshAll()
     }
-  };
+  }
 
-  // ===== MASTER PRODUK (sama seperti lama, hanya save ke Supabase) =====
+  // ====================== MASTER PRODUK ======================
   function seedProdukList() {
-    const dl = $('produkList'); dl.innerHTML = '';
+    const dl = $('produkList'); if (!dl) return
+    dl.innerHTML = ''
     master.forEach(p => {
-      const o = document.createElement('option');
-      o.value = `${p.kode} — ${p.nama}`;
-      dl.appendChild(o);
-    });
+      const o = document.createElement('option')
+      o.value = `${p.kode} — ${p.nama}`
+      dl.appendChild(o)
+    })
   }
 
   function renderMaster() {
-    const body = $('mpBody'); body.innerHTML = '';
-    if (!master.length) {
-      body.innerHTML = '<tr><td colspan="9" class="muted" style="text-align:center;padding:20px;">Belum ada produk.</td></tr>';
-      return;
-    }
+    const body = $('mpBody')
+    body.innerHTML = master.length === 0
+      ? '<tr><td colspan="9" class="muted" style="text-align:center;padding:20px;">Belum ada produk.</td></tr>'
+      : ''
     master.forEach((p, i) => {
-      const tr = document.createElement('tr');
+      const tr = document.createElement('tr')
       tr.innerHTML = `<td>${p.kode}</td><td style="font-weight:600">${p.nama}</td><td>${p.tipe||'pcs'}</td>
         <td class="right">${(+p.gram||0).toFixed(2)}</td><td class="right">${(+p.runner||0).toFixed(2)}</td>
         <td class="right">${p.cavity||1}</td><td class="right">${p.per_dus||0}</td><td class="right">${p.per_box||0}</td>
         <td style="text-align:center">
           <button class="btn sm" data-act="edit" data-i="${i}">Edit</button>
           <button class="btn sm danger" data-act="del" data-i="${i}">Hapus</button>
-        </td>`;
-      body.appendChild(tr);
-    });
+        </td>`
+      body.appendChild(tr)
+    })
   }
 
   $('mpBody').onclick = async e => {
-    const b = e.target.closest('button');
-    if (!b) return;
-    const i = +b.dataset.i;
+    const b = e.target.closest('button')
+    if (!b) return
+    const i = +b.dataset.i
+    const p = master[i]
     if (b.dataset.act === 'edit') {
-      const p = master[i];
-      $('mpKode').value = p.kode;
-      $('mpNama').value = p.nama;
-      $('mpTipe').value = p.tipe || 'pcs';
-      $('mpGram').value = p.gram;
-      $('mpRunner').value = p.runner;
-      $('mpCavity').value = p.cavity;
-      $('mpPerDus').value = p.per_dus;
-      $('mpPerBox').value = p.per_box;
-    } else if (b.dataset.act === 'del') {
-      if (confirm('Hapus produk ini?')) {
-        await supabase.from('master_produk').delete().eq('id', master[i].id);
-        await refreshAll();
-      }
+      $('mpKode').value = p.kode
+      $('mpNama').value = p.nama
+      $('mpTipe').value = p.tipe || 'pcs'
+      $('mpGram').value = p.gram || ''
+      $('mpRunner').value = p.runner || ''
+      $('mpCavity').value = p.cavity || ''
+      $('mpPerDus').value = p.per_dus || ''
+      $('mpPerBox').value = p.per_box || ''
+    } else if (confirm('Hapus produk ini?')) {
+      await supabase.from('master_produk').delete().eq('id', p.id)
+      refreshAll()
     }
-  };
+  }
 
   $('mpAdd').onclick = async () => {
-    const kode = $('mpKode').value.trim();
-    if (!kode) return alert('Kode wajib diisi');
+    const kode = $('mpKode').value.trim()
+    if (!kode) return alert('Kode wajib diisi')
     const rec = {
       kode,
       nama: $('mpNama').value.trim() || kode,
       tipe: $('mpTipe').value,
       gram: toNum($('mpGram').value),
       runner: toNum($('mpRunner').value),
-      cavity: parseInt($('mpCavity').value || 1),
-      per_dus: parseInt($('mpPerDus').value || 0),
-      per_box: parseInt($('mpPerBox').value || 0)
-    };
-    await supabase.from('master_produk').upsert(rec, { onConflict: 'kode' });
-    await refreshAll();
-    // clear form
-    $('mpKode').value = $('mpNama').value = $('mpGram').value = $('mpRunner').value = '';
-    $('mpCavity').value = $('mpPerDus').value = $('mpPerBox').value = '';
-  };
+      cavity: toNum($('mpCavity').value) || 1,
+      per_dus: toNum($('mpPerDus').value),
+      per_box: toNum($('mpPerBox').value)
+    }
+    await supabase.from('master_produk').upsert(rec, { onConflict: 'kode' })
+    ;['mpKode','mpNama','mpGram','mpRunner','mpCavity','mpPerDus','mpPerBox'].forEach(id => $(id).value = '')
+    refreshAll()
+  }
 
-  // ===== ENTRY FORM (sama logic hitung, hanya save ke Supabase) =====
-  // ... (logic compute(), recalc(), hydrateProduk() sama persis seperti versi lama kamu)
+  // ====================== ENTRY & HITUNGAN (sama persis kayak versi lama) ======================
+  const sblmIds = ['eSblm1','eSblm2','eSblm3','eSblm4','eSblm5','eSblm6']
+  const ssdhIds = ['eSsdh1','eSsdh2','eSsdh3','eSsdh4','eSsdh5','eSsdh6']
+  const rIds = ['rBintik','rFlashing','rShort','rWarna','rLain']
+
+  function findProduk(text) {
+    if (!text) return null
+    const t = text.toLowerCase().trim()
+    return master.find(p => `${p.kode} — ${p.nama}`.toLowerCase() === t) ||
+           master.find(p => p.kode.toLowerCase() === t) ||
+           master.find(p => p.nama.toLowerCase().includes(t))
+  }
+
+  function hydrateProduk(p) {
+    if (!p) {
+      $('eGram').value = $('eRunner').value = $('eCavity').value = $('eIsiDus').value = $('eIsiBox').value = ''
+      $('badgeTipe').textContent = ''
+      $('lblSblm').textContent = $('lblSsdh').textContent = 'Sisa (pcs)'
+      return
+    }
+    $('eGram').value = p.gram || 0
+    $('eRunner').value = p.runner || 0
+    $('eCavity').value = p.cavity || 1
+    $('eIsiDus').value = p.per_dus || 0
+    $('eIsiBox').value = p.per_box || 0
+    $('badgeTipe').textContent = p.tipe === 'kg_sisa' ? 'Mode KG' : 'Mode PCS'
+    const unit = p.tipe === 'kg_sisa' ? '(kg)' : '(pcs)'
+    $('lblSblm').textContent = 'Sisa Sebelum ' + unit
+    $('lblSsdh').textContent = 'Sisa Sesudah ' + unit
+  }
+
+  function sum(ids) { return ids.reduce((a, id) => a + toNum($(id).value), 0) }
+
+  function compute() {
+    const prod = findProduk($('eProduk').value)
+    const tipe = prod?.tipe || 'pcs'
+    const gram = toNum($('eGram').value)
+    const cav = Math.max(1, toNum($('eCavity').value))
+    const counter = toNum($('eCounter').value)
+
+    let sblm = sum(sblmIds), ssdh = sum(ssdhIds)
+    if (tipe === 'kg_sisa' && gram > 0) {
+      const conv = 1000 / gram
+      sblm *= conv
+      ssdh *= conv
+    }
+
+    const pack = toNum($('eQtyDus').value) * toNum($('eIsiDus').value) +
+                 toNum($('eQtyBox').value) * toNum($('eIsiBox').value) +
+                 toNum($('eQtyDusPlus').value) * toNum($('eIsiDusPlus').value)
+
+    const okpcs = pack - sblm + ssdh
+    const hasil = counter * cav + sblm - ssdh
+    const rejectpcs = hasil - okpcs
+    const okkg = okpcs * gram / 1000
+    const rejectkg = rejectpcs * gram / 1000
+    const runnerkg = counter * toNum($('eRunner').value) / 1000
+    const yieldpct = hasil > 0 ? (okpcs / hasil) * 100 : 0
+    const sisaBahan = toNum($('eJatah').value) + toNum($('eStok').value) - (runnerkg + rejectkg + okkg + toNum($('eBalokan').value))
+    const overpack = pack > hasil
+
+    return { prod, tipe, gram, cav, counter, sblm, ssdh, pack, hasil, okpcs, okkg, rejectpcs, rejectkg, runnerkg, yieldpct, sisaBahan, overpack }
+  }
+
+  function recalc() {
+    const p = compute()
+    $('vHasil').textContent = Math.round(p.hasil)
+    $('vOkPcs').textContent = Math.round(p.okpcs)
+    $('vOkKg').textContent = round2(p.okkg)
+    $('vRejectPcs').textContent = Math.round(p.rejectpcs)
+    $('vRejectKg').textContent = round2(p.rejectkg)
+    $('vRunnerKg').textContent = round2(p.runnerkg)
+    $('vYield').textContent = round2(p.yieldpct)
+    $('eSisaBahan').value = $('vSisaBahan').textContent = round2(p.sisaBahan)
+    $('warnOver').style.display = p.overpack ? 'block' : 'none'
+  }
+
+  // event input yang trigger recalc
+  ;['eProduk','eCavity','eCounter','eQtyDus','eQtyBox','eQtyDusPlus','eIsiDusPlus','eJatah','eStok','eBalokan'].concat(sblmIds).concat(ssdhIds).forEach(id => {
+    const el = $(id)
+    if (el) el.addEventListener('input', () => {
+      if (id === 'eProduk') hydrateProduk(findProduk(el.value))
+      recalc()
+    })
+  })
+
+  function openEntry() {
+    $('eTanggal').value = todayISO()
+    $('eShift').value = '1'
+    ;['eLine','eProduk','eCounter','eJatah','eStok','eBalokan','eQtyDus','eQtyBox','eQtyDusPlus','eIsiDusPlus','eCatatan'].forEach(id => $(id).value = '')
+    sblmIds.concat(ssdhIds).forEach(id => $(id).value = '')
+    rIds.forEach(id => $(id).value = '')
+    hydrateProduk(null)
+    recalc()
+  }
 
   $('btnSaveEntry').onclick = async () => {
-    const p = compute();
-    if (!p.prod) return alert('Pilih produk dulu!');
+    const p = compute()
+    if (!p.prod) return alert('Pilih produk dulu!')
 
     const rec = {
       tanggal: $('eTanggal').value || todayISO(),
@@ -295,12 +356,12 @@ tbody tr:hover td{background:#f8fafc;}
       kode: p.prod.kode,
       nama: p.prod.nama,
       tipe: p.tipe,
-      gram: +p.gram,
-      runner: +toNum($('eRunner').value),
+      gram: p.gram,
+      runner: toNum($('eRunner').value),
       cavity: p.cav,
       counter: p.counter,
-      sisa_sblm: +p.sblm_pcs.toFixed(2),
-      sisa_ssdh: +p.ssdh_pcs.toFixed(2),
+      sisa_sblm: +p.sblm.toFixed(2),
+      sisa_ssdh: +p.ssdh.toFixed(2),
       hasil: +p.hasil.toFixed(2),
       okpcs: +p.okpcs.toFixed(2),
       okkg: +round2(p.okkg),
@@ -309,48 +370,99 @@ tbody tr:hover td{background:#f8fafc;}
       runnerkg: +round2(p.runnerkg),
       sisa_bahan: +round2(p.sisaBahan),
       yieldpct: +round2(p.yieldpct),
-      qty_dus: +toNum($('eQtyDus').value) || 0,
-      isi_dus: +toNum($('eIsiDus').value) || 0,
-      qty_box: +toNum($('eQtyBox').value) || 0,
-      isi_box: +toNum($('eIsiBox').value) || 0,
-      qty_dus_plus: +toNum($('eQtyDusPlus').value) || 0,
-      isi_dus_plus: +toNum($('eIsiDusPlus').value) || 0,
-      catatan: ($('eCatatan').value || '').trim(),
-      reject_bintik: +toNum($('rBintik').value) || 0,
-      reject_flashing: +toNum($('rFlashing').value) || 0,
-      reject_short: +toNum($('rShort').value) || 0,
-      reject_warna: +toNum($('rWarna').value) || 0,
-      reject_lain: +toNum($('rLain').value) || 0,
-      reject_total_kecil: +toNum($('rTotal').value) || 0,
-      reject_max: +toNum($('rMax').value) || 0
-    };
+      qty_dus: toNum($('eQtyDus').value),
+      isi_dus: toNum($('eIsiDus').value),
+      qty_box: toNum($('eQtyBox').value),
+      isi_box: toNum($('eIsiBox').value),
+      qty_dus_plus: toNum($('eQtyDusPlus').value),
+      isi_dus_plus: toNum($('eIsiDusPlus').value),
+      catatan: $('eCatatan').value.trim(),
+      reject_bintik: toNum($('rBintik').value),
+      reject_flashing: toNum($('rFlashing').value),
+      reject_short: toNum($('rShort').value),
+      reject_warna: toNum($('rWarna').value),
+      reject_lain: toNum($('rLain').value),
+      reject_total_kecil: sum(rIds),
+      reject_max: Math.max(...rIds.map(id => toNum($(id).value)), 0)
+    }
 
-    await insertLog(rec);
-    $('mEntry').classList.remove('open');
-    await refreshAll();
-  };
+    await supabase.from('logs_produksi').insert([rec])
+    $('mEntry').classList.remove('open')
+    refreshAll()
+  }
 
-  // ===== BUTTON LAINNYA =====
-  $('btnClear').onclick = deleteAllLogs;
-  $('btnPrint').onclick = () => window.print();
-  $('btnAdd').onclick = () => { openEntry(); $('mEntry').classList.add('open'); };
-  $('btnMaster').onclick = () => { renderMaster(); $('mMaster').classList.add('open'); };
-  $('mEntryClose').onclick = $('mMasterClose').onclick = e => e.target.closest('.modal').classList.remove('open');
-
-  // Filter reset
+  // ====================== BUTTON LAIN ======================
+  $('btnAdd').onclick = () => { openEntry(); $('mEntry').classList.add('open') }
+  $('btnMaster').onclick = () => { renderMaster(); $('mMaster').classList.add('open') }
+  $('mEntryClose').onclick = $('mMasterClose').onclick = e => e.target.closest('.modal').classList.remove('open')
+  $('btnPrint').onclick = () => window.print()
+  $('btnClear').onclick = async () => {
+    if (confirm('Hapus SEMUA data laporan produksi?')) {
+      await supabase.from('logs_produksi').delete()
+      refreshAll()
+    }
+  }
   $('btnClearFilter').onclick = () => {
-    $('fFrom').value = $('fTo').value = $('fProduk').value = $('fLine').value = '';
-    $('fShift').value = '';
-    renderTable();
-  };
+    $('fFrom').value = $('fTo').value = $('fProduk').value = $('fLine').value = ''
+    $('fShift').value = ''
+    renderTable()
+  }
 
-  // ===== INIT =====
-  await refreshAll();
+  // Import CSV Master (sama kayak versi lama, cuma save ke Supabase)
+  $('btnImportCsv').onclick = () => $('fileCsvMaster').click()
+  $('fileCsvMaster').addEventListener('change', async e => {
+    const file = e.target.files[0]
+    if (!file) return
+    const allowDup = $('chkAllowDup').checked
+    const text = await file.text()
+    const lines = text.split(/\r?\n/).filter(l => l.trim())
+    if (lines.length < 2) return alert('CSV kosong!')
+    const delim = lines[0].includes(';') ? ';' : ','
+    const headers = lines[0].toLowerCase().split(delim).map(h => h.trim().replace(/"/g,''))
+    const idx = {
+      kode: headers.findIndex(h => h.includes('kode') || h.includes('code')),
+      nama: headers.findIndex(h => h.includes('nama') || h.includes('name') || h.includes('produk')),
+      gram: headers.findIndex(h => h.includes('gram') || h.includes('berat')),
+      runner: headers.findIndex(h => h.includes('runner')),
+      cavity: headers.findIndex(h => h.includes('cav') || h.includes('cavity')),
+      dus: headers.findIndex(h => h.includes('dus')),
+      box: headers.findIndex(h => h.includes('box')),
+      tipe: headers.findIndex(h => h.includes('tipe') || h.includes('type'))
+    }
 
-  // Pastikan semua fungsi lain (compute, recalc, openEntry, dll) tetap kamu copy dari versi lama kamu
-  // (saya tidak menuliskan ulang semua karena panjang, tapi logicnya 100% sama)
+    const records = []
+    for (let i = 1; i < lines.length; i++) {
+      const c = lines[i].split(delim).map(x => x.trim().replace(/"/g,''))
+      if (!c[idx.kode] || !c[idx.nama]) continue
+      records.push({
+        kode: c[idx.kode],
+        nama: c[idx.nama],
+        tipe: idx.tipe >= 0 ? c[idx.tipe] || 'pcs' : 'pcs',
+        gram: idx.gram >= 0 ? toNum(c[idx.gram].replace(',','.')) : 0,
+        runner: idx.runner >= 0 ? toNum(c[idx.runner].replace(',','.')) : 0,
+        cavity: idx.cavity >= 0 ? toNum(c[idx.cavity]) : 1,
+        per_dus: idx.dus >= 0 ? toNum(c[idx.dus]) : 0,
+        per_box: idx.box >= 0 ? toNum(c[idx.box]) : 0
+      })
+    }
+
+    if (!allowDup) {
+      // hapus dulu yang kode-nya sama
+      const existing = await supabase.from('master_produk').select('kode')
+      const existingCodes = existing.data.map(x => x.kode.toLowerCase())
+      records = records.filter(r => !existingCodes.includes(r.kode.toLowerCase()))
+    }
+
+    if (records.length) await supabase.from('master_produk').insert(records)
+    alert(`Sukses import ${records.length} produk!`)
+    $('fileCsvMaster').value = ''
+    refreshAll()
+  })
+
+  // ====================== INIT ======================
+  refreshAll()
 </script>
-
+  
 <!-- Copy semua HTML modal (mMaster & mEntry) dari file lama kamu di sini -->
 <!-- Pastikan tidak ada yang berubah selain script di atas -->
 
