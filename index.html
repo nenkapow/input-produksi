@@ -3,23 +3,14 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>App Produksi v0.7.6 (Diagnostic)</title>
-
-<script>
-window.onerror = function(msg, url, line) {
-    alert("FATAL ERROR:\n" + msg + "\n\nBaris ke: " + line + "\n\n(Biasanya salah ketik pas isi API Key/URL)");
-    return true;
-};
-</script>
-
+<title>App Produksi v0.8.0 (Fitur Rekap)</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-/* STYLE SAMA */
-:root { --bg-body:#f1f5f9; --bg-card:#ffffff; --text-main:#0f172a; --text-muted:#64748b; --border:#e2e8f0; --primary:#4f46e5; --primary-hover:#4338ca; --success:#10b981; --danger:#ef4444; --warning:#f59e0b; --radius:12px; }
+/* --- STYLE VISUAL (SAMA) --- */
+:root { --bg-body:#f1f5f9; --bg-card:#ffffff; --text-main:#0f172a; --text-muted:#64748b; --border:#e2e8f0; --primary:#4f46e5; --primary-hover:#4338ca; --success:#10b981; --danger:#ef4444; --warning:#f59e0b; --info:#0ea5e9; --radius:12px; }
 * { box-sizing:border-box; outline:none; }
 body { margin:0; background:var(--bg-body); color:var(--text-main); font-family:'Inter',sans-serif; }
 .wrap { max-width:1400px; margin:0 auto; padding:2rem; }
@@ -30,7 +21,9 @@ body { margin:0; background:var(--bg-body); color:var(--text-main); font-family:
 .btn:hover { background:#f8fafc; }
 .btn.primary { background:var(--primary); color:white; border-color:var(--primary); }
 .btn.ok { background:var(--success); color:white; border-color:var(--success); }
+.btn.info { background:var(--info); color:white; border-color:var(--info); }
 .btn.danger { background:white; color:var(--danger); border-color:#fecaca; }
+.btn.danger:hover { background:#fef2f2; }
 .btn.sm { padding:6px 12px; font-size:0.8rem; border-radius:6px; }
 .input, select { width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:8px; background:#f8fafc; }
 .input:focus { background:white; border-color:var(--primary); }
@@ -54,144 +47,178 @@ tbody td { padding:8px; border-bottom:1px solid var(--border); vertical-align:mi
 </head>
 <body>
 
-<div id="loading" class="loading-overlay" style="display:none;">
-  <div class="spinner"></div>
-  <div id="loadingMsg" style="margin-top:10px; font-weight:600; color:var(--text-main);">Proses...</div>
+<div id="loading" class="loading-overlay">
+    <div class="spinner"></div>
+    <div style="margin-top:10px; font-weight:600; color:var(--text-main);">Menghubungkan...</div>
 </div>
 
 <div class="wrap">
-  <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:24px;">
-    <div>
-      <h2>App Produksi Supabase <span style="font-weight:400; color:var(--text-muted); font-size:1rem;">v0.7.6</span></h2>
-      <div class="muted" style="margin-top:4px;">Mode Diagnosa (Anti-Macet)</div>
+    <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:24px;">
+        <div>
+            <h2>App Produksi <span style="font-weight:400; color:var(--text-muted); font-size:1rem;">v0.8.0</span></h2>
+            <div class="muted" style="margin-top:4px;">Database: <span id="statusDb" style="color:var(--danger)">Belum Konek</span></div>
+        </div>
+        <div class="row">
+            <button id="btnConfig" class="btn">⚙️ Setting</button>
+            <button id="btnRefresh" class="btn">🔄 Refresh</button>
+            <button id="btnPrint" class="btn ok">Cetak</button>
+        </div>
     </div>
-    <div class="row">
-      <button id="btnRefresh" class="btn">🔄 Refresh Data</button>
-      <button id="btnPrint" class="btn ok">Cetak</button>
-    </div>
-  </div>
 
-  <div class="card" style="padding:16px;">
-    <div class="row" style="align-items:center; justify-content:space-between;">
-      <div class="row">
-        <button id="btnAdd" class="btn primary" style="font-weight:600">+ Input Produksi</button>
-        <button id="btnMaster" class="btn">Master Produk</button>
-        <button id="btnExport" class="btn ok">Export CSV</button>
-      </div>
-      <button id="btnClear" class="btn danger" style="margin-left:auto">Hapus Data</button>
+    <div class="card" style="padding:16px;">
+        <div class="row" style="align-items:center; justify-content:space-between;">
+            <div class="row">
+                <button id="btnAdd" class="btn primary" style="font-weight:600">+ Input</button>
+                <button id="btnMaster" class="btn">Master</button>
+                <button id="btnExport" class="btn ok">Export CSV</button>
+                <button id="btnRekap" class="btn info">📊 Rekap Line</button> </div>
+            <button id="btnClear" class="btn danger" style="margin-left:auto">Hapus Data</button>
+        </div>
     </div>
-  </div>
 
-  <div class="card">
-    <h4 style="color:var(--text-main); font-size:0.9rem; margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:12px;">Filter Data</h4>
-    <div class="row" style="align-items:flex-end;">
-      <div style="flex:1; min-width:140px"><div class="muted">Dari Tanggal</div><input id="fFrom" type="date" class="input"></div>
-      <div style="flex:1; min-width:140px"><div class="muted">Sampai Tanggal</div><input id="fTo" type="date" class="input"></div>
-      <div style="flex:2; min-width:200px"><div class="muted">Cari Produk</div><input id="fProduk" class="input" placeholder="Nama / Kode..." /></div>
-      <div style="flex:1; min-width:100px"><div class="muted">Shift</div><select id="fShift" class="input"><option value="">Semua</option><option>1</option><option>2</option><option>3</option></select></div>
-      <div style="flex:1; min-width:120px"><div class="muted">Line/Mesin</div><input id="fLine" class="input" placeholder="Cth: L-01" /></div>
-      <div style="padding-bottom:1px;"><button id="btnClearFilter" class="btn">Reset</button></div>
+    <div class="card">
+        <h4 style="color:var(--text-main); font-size:0.9rem; margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:12px;">Filter Data</h4>
+        <div class="row" style="align-items:flex-end;">
+            <div style="flex:1; min-width:140px"><div class="muted">Dari Tanggal</div><input id="fFrom" type="date" class="input"></div>
+            <div style="flex:1; min-width:140px"><div class="muted">Sampai Tanggal</div><input id="fTo" type="date" class="input"></div>
+            <div style="flex:2; min-width:200px"><div class="muted">Cari Produk</div><input id="fProduk" class="input" placeholder="Nama / Kode..." /></div>
+            <div style="flex:1; min-width:100px"><div class="muted">Shift</div><select id="fShift" class="input"><option value="">Semua</option><option>1</option><option>2</option><option>3</option></select></div>
+            <div style="flex:1; min-width:120px"><div class="muted">Line/Mesin</div><input id="fLine" class="input" placeholder="Cth: L-01" /></div>
+            <div style="padding-bottom:1px;"><button id="btnClearFilter" class="btn">Reset</button></div>
+        </div>
     </div>
-  </div>
 
-  <div class="card" style="overflow:hidden; padding:0;">
-    <div style="padding:16px 24px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; background:#f8fafc;">
-      <h3 style="font-size:1rem;">Laporan Produksi</h3>
-      <span id="rowCount" class="badge" style="background:white; border:1px solid var(--border); color:var(--text-muted);">0 data</span>
+    <div class="card" style="overflow:hidden; padding:0;">
+        <div style="padding:16px 24px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; background:#f8fafc;">
+            <h3 style="font-size:1rem;">Laporan Produksi</h3>
+            <span id="rowCount" class="badge" style="background:white; border:1px solid var(--border); color:var(--text-muted);">0 data</span>
+        </div>
+        <div style="overflow:auto; max-height:65vh;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tanggal</th><th>Shift</th><th>Line</th><th>Produk</th><th>Tipe</th>
+                        <th class="right">Counter</th><th class="right">Cavity</th>
+                        <th class="right">Dus</th><th class="right">Box</th>
+                        <th class="right">OK (pcs)</th><th class="right">OK (kg)</th>
+                        <th class="right">Reject</th><th class="right">Sisa Bhn</th>
+                        <th class="right">Yield %</th><th class="right">R. Max</th>
+                        <th style="text-align:center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody"></tbody>
+            </table>
+        </div>
     </div>
-    <div style="overflow:auto; max-height:65vh;">
-      <table>
-        <thead>
-          <tr>
-            <th>Tanggal</th><th>Shift</th><th>Line</th><th>Produk</th><th>Tipe</th>
-            <th class="right">Counter</th><th class="right">Cavity</th>
-            <th class="right">Dus</th><th class="right">Box</th>
-            <th class="right">OK (pcs)</th><th class="right">OK (kg)</th>
-            <th class="right">Reject</th><th class="right">Sisa Bhn</th>
-            <th class="right">Yield %</th><th class="right">R. Max</th>
-            <th style="text-align:center">Aksi</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
-    </div>
-  </div>
 </div>
+
+<div id="mConfig" class="modal"><div class="card" style="max-width:500px">
+    <h3 style="margin-bottom:16px;">Koneksi Supabase</h3>
+    <div class="muted" style="margin-bottom:16px;">Paste Project URL dan Anon Key dari Dashboard Supabase Anda.</div>
+    <div class="grid">
+        <div><div class="muted">Project URL (https://xyz.supabase.co)</div><input id="cfgUrl" class="input" /></div>
+        <div><div class="muted">Anon Public Key (eyJ...)</div><textarea id="cfgKey" class="input" rows="4"></textarea></div>
+        <button id="btnSaveConfig" class="btn primary" style="width:100%">SIMPAN & KONEK</button>
+        <button id="mConfigClose" class="btn" style="width:100%">Tutup</button>
+    </div>
+</div></div>
+
+<div id="mRekap" class="modal"><div class="card">
+    <div class="row" style="justify-content:space-between; margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:16px;">
+        <h3>Rekapitulasi Produksi</h3>
+        <button id="mRekapClose" class="btn sm">Tutup</button>
+    </div>
+    <div class="muted" style="margin-bottom:12px;">Data berdasarkan filter tanggal yang dipilih.</div>
+    <div style="overflow:auto; max-height:60vh; border:1px solid var(--border); border-radius:8px;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Line / Mesin</th>
+                    <th>Nama Produk</th>
+                    <th class="right">Total OK (pcs)</th>
+                    <th class="right">Total Reject</th>
+                    <th class="right">Total OK (kg)</th>
+                    <th class="right">Yield Rata2</th>
+                </tr>
+            </thead>
+            <tbody id="tbodyRekap"></tbody>
+        </table>
+    </div>
+</div></div>
 
 <div id="mMaster" class="modal"><div class="card">
     <div class="row" style="justify-content:space-between; margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:16px;">
-      <h3>Master Produk</h3>
-      <div class="row">
-        <label style="display:flex; align-items:center; gap:6px; font-size:0.85rem; background:#f1f5f9; padding:6px 10px; border-radius:6px; cursor:pointer;"><input type="checkbox" id="chkAllowDup" /> Allow Dup</label>
-        <button id="btnImportCsv" class="btn ok sm">Import CSV</button>
-        <button id="mMasterClose" class="btn sm">Tutup</button>
-        <input type="file" id="fileCsvMaster" accept=".csv" style="display:none;" />
-      </div>
+        <h3>Master Produk</h3>
+        <div class="row">
+            <label style="display:flex; align-items:center; gap:6px; font-size:0.85rem; background:#f1f5f9; padding:6px 10px; border-radius:6px; cursor:pointer;"><input type="checkbox" id="chkAllowDup" /> Allow Dup</label>
+            <button id="btnImportCsv" class="btn ok sm">Import CSV</button>
+            <button id="mMasterClose" class="btn sm">Tutup</button>
+            <input type="file" id="fileCsvMaster" accept=".csv" style="display:none;" />
+        </div>
     </div>
     <div style="background:var(--bg-body); padding:20px; border-radius:var(--radius); margin-bottom:24px;">
-      <h4 style="font-size:0.85rem; margin-bottom:12px;">Tambah / Edit Manual</h4>
-      <div class="grid" style="grid-template-columns:repeat(12,1fr)">
-        <div style="grid-column:span 2"><div class="muted">Kode</div><input id="mpKode" class="input" placeholder="Kode" /></div>
-        <div style="grid-column:span 4"><div class="muted">Nama</div><input id="mpNama" class="input" placeholder="Nama Produk" /></div>
-        <div style="grid-column:span 2"><div class="muted">Tipe</div><select id="mpTipe" class="input"><option value="pcs">pcs</option><option value="kg_sisa">kg</option></select></div>
-        <div style="grid-column:span 2"><div class="muted">Gram</div><input id="mpGram" class="input" placeholder="0.00" type="number" step="0.01" /></div>
-        <div style="grid-column:span 2"><div class="muted">Runner</div><input id="mpRunner" class="input" placeholder="0.00" type="number" step="0.01" /></div>
-        <div style="grid-column:span 2"><div class="muted">Cavity</div><input id="mpCavity" class="input" placeholder="1" type="number" /></div>
-        <div style="grid-column:span 2"><div class="muted">Isi Dus</div><input id="mpPerDus" class="input" placeholder="0" type="number" /></div>
-        <div style="grid-column:span 2"><div class="muted">Isi Box</div><input id="mpPerBox" class="input" placeholder="0" type="number" /></div>
-        <div style="grid-column:span 6"><div class="muted">&nbsp;</div><button id="mpAdd" class="btn primary" style="width:100%">+ Simpan / Update</button></div>
-      </div>
+        <h4 style="font-size:0.85rem; margin-bottom:12px;">Tambah / Edit Manual</h4>
+        <div class="grid" style="grid-template-columns:repeat(12,1fr)">
+            <div style="grid-column:span 2"><div class="muted">Kode</div><input id="mpKode" class="input" placeholder="Kode" /></div>
+            <div style="grid-column:span 4"><div class="muted">Nama</div><input id="mpNama" class="input" placeholder="Nama Produk" /></div>
+            <div style="grid-column:span 2"><div class="muted">Tipe</div><select id="mpTipe" class="input"><option value="pcs">pcs</option><option value="kg_sisa">kg</option></select></div>
+            <div style="grid-column:span 2"><div class="muted">Gram</div><input id="mpGram" class="input" placeholder="0.00" type="number" step="0.01" /></div>
+            <div style="grid-column:span 2"><div class="muted">Runner</div><input id="mpRunner" class="input" placeholder="0.00" type="number" step="0.01" /></div>
+            <div style="grid-column:span 2"><div class="muted">Cavity</div><input id="mpCavity" class="input" placeholder="1" type="number" /></div>
+            <div style="grid-column:span 2"><div class="muted">Isi Dus</div><input id="mpPerDus" class="input" placeholder="0" type="number" /></div>
+            <div style="grid-column:span 2"><div class="muted">Isi Box</div><input id="mpPerBox" class="input" placeholder="0" type="number" /></div>
+            <div style="grid-column:span 6"><div class="muted">&nbsp;</div><button id="mpAdd" class="btn primary" style="width:100%">+ Simpan / Update</button></div>
+        </div>
     </div>
     <div style="overflow:auto; max-height:50vh; border:1px solid var(--border);"><table id="tblMaster"><thead><tr><th>Kode</th><th>Nama</th><th>Tipe</th><th class="right">Gram</th><th class="right">Runner</th><th class="right">Cav</th><th class="right">Dus</th><th style="text-align:center">Aksi</th></tr></thead><tbody id="mpBody"></tbody></table></div>
 </div></div>
 
 <div id="mEntry" class="modal"><div class="card">
     <div class="row" style="justify-content:space-between; margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:16px;">
-      <div style="display:flex; align-items:center; gap:12px;"><h3>Input Produksi <span id="badgeTipe" class="badge"></span></h3></div>
-      <button id="mEntryClose" class="btn sm">Tutup ✕</button>
+        <div style="display:flex; align-items:center; gap:12px;"><h3>Input Produksi <span id="badgeTipe" class="badge"></span></h3></div>
+        <button id="mEntryClose" class="btn sm">Tutup ✕</button>
     </div>
     <div class="grid" style="grid-template-columns:repeat(12,1fr)">
-      <div style="grid-column:span 3"><div class="muted">Tanggal</div><input id="eTanggal" type="date" class="input" /></div>
-      <div style="grid-column:span 2"><div class="muted">Shift</div><select id="eShift" class="input"><option>1</option><option>2</option><option>3</option></select></div>
-      <div style="grid-column:span 3"><div class="muted">Line</div><input id="eLine" class="input" placeholder="Line" /></div>
-      <div style="grid-column:span 4"><div class="muted">Produk</div><input id="eProduk" class="input" placeholder="Cari..." list="produkList" /></div>
-      <datalist id="produkList"></datalist>
-      <div style="grid-column:span 12; border-top:1px dashed var(--border); margin-top:8px;"></div>
-      <div style="grid-column:span 2"><div class="muted">Gram</div><input id="eGram" type="number" class="input" step="0.01" readonly style="background:#e2e8f0" /></div>
-      <div style="grid-column:span 2"><div class="muted">Runner</div><input id="eRunner" type="number" class="input" step="0.01" readonly style="background:#e2e8f0" /></div>
-      <div style="grid-column:span 2"><div class="muted">Cavity</div><input id="eCavity" type="number" class="input" /></div>
-      <div style="grid-column:span 6"><div class="muted">Counter (Shot)</div><input id="eCounter" type="number" class="input" /></div>
-      <div style="grid-column:span 12" class="card" style="background:#f8fafc; padding:16px;"><h4 style="margin:0 0 12px; font-size:0.9rem;">Bahan (kg)</h4><div class="grid" style="grid-template-columns:repeat(8,1fr)"><div style="grid-column:span 2"><div class="muted">Jatah</div><input id="eJatah" type="number" step="0.01" class="input" /></div><div style="grid-column:span 2"><div class="muted">Stok</div><input id="eStok" type="number" step="0.01" class="input" /></div><div style="grid-column:span 2"><div class="muted">Balokan</div><input id="eBalokan" type="number" step="0.01" class="input" /></div><div style="grid-column:span 2"><div class="muted">Sisa</div><input id="eSisaBahan" type="number" readonly class="input" style="background:#e2e8f0; font-weight:bold;" /></div></div></div>
-      <div style="grid-column:span 6; border-right:1px solid var(--border); padding-right:10px"><div class="muted"><b>Sisa Sebelum</b></div><div class="grid" style="grid-template-columns:repeat(3,1fr); gap:8px;"><input id="eSblm1" class="input" type="number" step="0.01" placeholder="C1" /> <input id="eSblm2" class="input" type="number" step="0.01" /> <input id="eSblm3" class="input" type="number" step="0.01" /><input id="eSblm4" class="input" type="number" step="0.01" /> <input id="eSblm5" class="input" type="number" step="0.01" /> <input id="eSblm6" class="input" type="number" step="0.01" /></div></div>
-      <div style="grid-column:span 6; padding-left:10px"><div class="muted"><b>Sisa Sesudah</b></div><div class="grid" style="grid-template-columns:repeat(3,1fr); gap:8px;"><input id="eSsdh1" class="input" type="number" step="0.01" placeholder="C1" /> <input id="eSsdh2" class="input" type="number" step="0.01" /> <input id="eSsdh3" class="input" type="number" step="0.01" /><input id="eSsdh4" class="input" type="number" step="0.01" /> <input id="eSsdh5" class="input" type="number" step="0.01" /> <input id="eSsdh6" class="input" type="number" step="0.01" /></div></div>
-      <div style="grid-column:span 12; margin:8px 0; border-bottom:1px solid var(--border)"></div>
-      <div style="grid-column:span 12"><h4 style="margin:0 0 12px; font-size:0.9rem;">Packaging</h4><div class="grid" style="grid-template-columns:repeat(12,1fr)"><div style="grid-column:span 2"><div class="muted">Dus</div><input id="eQtyDus" type="number" class="input" /></div><div style="grid-column:span 2"><div class="muted">Isi/D</div><input id="eIsiDus" type="number" class="input" readonly style="background:#e2e8f0" /></div><div style="grid-column:span 2"><div class="muted">Box</div><input id="eQtyBox" type="number" class="input" /></div><div style="grid-column:span 2"><div class="muted">Isi/B</div><input id="eIsiBox" type="number" class="input" readonly style="background:#e2e8f0" /></div><div style="grid-column:span 2"><div class="muted">Dus+</div><input id="eQtyDusPlus" type="number" class="input" /></div><div style="grid-column:span 2"><div class="muted">Isi+</div><input id="eIsiDusPlus" type="number" class="input" /></div><div style="grid-column:span 12"><div class="muted">Catatan</div><input id="eCatatan" class="input" /></div></div></div>
-      <div style="grid-column:span 12" class="card" style="background:#fff1f2; padding:16px;"><h4 style="margin:0 0 12px; color:var(--danger); font-size:0.9rem;">Reject (Pcs)</h4><div class="grid" style="grid-template-columns:repeat(10,1fr)"><div style="grid-column:span 2"><div class="muted">Bintik</div><input id="rBintik" type="number" class="input" /></div><div style="grid-column:span 2"><div class="muted">Flash</div><input id="rFlashing" type="number" class="input" /></div><div style="grid-column:span 2"><div class="muted">Short</div><input id="rShort" type="number" class="input" /></div><div style="grid-column:span 2"><div class="muted">Warna</div><input id="rWarna" type="number" class="input" /></div><div style="grid-column:span 2"><div class="muted">Lain</div><input id="rLain" type="number" class="input" /></div><input id="rTotal" type="hidden" /> <input id="rMax" type="hidden" /></div></div>
-      <div style="grid-column:span 12" class="card" style="background:#f0fdf4; padding:20px; margin-bottom:0;">
-        <div class="grid" style="grid-template-columns:repeat(4,1fr); text-align:center;">
-          <div class="stat-box"><div class="muted">Hasil (Pcs)</div><span class="stat-value" id="vHasil" style="color:var(--primary)">0</span></div>
-          <div class="stat-box"><div class="muted">OK (Pcs)</div><span class="stat-value" id="vOkPcs" style="color:var(--success)">0</span></div>
-          <div class="stat-box"><div class="muted">Reject (Pcs)</div><span class="stat-value" id="vRejectPcs" style="color:var(--danger)">0</span></div>
-          <div class="stat-box"><div class="muted">Yield</div><span class="stat-value" id="vYield">0%</span></div>
-          <div style="grid-column:span 4; height:1px; background:var(--border); margin:4px 0"></div>
-          <div class="stat-box"><div class="muted">OK (Kg)</div><span class="stat-value" id="vOkKg">0.00</span></div>
-          <div class="stat-box"><div class="muted">Reject (Kg)</div><span class="stat-value" id="vRejectKg">0.00</span></div>
-          <div class="stat-box"><div class="muted">Runner (Kg)</div><span class="stat-value" id="vRunnerKg">0.00</span></div>
-          <div class="stat-box"><div class="muted">Sisa Bhn (Kg)</div><span class="stat-value" id="vSisaBahanLabel">0.00</span></div>
+        <div style="grid-column:span 3"><div class="muted">Tanggal</div><input id="eTanggal" type="date" class="input" /></div>
+        <div style="grid-column:span 2"><div class="muted">Shift</div><select id="eShift" class="input"><option>1</option><option>2</option><option>3</option></select></div>
+        <div style="grid-column:span 3"><div class="muted">Line</div><input id="eLine" class="input" placeholder="Line" /></div>
+        <div style="grid-column:span 4"><div class="muted">Produk</div><input id="eProduk" class="input" placeholder="Cari..." list="produkList" /></div>
+        <datalist id="produkList"></datalist>
+        <div style="grid-column:span 12; border-top:1px dashed var(--border); margin-top:8px;"></div>
+        <div style="grid-column:span 2"><div class="muted">Gram</div><input id="eGram" type="number" class="input" step="0.01" readonly style="background:#e2e8f0" /></div>
+        <div style="grid-column:span 2"><div class="muted">Runner</div><input id="eRunner" type="number" class="input" step="0.01" readonly style="background:#e2e8f0" /></div>
+        <div style="grid-column:span 2"><div class="muted">Cavity</div><input id="eCavity" type="number" class="input" /></div>
+        <div style="grid-column:span 6"><div class="muted">Counter (Shot)</div><input id="eCounter" type="number" class="input" /></div>
+        
+        <div style="grid-column:span 12" class="card" style="background:#f8fafc; padding:16px;"><h4 style="margin:0 0 12px; font-size:0.9rem;">Bahan (kg)</h4><div class="grid" style="grid-template-columns:repeat(8,1fr)"><div style="grid-column:span 2"><div class="muted">Jatah</div><input id="eJatah" type="number" step="0.01" class="input" /></div><div style="grid-column:span 2"><div class="muted">Stok</div><input id="eStok" type="number" step="0.01" class="input" /></div><div style="grid-column:span 2"><div class="muted">Balokan</div><input id="eBalokan" type="number" step="0.01" class="input" /></div><div style="grid-column:span 2"><div class="muted">Sisa</div><input id="eSisaBahan" type="number" readonly class="input" style="background:#e2e8f0; font-weight:bold;" /></div></div></div>
+        
+        <div style="grid-column:span 6; border-right:1px solid var(--border); padding-right:10px"><div class="muted"><b>Sisa Sebelum</b></div><div class="grid" style="grid-template-columns:repeat(3,1fr); gap:8px;"><input id="eSblm1" class="input" type="number" step="0.01" placeholder="C1" /> <input id="eSblm2" class="input" type="number" step="0.01" /> <input id="eSblm3" class="input" type="number" step="0.01" /><input id="eSblm4" class="input" type="number" step="0.01" /> <input id="eSblm5" class="input" type="number" step="0.01" /> <input id="eSblm6" class="input" type="number" step="0.01" /></div></div>
+        <div style="grid-column:span 6; padding-left:10px"><div class="muted"><b>Sisa Sesudah</b></div><div class="grid" style="grid-template-columns:repeat(3,1fr); gap:8px;"><input id="eSsdh1" class="input" type="number" step="0.01" placeholder="C1" /> <input id="eSsdh2" class="input" type="number" step="0.01" /> <input id="eSsdh3" class="input" type="number" step="0.01" /><input id="eSsdh4" class="input" type="number" step="0.01" /> <input id="eSsdh5" class="input" type="number" step="0.01" /> <input id="eSsdh6" class="input" type="number" step="0.01" /></div></div>
+        
+        <div style="grid-column:span 12; margin:8px 0; border-bottom:1px solid var(--border)"></div>
+        <div style="grid-column:span 12"><h4 style="margin:0 0 12px; font-size:0.9rem;">Packaging</h4><div class="grid" style="grid-template-columns:repeat(12,1fr)"><div style="grid-column:span 2"><div class="muted">Dus</div><input id="eQtyDus" type="number" class="input" /></div><div style="grid-column:span 2"><div class="muted">Isi/D</div><input id="eIsiDus" type="number" class="input" readonly style="background:#e2e8f0" /></div><div style="grid-column:span 2"><div class="muted">Box</div><input id="eQtyBox" type="number" class="input" /></div><div style="grid-column:span 2"><div class="muted">Isi/B</div><input id="eIsiBox" type="number" class="input" readonly style="background:#e2e8f0" /></div><div style="grid-column:span 2"><div class="muted">Dus+</div><input id="eQtyDusPlus" type="number" class="input" /></div><div style="grid-column:span 2"><div class="muted">Isi+</div><input id="eIsiDusPlus" type="number" class="input" /></div><div style="grid-column:span 12"><div class="muted">Catatan</div><input id="eCatatan" class="input" /></div></div></div>
+        
+        <div style="grid-column:span 12" class="card" style="background:#fff1f2; padding:16px;"><h4 style="margin:0 0 12px; color:var(--danger); font-size:0.9rem;">Reject (Pcs)</h4><div class="grid" style="grid-template-columns:repeat(10,1fr)"><div style="grid-column:span 2"><div class="muted">Bintik</div><input id="rBintik" type="number" class="input" /></div><div style="grid-column:span 2"><div class="muted">Flash</div><input id="rFlashing" type="number" class="input" /></div><div style="grid-column:span 2"><div class="muted">Short</div><input id="rShort" type="number" class="input" /></div><div style="grid-column:span 2"><div class="muted">Warna</div><input id="rWarna" type="number" class="input" /></div><div style="grid-column:span 2"><div class="muted">Lain</div><input id="rLain" type="number" class="input" /></div><input id="rTotal" type="hidden" /> <input id="rMax" type="hidden" /></div></div>
+        
+        <div style="grid-column:span 12" class="card" style="background:#f0fdf4; padding:20px; margin-bottom:0;">
+            <div class="grid" style="grid-template-columns:repeat(4,1fr); text-align:center;">
+                <div class="stat-box"><div class="muted">Hasil (Pcs)</div><span class="stat-value" id="vHasil" style="color:var(--primary)">0</span></div>
+                <div class="stat-box"><div class="muted">OK (Pcs)</div><span class="stat-value" id="vOkPcs" style="color:var(--success)">0</span></div>
+                <div class="stat-box"><div class="muted">Reject (Pcs)</div><span class="stat-value" id="vRejectPcs" style="color:var(--danger)">0</span></div>
+                <div class="stat-box"><div class="muted">Yield</div><span class="stat-value" id="vYield">0%</span></div>
+                <div style="grid-column:span 4; height:1px; background:var(--border); margin:4px 0"></div>
+                <div class="stat-box"><div class="muted">OK (Kg)</div><span class="stat-value" id="vOkKg">0.00</span></div>
+                <div class="stat-box"><div class="muted">Reject (Kg)</div><span class="stat-value" id="vRejectKg">0.00</span></div>
+                <div class="stat-box"><div class="muted">Runner (Kg)</div><span class="stat-value" id="vRunnerKg">0.00</span></div>
+                <div class="stat-box"><div class="muted">Sisa Bhn (Kg)</div><span class="stat-value" id="vSisaBahanLabel">0.00</span></div>
+            </div>
+            <div id="warnOver" style="color:var(--danger); background:#fee2e2; padding:8px; border-radius:6px; margin-top:12px; font-weight:600; display:none; text-align:center;">⚠️ Packaging > Hasil Produksi</div>
+            <button id="btnSaveEntry" class="btn primary" style="width:100%; margin-top:20px; padding:12px;">SIMPAN DATA</button>
         </div>
-        <div id="warnOver" style="color:var(--danger); background:#fee2e2; padding:8px; border-radius:6px; margin-top:12px; font-weight:600; display:none; text-align:center;">⚠️ Packaging > Hasil Produksi</div>
-        <button id="btnSaveEntry" class="btn primary" style="width:100%; margin-top:20px; padding:12px;">SIMPAN DATA</button>
-      </div>
     </div>
 </div></div>
 
 <script>
-// ==========================================
-// KONFIGURASI SUPABASE (HATI-HATI ISINYA)
-// ==========================================
-const SUPABASE_URL = "https://ldipyeuhjimstjxgsnbu.supabase.co"; 
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkaXB5ZXVoamltc3RqeGdzbmJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUxNzQxMzQsImV4cCI6MjA4MDc1MDEzNH0.eKbaxoLw0-OBTBInJYb3LWLJhX4ujJFm_hYL8GVBekM";
-
 const $ = id => document.getElementById(id);
 const toNum = v => isNaN(+v) ? 0 : +v;
 const uid = () => Math.random().toString(36).slice(2);
@@ -201,100 +228,152 @@ let client = null;
 let logs = [];
 let master = [];
 
-// --- 1. INISIALISASI (SAFE MODE: UI DULUAN) ---
+// --- INIT ---
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Siapkan UI (Biar gak macet walau DB error)
-    setupUI();
-
-    // 2. Set Tanggal Hari Ini
-    const d = new Date();
-    $('fFrom').value = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0,10);
-    $('fTo').value = new Date(d.getFullYear(), d.getMonth()+1, 0).toISOString().slice(0,10);
-
-    // 3. Coba Konek Database
-    initSupabase();
-});
-
-function setupUI() {
+    // 1. Bind Tombol Dulu
+    $('btnConfig').onclick = () => $('mConfig').classList.add('open');
+    $('mConfigClose').onclick = () => $('mConfig').classList.remove('open');
+    $('btnSaveConfig').onclick = saveConfig;
+    
+    $('btnRefresh').onclick = refreshData;
+    $('btnClearFilter').onclick = () => { $('fFrom').value=''; $('fTo').value=''; renderTable(); };
+    $('fFrom').onchange = renderTable; $('fTo').onchange = renderTable;
     $('btnAdd').onclick = () => { $('mEntry').classList.add('open'); resetEntryForm(); };
     $('mEntryClose').onclick = () => { $('mEntry').classList.remove('open'); };
     $('btnMaster').onclick = () => { $('mMaster').classList.add('open'); };
     $('mMasterClose').onclick = () => { $('mMaster').classList.remove('open'); };
-    $('btnRefresh').onclick = refreshData;
-    $('btnClearFilter').onclick = () => { $('fFrom').value=''; $('fTo').value=''; renderTable(); };
-    $('fFrom').onchange = renderTable; $('fTo').onchange = renderTable;
     $('btnExport').onclick = exportCSV;
     $('btnSaveEntry').onclick = saveEntry;
     $('mpAdd').onclick = saveMaster;
     $('btnImportCsv').onclick = () => $('fileCsvMaster').click();
     $('fileCsvMaster').onchange = importCSV;
     $('btnClear').onclick = wipeLogs;
+    
+    // FEATURE BARU: REKAP
+    $('btnRekap').onclick = showRekap;
+    $('mRekapClose').onclick = () => $('mRekap').classList.remove('open');
 
-    // Calculator Listeners
     const calcInputs = ['eProduk','eCavity','eCounter','eRunner','eJatah','eStok','eBalokan', 
-                        'eQtyDus','eQtyBox','eQtyDusPlus','eIsiDusPlus', 
-                        'eSblm1','eSblm2','eSblm3','eSblm4','eSblm5','eSblm6',
-                        'eSsdh1','eSsdh2','eSsdh3','eSsdh4','eSsdh5','eSsdh6',
-                        'rBintik','rFlashing','rShort','rWarna','rLain'];
-    calcInputs.forEach(id => { 
-        const el = $(id); 
-        if(el) el.oninput = () => { if(id === 'eProduk') hydrateProduk(); recalc(); }; 
-    });
+    'eQtyDus','eQtyBox','eQtyDusPlus','eIsiDusPlus', 
+    'eSblm1','eSblm2','eSblm3','eSblm4','eSblm5','eSblm6',
+    'eSsdh1','eSsdh2','eSsdh3','eSsdh4','eSsdh5','eSsdh6',
+    'rBintik','rFlashing','rShort','rWarna','rLain'];
+    calcInputs.forEach(id => { const el = $(id); if(el) el.oninput = () => { if(id === 'eProduk') hydrateProduk(); recalc(); }; });
+
+    const d = new Date();
+    $('fFrom').value = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0,10);
+    $('fTo').value = new Date(d.getFullYear(), d.getMonth()+1, 0).toISOString().slice(0,10);
+
+    // 2. Cek LocalStorage
+    const savedUrl = localStorage.getItem('prod_sb_url');
+    const savedKey = localStorage.getItem('prod_sb_key');
+    
+    if(savedUrl && savedKey) {
+        initSupabase(savedUrl, savedKey);
+    } else {
+        $('mConfig').classList.add('open'); 
+    }
+});
+
+function saveConfig() {
+    const url = $('cfgUrl').value.trim();
+    const key = $('cfgKey').value.trim();
+    if(!url || !key) return alert("Isi lengkap bro!");
+    
+    localStorage.setItem('prod_sb_url', url);
+    localStorage.setItem('prod_sb_key', key);
+    initSupabase(url, key);
+    $('mConfig').classList.remove('open');
 }
 
-function initSupabase() {
-    if (typeof supabase === 'undefined') {
-        return alert("Gagal memuat library Supabase. Internet konek?");
-    }
-    
-    // Cek apakah user masih pakai placeholder
-    if (SUPABASE_URL.includes("ISI_URL") || SUPABASE_KEY.includes("ISI_ANON")) {
-        return alert("⚠️ SISTEM BELUM KONEK: Harap isi API URL & KEY di kodingan paling bawah!");
-    }
-    
+function initSupabase(url, key) {
     try {
-        client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        if(typeof supabase === 'undefined') throw new Error("Library Supabase belum ke-load. Cek Internet.");
+        client = supabase.createClient(url, key);
+        $('statusDb').innerText = "Terhubung";
+        $('statusDb').style.color = "var(--success)";
         refreshData();
-    } catch (e) {
-        alert("Error Konek Supabase: " + e.message);
+    } catch(e) {
+        alert("Gagal konek: " + e.message);
+        $('statusDb').innerText = "Error";
+        $('mConfig').classList.add('open');
     }
 }
 
-// --- 2. CORE FUNCTIONS ---
 async function refreshData() {
     if(!client) return;
     $('loading').style.display = 'flex';
-    
-    // Get Master
     const { data: mData, error: mErr } = await client.from('master').select('*');
-    if(mErr) { 
-        $('loading').style.display='none'; 
-        return alert('Gagal ambil Master: ' + mErr.message); 
-    }
+    if(mErr) { $('loading').style.display='none'; return alert('Gagal Master: ' + mErr.message); }
     master = mData || [];
-
-    // Get Logs
     const { data: lData, error: lErr } = await client.from('logs').select('*');
-    if(lErr) { 
-        $('loading').style.display='none'; 
-        return alert('Gagal ambil Logs: ' + lErr.message); 
-    }
+    if(lErr) { $('loading').style.display='none'; return alert('Gagal Logs: ' + lErr.message); }
     logs = lData || [];
-
-    renderTable();
-    renderMaster();
-    seedProdukList();
+    renderTable(); renderMaster(); seedProdukList();
     $('loading').style.display = 'none';
+}
+
+function showRekap() {
+    const qFrom = $('fFrom').value, qTo = $('fTo').value;
+    const from = qFrom ? new Date(qFrom) : null;
+    const to = qTo ? new Date(qTo) : null;
+
+    // 1. Filter Data Sesuai Tanggal
+    const filtered = logs.filter(r => {
+        const d = new Date(r.tanggal);
+        return (from ? d >= from : true) && (to ? d <= to : true);
+    });
+
+    if(filtered.length === 0) return alert("Tidak ada data di rentang tanggal ini.");
+
+    // 2. Grouping by Line & Produk
+    const groups = {};
+    filtered.forEach(r => {
+        const key = r.line + "|||" + r.nama; // Unik Key
+        if(!groups[key]) {
+            groups[key] = { line: r.line, nama: r.nama, okpcs: 0, reject: 0, okkg: 0, yieldTotal: 0, count: 0 };
+        }
+        groups[key].okpcs += (+r.okpcs || 0);
+        groups[key].reject += (+r.reject || 0);
+        groups[key].okkg += (+r.okkg || 0);
+        groups[key].yieldTotal += (+r.yieldpct || 0);
+        groups[key].count++;
+    });
+
+    // 3. Render ke Tabel Modal
+    const tbody = $('tbodyRekap');
+    tbody.innerHTML = '';
+    
+    // Sort biar rapi (By Line dulu, baru Produk)
+    const sortedKeys = Object.keys(groups).sort();
+
+    sortedKeys.forEach(key => {
+        const g = groups[key];
+        const avgYield = g.count > 0 ? (g.yieldTotal / g.count) : 0;
+        
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${g.line}</td>
+            <td style="font-weight:600">${g.nama}</td>
+            <td class="right text-ok"><b>${g.okpcs.toLocaleString()}</b></td>
+            <td class="right text-danger">${g.reject.toLocaleString()}</td>
+            <td class="right">${g.okkg.toFixed(2)}</td>
+            <td class="right"><b>${avgYield.toFixed(2)}%</b></td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    $('mRekap').classList.add('open');
 }
 
 function resetEntryForm() {
     const fields = [
-        'eLine', 'eProduk', 'eGram', 'eRunner', 'eCavity', 'eCounter',
-        'eJatah', 'eStok', 'eBalokan', 'eSisaBahan',
-        'eSblm1', 'eSblm2', 'eSblm3', 'eSblm4', 'eSblm5', 'eSblm6',
-        'eSsdh1', 'eSsdh2', 'eSsdh3', 'eSsdh4', 'eSsdh5', 'eSsdh6',
-        'eQtyDus', 'eIsiDus', 'eQtyBox', 'eIsiBox', 'eQtyDusPlus', 'eIsiDusPlus', 'eCatatan',
-        'rBintik', 'rFlashing', 'rShort', 'rWarna', 'rLain', 'rTotal', 'rMax'
+    'eLine', 'eProduk', 'eGram', 'eRunner', 'eCavity', 'eCounter',
+    'eJatah', 'eStok', 'eBalokan', 'eSisaBahan',
+    'eSblm1', 'eSblm2', 'eSblm3', 'eSblm4', 'eSblm5', 'eSblm6',
+    'eSsdh1', 'eSsdh2', 'eSsdh3', 'eSsdh4', 'eSsdh5', 'eSsdh6',
+    'eQtyDus', 'eIsiDus', 'eQtyBox', 'eIsiBox', 'eQtyDusPlus', 'eIsiDusPlus', 'eCatatan',
+    'rBintik', 'rFlashing', 'rShort', 'rWarna', 'rLain', 'rTotal', 'rMax'
     ];
     fields.forEach(id => { if($(id)) $(id).value = ''; });
     $('eShift').value = '1'; $('eTanggal').value = todayISO();
@@ -320,13 +399,10 @@ function recalc(){
     $('vRejectPcs').innerText = p.rejectpcs.toFixed(0);
     $('eSisaBahan').value = p.sisaBahan.toFixed(2);
     $('vYield').innerText = p.yieldpct.toFixed(2) + "%";
-    
-    // UPDATE DISPLAY KG
     $('vOkKg').innerText = p.okkg.toFixed(2);
     $('vRejectKg').innerText = p.rejectkg.toFixed(2);
     $('vRunnerKg').innerText = p.runnerkg.toFixed(2);
     $('vSisaBahanLabel').innerText = p.sisaBahan.toFixed(2);
-
     $('warnOver').style.display = p.overpack ? 'block' : 'none';
 }
 
@@ -452,7 +528,7 @@ function importCSV(e) {
 }
 
 function renderMaster() { const t = $('mpBody'); t.innerHTML = ''; master.forEach((p, idx) => { const tr = document.createElement('tr'); tr.innerHTML = `<td>${p.kode}</td><td>${p.nama}</td><td>${p.tipe}</td><td class="right">${p.gram}</td><td class="right">${p.runner}</td><td class="right">${p.cavity}</td><td class="right">${p.per_dus}</td><td style="text-align:center"><button class="btn sm" onclick="editMaster(${idx})">✏️</button> <button class="btn sm danger" onclick="deleteMaster('${p.id}')">🗑️</button></td>`; t.appendChild(tr); }); }
-function renderTable() { const t = $('tbody'); t.innerHTML = ''; const qFrom = $('fFrom').value, qTo = $('fTo').value; const from = qFrom ? new Date(qFrom) : null; const to = qTo ? new Date(qTo) : null; const qProd = $('fProduk').value.toLowerCase(); const filtered = logs.filter(r => { const d = new Date(r.tanggal); return (from ? d >= from : true) && (to ? d <= to : true) && (qProd ? r.nama.toLowerCase().includes(qProd) : true); }); $('rowCount').textContent = filtered.length + " data"; filtered.forEach(r => { const tr = document.createElement('tr'); tr.innerHTML = `<td>${r.tanggal}</td><td>${r.shift}</td><td>${r.line}</td><td><b>${r.nama}</b><br><small>${r.kode}</small></td><td>${r.tipe}</td><td class="right">${r.counter}</td><td class="right">${r.cavity}</td><td class="right">${r.qty_dus}</td><td class="right">${r.qty_box}</td><td class="right text-ok"><b>${(+r.okpcs).toFixed(0)}</b></td><td class="right">${(+r.okkg).toFixed(2)}</td><td class="right text-danger">${(+r.reject).toFixed(0)}</td><td class="right">${(+r.sisa_bahan).toFixed(2)}</td><td class="right"><b>${(+r.yieldpct).toFixed(2)}%</b></td><td class="right">${r.reject_max}</td><td style="text-align:center"><button class="btn sm danger" onclick="deleteLog('${r.id}')">Hapus</button></td>`; t.appendChild(tr); }); }
+function renderTable() { const t = $('tbody'); t.innerHTML = ''; const qFrom = $('fFrom').value, qTo = $('fTo').value; const from = qFrom ? new Date(qFrom) : null; const to = qTo ? new Date(qTo) : null; const qProd = $('fProduk').value.toLowerCase(); const filtered = logs.filter(r => { const d = new Date(r.tanggal); return (from ? d >= from : true) && (to ? d <= to : true) && (qProd ? r.nama.toLowerCase().includes(qProd) : true); }); $('rowCount').textContent = filtered.length + " data"; filtered.forEach(r => { const tr = document.createElement('tr'); tr.innerHTML = `<td>${r.tanggal}</td><td>${r.shift}</td><td>${r.line}</td><td><b>${r.nama}</b><br><small>${r.kode}</small></td><td>${r.tipe}</td><td class="right">${r.counter}</td><td class="right">${r.cavity}</td><td class="right">${r.qty_dus}</td><td class="right">${r.qty_box}</td><td class="right text-ok"><b>${(+r.okpcs).toLocaleString()}</b></td><td class="right">${(+r.okkg).toFixed(2)}</td><td class="right text-danger">${(+r.reject).toLocaleString()}</td><td class="right">${(+r.sisa_bahan).toFixed(2)}</td><td class="right"><b>${(+r.yieldpct).toFixed(2)}%</b></td><td class="right">${r.reject_max}</td><td style="text-align:center"><button class="btn sm danger" onclick="deleteLog('${r.id}')">Hapus</button></td>`; t.appendChild(tr); }); }
 function seedProdukList() { const l = $('produkList'); l.innerHTML = ''; master.forEach(p => { const opt = document.createElement('option'); opt.value = p.kode + " — " + p.nama; l.appendChild(opt); }); }
 function exportCSV() { const qFrom = $('fFrom').value; const qTo = $('fTo').value; const from = qFrom ? new Date(qFrom) : null; const to = qTo ? new Date(qTo) : null; const filtered = logs.filter(r => { const d = new Date(r.tanggal); return (from ? d >= from : true) && (to ? d <= to : true); }); if(filtered.length === 0) return alert("Data kosong"); const header = Object.keys(filtered[0]).join(","); const csv = [header].concat(filtered.map(row => Object.values(row).map(v => `"${v}"`).join(","))).join("\n"); const blob = new Blob([csv], { type: 'text/csv' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'Laporan.csv'; a.click(); }
 function sum(ids){ return ids.map(id=>toNum($(id).value)).reduce((a,b)=>a+b,0); }
