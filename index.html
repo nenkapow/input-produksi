@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
-<title>App Produksi v0.9.3 (Fix Master & Reject)</title>
+<title>App Produksi v0.9.4 (Smart Flow)</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -88,7 +88,7 @@ tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-
         <div>
             <h2>Production Dashboard</h2>
             <div class="row" style="align-items:center; gap:8px; margin-top:8px;">
-                <span class="badge">v0.9.3</span>
+                <span class="badge">v0.9.4</span>
                 <span id="statusDb" style="font-size:0.8rem; color:var(--danger)">Disconnected</span>
             </div>
         </div>
@@ -351,7 +351,13 @@ document.addEventListener('DOMContentLoaded', () => {
     ...rejectInputs];
     calcInputs.forEach(id => { const el = $(id); if(el) el.oninput = () => { if(id === 'eProduk') hydrateProduk(); recalc(); }; });
 
+    // --- INISIALISASI AWAL (Sticky Start) ---
     const d = new Date();
+    // Default Tanggal Hari Ini & Shift 1 saat aplikasi pertama dibuka
+    $('eTanggal').value = todayISO(); 
+    $('eShift').value = '1';
+
+    // Filter Date Range Default
     $('fFrom').value = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0,10);
     $('fTo').value = new Date(d.getFullYear(), d.getMonth()+1, 0).toISOString().slice(0,10);
 
@@ -423,7 +429,17 @@ function showRekap() {
     });
 
     const tbody = $('tbodyRekap'); tbody.innerHTML = '';
-    Object.keys(groups).sort().forEach(key => {
+    
+    // --- SMART SORT LOGIC (NUMERIC SORT) ---
+    // Mengurutkan key berdasarkan Line secara numerik (1, 2, 10), bukan string (1, 10, 2)
+    const sortedKeys = Object.keys(groups).sort((a, b) => {
+        const lineA = groups[a].line.toString();
+        const lineB = groups[b].line.toString();
+        // numeric: true bikin "10" dianggap lebih besar dari "2"
+        return lineA.localeCompare(lineB, undefined, {numeric: true, sensitivity: 'base'});
+    });
+
+    sortedKeys.forEach(key => {
         const g = groups[key];
         const avgYield = g.count > 0 ? (g.yieldTotal / g.count) : 0;
         const tr = document.createElement('tr');
@@ -434,9 +450,15 @@ function showRekap() {
 }
 
 function resetEntryForm() {
+    // List field yang WAJIB dibersihkan (Line, Produk, Angka2)
     const fields = ['eLine', 'eProduk', 'eGram', 'eRunner', 'eCavity', 'eCounter', 'eJatah', 'eStok', 'eBalokan', 'eSisaBahan', 'eSblm1', 'eSblm2', 'eSblm3', 'eSblm4', 'eSblm5', 'eSblm6', 'eSsdh1', 'eSsdh2', 'eSsdh3', 'eSsdh4', 'eSsdh5', 'eSsdh6', 'eQtyDus', 'eIsiDus', 'eQtyBox', 'eIsiBox', 'eQtyDusPlus', 'eIsiDusPlus', 'eCatatan', 'rUneven','rMottled','rStartup','rShort','rFlow','rFlash','rCrack','rSpot','rScratch','rDirty', 'rTotal', 'rMax'];
     fields.forEach(id => { if($(id)) $(id).value = ''; });
-    $('eShift').value = '1'; $('eTanggal').value = todayISO();
+    
+    // --- STICKY DATE & SHIFT ---
+    // Script reset Tanggal & Shift DIHAPUS biar nilainya nempel terus (sesuai input terakhir).
+    // $('eShift').value = '1'; <--- HAPUS
+    // $('eTanggal').value = todayISO(); <--- HAPUS
+    
     ['vHasil','vOkPcs','vRejectPcs','vYield','vOkKg','vRejectKg','vRunnerKg','vSisaBahanLabel'].forEach(id=>$(id).innerText='0');
     $('badgeTipe').innerText=''; $('warnOver').style.display='none';
 }
