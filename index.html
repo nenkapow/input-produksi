@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
-<title>App Produksi v0.9.1 (Reject Fix)</title>
+<title>App Produksi v0.9.2 (Fix Master)</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -110,7 +110,7 @@ tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-
         <div>
             <h2>Production Dashboard</h2>
             <div class="row" style="align-items:center; gap:8px; margin-top:8px;">
-                <span class="badge">v0.9.1 Premium</span>
+                <span class="badge">v0.9.2 Premium</span>
                 <span id="statusDb" style="font-size:0.8rem; color:var(--danger)">Disconnected</span>
             </div>
         </div>
@@ -158,7 +158,7 @@ tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-
                         <th class="right">Dus</th><th class="right">Box</th>
                         <th class="right">OK (pcs)</th><th class="right">OK (kg)</th>
                         <th class="right">Reject</th><th class="right">Sisa Bhn</th>
-                        <th class="right">Yield %</th>
+                        <th class="right">Yield %</th><th class="right">R. Max</th>
                         <th style="text-align:center">Aksi</th>
                     </tr>
                 </thead>
@@ -209,7 +209,7 @@ tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-
                 <input type="checkbox" id="chkAllowDup" style="accent-color:var(--primary)" /> Allow Duplicate
             </label>
             <button id="btnImportCsv" class="btn ok sm">Import CSV</button>
-            <button id="mMasterClose" class="btn sm">Tutup</button>
+            <button id="btnWipeMaster" class="btn danger sm">Hapus Semua</button> <button id="mMasterClose" class="btn sm">Tutup</button>
             <input type="file" id="fileCsvMaster" accept=".csv" style="display:none;" />
         </div>
     </div>
@@ -359,6 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('btnImportCsv').onclick = () => $('fileCsvMaster').click();
     $('fileCsvMaster').onchange = importCSV;
     $('btnClear').onclick = wipeLogs;
+    $('btnWipeMaster').onclick = wipeMaster; // TOMBOL HAPUS MASTER
     $('btnRekap').onclick = showRekap;
     $('mRekapClose').onclick = () => $('mRekap').classList.remove('open');
 
@@ -410,6 +411,10 @@ async function refreshData() {
     const { data: mData, error: mErr } = await client.from('master').select('*');
     if(mErr) { $('loading').style.display='none'; return alert('Gagal Master: ' + mErr.message); }
     master = mData || [];
+    
+    // AUTO SORT MASTER BY KODE (ASCENDING) - BIAR GAK LONCAT
+    master.sort((a,b) => (a.kode || '').localeCompare(b.kode || ''));
+
     const { data: lData, error: lErr } = await client.from('logs').select('*');
     if(lErr) { $('loading').style.display='none'; return alert('Gagal Logs: ' + lErr.message); }
     logs = lData || [];
@@ -474,10 +479,7 @@ function recalc(){
     $('vYield').innerText = p.yieldpct.toFixed(2) + "%"; $('vOkKg').innerText = p.okkg.toFixed(2);
     $('vRejectKg').innerText = p.rejectkg.toFixed(2); $('vRunnerKg').innerText = p.runnerkg.toFixed(2);
     $('vSisaBahanLabel').innerText = p.sisaBahan.toFixed(2);
-    
-    // UPDATE INPUT TOTAL REJECT (FIX)
     $('rTotal').value = p.rtotal; 
-
     $('warnOver').style.display = p.overpack ? 'block' : 'none';
 }
 
@@ -514,9 +516,7 @@ function compute(){
     let rIds = ['rBintik','rFlashing','rShort','rWarna','rLain'];
     let rTotalInput = sum(rIds);
     let rMax = Math.max(...rIds.map(id=>toNum($(id).value)));
-    
-    // GAK PERLU SET VALUE DISINI, CUKUP RETURN AJA
-    // $('rTotal').value = rTotalInput; $('rMax').value = rMax;
+    $('rTotal').value = rTotalInput; $('rMax').value = rMax;
 
     return { prod, tipe, gram, cav, counter, sblm_pcs, ssdh_pcs, hasil, okpcs, okkg, rejectpcs, rejectkg, runnerkg, yieldpct, sisaBahan, overpack, packpcs, rtotal: rTotalInput, rmax: rMax };
 }
@@ -567,6 +567,7 @@ window.deleteLog = async (id) => { if(!confirm("Hapus?")) return; $('loading').s
 window.deleteMaster = async (id) => { if(!confirm("Hapus Master?")) return; $('loading').style.display='flex'; const { error } = await client.from('master').delete().eq('id', id); $('loading').style.display='none'; if(!error) refreshData(); };
 window.editMaster = (idx) => { const p = master[idx]; $('mpKode').value = p.kode; $('mpNama').value = p.nama; $('mpTipe').value = p.tipe; $('mpGram').value = p.gram; $('mpRunner').value = p.runner; $('mpCavity').value = p.cavity; $('mpPerDus').value = p.per_dus; $('mpPerBox').value = p.per_box; };
 async function wipeLogs() { if(!confirm('HAPUS SEMUA DATA LAPORAN?')) return; $('loading').style.display='flex'; const { error } = await client.from('logs').delete().neq('id','0'); $('loading').style.display='none'; refreshData(); }
+async function wipeMaster() { if(!confirm('YAKIN HAPUS SEMUA MASTER PRODUK?')) return; $('loading').style.display='flex'; const { error } = await client.from('master').delete().neq('id','0'); $('loading').style.display='none'; refreshData(); }
 
 function importCSV(e) {
     if(!client) return alert("Database Belum Konek!");
