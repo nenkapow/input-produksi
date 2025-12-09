@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
-<title>App Produksi v0.9.2 (Fix Master)</title>
+<title>App Produksi v0.9.3 (Fix Master & Reject)</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,23 +11,12 @@
 <style>
 /* --- PREMIUM DARK THEME VARIABLES --- */
 :root {
-    --bg-body: #0f172a;
-    --bg-card: rgba(30, 41, 59, 0.7);
-    --bg-input: #1e293b;
-    --text-main: #f8fafc;
-    --text-muted: #94a3b8;
-    --border: #334155;
-    --primary: #6366f1;
-    --primary-hover: #4f46e5;
-    --success: #10b981;
-    --danger: #ef4444;
-    --info: #0ea5e9;
-    --radius: 12px;
-    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-    --glow: 0 0 15px rgba(99, 102, 241, 0.3);
+    --bg-body: #0f172a; --bg-card: rgba(30, 41, 59, 0.7); --bg-input: #1e293b;
+    --text-main: #f8fafc; --text-muted: #94a3b8; --border: #334155;
+    --primary: #6366f1; --primary-hover: #4f46e5;
+    --success: #10b981; --danger: #ef4444; --info: #0ea5e9;
+    --radius: 12px; --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
 }
-
-/* --- BASE --- */
 * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
 body { 
     margin: 0; background-color: var(--bg-body); color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif; 
@@ -35,67 +24,56 @@ body {
     background-attachment: fixed;
 }
 .wrap { max-width: 1400px; margin: 0 auto; padding: 2rem; }
-
-/* --- COMPONENTS --- */
 .card {
     background: var(--bg-card); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 20px; box-shadow: var(--shadow);
 }
-h2 { font-size: 1.75rem; font-weight: 700; background: linear-gradient(to right, #fff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin:0;}
+h2 { font-size: 1.75rem; font-weight: 700; margin:0; background: linear-gradient(to right, #fff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 h3, h4 { margin: 0; }
 .muted { color: var(--text-muted); font-size: 0.85rem; }
-
-/* --- BUTTONS --- */
 .btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 8px;
     padding: 10px 20px; font-size: 0.9rem; font-weight: 600; border-radius: 8px; border: 1px solid var(--border);
     background: #1e293b; color: var(--text-main); cursor: pointer; transition: all 0.2s ease;
 }
 .btn:hover { border-color: var(--text-muted); transform: translateY(-1px); }
-.btn.primary { background: var(--primary); border-color: var(--primary); color: white; box-shadow: var(--glow); }
+.btn.primary { background: var(--primary); border-color: var(--primary); color: white; }
 .btn.ok { background: rgba(16, 185, 129, 0.15); border-color: var(--success); color: #34d399; }
 .btn.danger { background: rgba(239, 68, 68, 0.15); border-color: var(--danger); color: #f87171; }
 .btn.info { background: rgba(14, 165, 233, 0.15); border-color: var(--info); color: #38bdf8; }
 .btn.sm { padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; }
-
-/* --- INPUTS --- */
 .input, select {
     width: 100%; padding: 12px 16px; background: var(--bg-input); border: 1px solid var(--border);
     border-radius: 8px; color: white; font-size: 0.95rem; transition: 0.2s;
 }
 .input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2); }
-input[type="date"] { color-scheme: dark; }
-
-/* --- TABLE --- */
-.table-container { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
 table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.table-container { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
 thead th {
     background: #1e293b; color: var(--text-muted); padding: 14px 16px; text-align: left;
     font-weight: 600; text-transform: uppercase; font-size: 0.75rem; border-bottom: 1px solid var(--border); white-space: nowrap;
 }
 tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; color: var(--text-main); }
 .right { text-align: right; font-family: 'JetBrains Mono', monospace; }
-
-/* --- UTILS --- */
-.row { display: flex; gap: 12px; flex-wrap: wrap; }
-.grid { display: grid; gap: 16px; }
 .badge { font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; background: rgba(99, 102, 241, 0.2); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); }
 .stat-box { background: #1e293b; border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center; }
 .stat-value { font-family: 'JetBrains Mono', monospace; font-size: 1.25rem; font-weight: 700; margin-top: 6px; display: block; }
+.row { display: flex; gap: 12px; flex-wrap: wrap; }
+.grid { display: grid; gap: 16px; }
 .text-ok { color: #34d399; } .text-danger { color: #f87171; }
-
-/* --- MODAL --- */
 .modal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 100; }
 .modal.open { display: flex; }
 .modal .card { width: 100%; max-width: 1100px; max-height: 90vh; overflow-y: auto; border: 1px solid var(--border); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); animation: modalPop 0.3s; }
 @keyframes modalPop { from { transform: scale(0.95) translateY(20px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
-
-/* --- LOADING --- */
 .loading-overlay { position: fixed; inset: 0; background: #0f172a; z-index: 200; display: none; align-items: center; justify-content: center; flex-direction: column; }
 .spinner { width: 50px; height: 50px; border: 4px solid #1e293b; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
 @keyframes spin { 100% { transform: rotate(360deg); } }
 
-@media (max-width: 768px) { .wrap { padding: 1rem; } .grid { grid-template-columns: 1fr !important; } .header-row { flex-direction: column; align-items: flex-start; gap: 16px; } .row { width: 100%; } .btn { flex: 1; } }
+/* REJECT GRID SPECIAL */
+.reject-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+.reject-label { font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+@media (max-width: 768px) { .wrap { padding: 1rem; } .grid, .reject-grid { grid-template-columns: repeat(2, 1fr) !important; } .header-row { flex-direction: column; align-items: flex-start; gap: 16px; } .row { width: 100%; } .btn { flex: 1; } }
 </style>
 </head>
 <body>
@@ -110,7 +88,7 @@ tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-
         <div>
             <h2>Production Dashboard</h2>
             <div class="row" style="align-items:center; gap:8px; margin-top:8px;">
-                <span class="badge">v0.9.2 Premium</span>
+                <span class="badge">v0.9.3</span>
                 <span id="statusDb" style="font-size:0.8rem; color:var(--danger)">Disconnected</span>
             </div>
         </div>
@@ -170,17 +148,16 @@ tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-
 
 <div id="mConfig" class="modal"><div class="card" style="max-width:500px">
     <h3 style="margin-bottom:8px; color:var(--text-main)">Database Setup</h3>
-    <div class="muted" style="margin-bottom:20px;">Hubungkan ke Supabase Project Anda.</div>
     <div class="grid">
-        <div><div class="muted">Project URL</div><input id="cfgUrl" class="input" placeholder="https://xyz.supabase.co" /></div>
-        <div><div class="muted">Anon Public Key</div><textarea id="cfgKey" class="input" rows="4" placeholder="eyJ..."></textarea></div>
-        <button id="btnSaveConfig" class="btn primary" style="width:100%; padding:14px;">SIMPAN & KONEK</button>
+        <div><div class="muted">Project URL</div><input id="cfgUrl" class="input" /></div>
+        <div><div class="muted">Anon Public Key</div><textarea id="cfgKey" class="input" rows="4"></textarea></div>
+        <button id="btnSaveConfig" class="btn primary" style="width:100%;">SIMPAN & KONEK</button>
         <button id="mConfigClose" class="btn" style="width:100%">Batal</button>
     </div>
 </div></div>
 
 <div id="mRekap" class="modal"><div class="card">
-    <div class="row" style="justify-content:space-between; margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--border);">
+    <div class="row" style="justify-content:space-between; margin-bottom:20px;">
         <h3 style="color:var(--info)">📊 Rekapitulasi Line</h3>
         <button id="mRekapClose" class="btn sm">Tutup</button>
     </div>
@@ -188,12 +165,7 @@ tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-
         <table>
             <thead>
                 <tr>
-                    <th>Line / Mesin</th>
-                    <th>Nama Produk</th>
-                    <th class="right">Total OK (pcs)</th>
-                    <th class="right">Total Reject</th>
-                    <th class="right">Total OK (kg)</th>
-                    <th class="right">Avg Yield</th>
+                    <th>Line / Mesin</th><th>Nama Produk</th><th class="right">Total OK (pcs)</th><th class="right">Total Reject</th><th class="right">Total OK (kg)</th><th class="right">Avg Yield</th>
                 </tr>
             </thead>
             <tbody id="tbodyRekap"></tbody>
@@ -202,14 +174,15 @@ tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-
 </div></div>
 
 <div id="mMaster" class="modal"><div class="card">
-    <div class="row" style="justify-content:space-between; margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--border);">
+    <div class="row" style="justify-content:space-between; margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:16px;">
         <h3>Master Produk</h3>
         <div class="row">
             <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; background:var(--bg-input); padding:8px 12px; border-radius:8px; cursor:pointer; border:1px solid var(--border);">
                 <input type="checkbox" id="chkAllowDup" style="accent-color:var(--primary)" /> Allow Duplicate
             </label>
             <button id="btnImportCsv" class="btn ok sm">Import CSV</button>
-            <button id="btnWipeMaster" class="btn danger sm">Hapus Semua</button> <button id="mMasterClose" class="btn sm">Tutup</button>
+            <button id="btnWipeMaster" class="btn danger sm">Hapus Semua</button>
+            <button id="mMasterClose" class="btn sm">Tutup</button>
             <input type="file" id="fileCsvMaster" accept=".csv" style="display:none;" />
         </div>
     </div>
@@ -297,12 +270,18 @@ tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-
         
         <div style="grid-column:span 12" class="card" style="background:rgba(239, 68, 68, 0.1); border:1px solid rgba(239, 68, 68, 0.3); padding:16px;">
             <h4 style="margin:0 0 12px; color:#fca5a5; font-size:0.9rem;">REJECT DETAIL (PCS)</h4>
-            <div class="grid" style="grid-template-columns:repeat(5,1fr); gap:12px;">
-                <div><div class="muted">Bintik</div><input id="rBintik" type="number" class="input" /></div>
-                <div><div class="muted">Flash</div><input id="rFlashing" type="number" class="input" /></div>
-                <div><div class="muted">Short</div><input id="rShort" type="number" class="input" /></div>
-                <div><div class="muted">Warna</div><input id="rWarna" type="number" class="input" /></div>
-                <div><div class="muted">Lain</div><input id="rLain" type="number" class="input" /></div>
+            <div class="reject-grid">
+                <div><div class="reject-label">Uneven Color</div><input id="rUneven" type="number" class="input" /></div>
+                <div><div class="reject-label">Mottled</div><input id="rMottled" type="number" class="input" /></div>
+                <div><div class="reject-label">Start Up</div><input id="rStartup" type="number" class="input" /></div>
+                <div><div class="reject-label">Short Shot</div><input id="rShort" type="number" class="input" /></div>
+                <div><div class="reject-label">Flow Mark</div><input id="rFlow" type="number" class="input" /></div>
+                
+                <div><div class="reject-label">Flashing</div><input id="rFlash" type="number" class="input" /></div>
+                <div><div class="reject-label">Crack</div><input id="rCrack" type="number" class="input" /></div>
+                <div><div class="reject-label">Spot</div><input id="rSpot" type="number" class="input" /></div>
+                <div><div class="reject-label">Scratch</div><input id="rScratch" type="number" class="input" /></div>
+                <div><div class="reject-label">Dirty</div><input id="rDirty" type="number" class="input" /></div>
             </div>
             <div style="margin-top:12px; border-top:1px dashed rgba(239, 68, 68, 0.3); padding-top:12px;">
                 <div class="muted" style="color:#fca5a5; font-weight:bold;">Total Reject (Auto)</div>
@@ -359,15 +338,17 @@ document.addEventListener('DOMContentLoaded', () => {
     $('btnImportCsv').onclick = () => $('fileCsvMaster').click();
     $('fileCsvMaster').onchange = importCSV;
     $('btnClear').onclick = wipeLogs;
-    $('btnWipeMaster').onclick = wipeMaster; // TOMBOL HAPUS MASTER
+    $('btnWipeMaster').onclick = wipeMaster;
     $('btnRekap').onclick = showRekap;
     $('mRekapClose').onclick = () => $('mRekap').classList.remove('open');
 
+    // 10 JENIS REJECT LISTENER
+    const rejectInputs = ['rUneven','rMottled','rStartup','rShort','rFlow','rFlash','rCrack','rSpot','rScratch','rDirty'];
     const calcInputs = ['eProduk','eCavity','eCounter','eRunner','eJatah','eStok','eBalokan', 
     'eQtyDus','eQtyBox','eQtyDusPlus','eIsiDusPlus', 
     'eSblm1','eSblm2','eSblm3','eSblm4','eSblm5','eSblm6',
     'eSsdh1','eSsdh2','eSsdh3','eSsdh4','eSsdh5','eSsdh6',
-    'rBintik','rFlashing','rShort','rWarna','rLain'];
+    ...rejectInputs];
     calcInputs.forEach(id => { const el = $(id); if(el) el.oninput = () => { if(id === 'eProduk') hydrateProduk(); recalc(); }; });
 
     const d = new Date();
@@ -412,7 +393,6 @@ async function refreshData() {
     if(mErr) { $('loading').style.display='none'; return alert('Gagal Master: ' + mErr.message); }
     master = mData || [];
     
-    // AUTO SORT MASTER BY KODE (ASCENDING) - BIAR GAK LONCAT
     master.sort((a,b) => (a.kode || '').localeCompare(b.kode || ''));
 
     const { data: lData, error: lErr } = await client.from('logs').select('*');
@@ -454,7 +434,7 @@ function showRekap() {
 }
 
 function resetEntryForm() {
-    const fields = ['eLine', 'eProduk', 'eGram', 'eRunner', 'eCavity', 'eCounter', 'eJatah', 'eStok', 'eBalokan', 'eSisaBahan', 'eSblm1', 'eSblm2', 'eSblm3', 'eSblm4', 'eSblm5', 'eSblm6', 'eSsdh1', 'eSsdh2', 'eSsdh3', 'eSsdh4', 'eSsdh5', 'eSsdh6', 'eQtyDus', 'eIsiDus', 'eQtyBox', 'eIsiBox', 'eQtyDusPlus', 'eIsiDusPlus', 'eCatatan', 'rBintik', 'rFlashing', 'rShort', 'rWarna', 'rLain', 'rTotal', 'rMax'];
+    const fields = ['eLine', 'eProduk', 'eGram', 'eRunner', 'eCavity', 'eCounter', 'eJatah', 'eStok', 'eBalokan', 'eSisaBahan', 'eSblm1', 'eSblm2', 'eSblm3', 'eSblm4', 'eSblm5', 'eSblm6', 'eSsdh1', 'eSsdh2', 'eSsdh3', 'eSsdh4', 'eSsdh5', 'eSsdh6', 'eQtyDus', 'eIsiDus', 'eQtyBox', 'eIsiBox', 'eQtyDusPlus', 'eIsiDusPlus', 'eCatatan', 'rUneven','rMottled','rStartup','rShort','rFlow','rFlash','rCrack','rSpot','rScratch','rDirty', 'rTotal', 'rMax'];
     fields.forEach(id => { if($(id)) $(id).value = ''; });
     $('eShift').value = '1'; $('eTanggal').value = todayISO();
     ['vHasil','vOkPcs','vRejectPcs','vYield','vOkKg','vRejectKg','vRunnerKg','vSisaBahanLabel'].forEach(id=>$(id).innerText='0');
@@ -513,7 +493,8 @@ function compute(){
     const yieldpct = hasil > 0 ? (okpcs / hasil) * 100 : 0;
     const overpack = packpcs > hasil;
     
-    let rIds = ['rBintik','rFlashing','rShort','rWarna','rLain'];
+    // 10 JENIS REJECT
+    let rIds = ['rUneven','rMottled','rStartup','rShort','rFlow','rFlash','rCrack','rSpot','rScratch','rDirty'];
     let rTotalInput = sum(rIds);
     let rMax = Math.max(...rIds.map(id=>toNum($(id).value)));
     $('rTotal').value = rTotalInput; $('rMax').value = rMax;
@@ -525,6 +506,7 @@ async function saveEntry() {
     if(!client) return alert("Database Belum Konek!");
     const p = compute(); if(!p.prod) return alert("Pilih produk valid");
     $('loading').style.display='flex';
+    
     const { error } = await client.from('logs').insert({
         id: uid(), tanggal: $('eTanggal').value, shift: $('eShift').value, line: $('eLine').value,
         kode: p.prod.kode, nama: p.prod.nama, tipe: p.tipe,
@@ -537,8 +519,13 @@ async function saveEntry() {
         qty_box: toNum($('eQtyBox').value), isi_box: toNum($('eIsiBox').value),
         qty_dus_plus: toNum($('eQtyDusPlus').value), isi_dus_plus: toNum($('eIsiDusPlus').value),
         catatan: $('eCatatan').value,
-        reject_bintik: toNum($('rBintik').value), reject_flashing: toNum($('rFlashing').value),
-        reject_short: toNum($('rShort').value), reject_warna: toNum($('rWarna').value), reject_lain: toNum($('rLain').value), 
+        // REJECT 10 JENIS BARU
+        reject_uneven: toNum($('rUneven').value), reject_mottled: toNum($('rMottled').value),
+        reject_startup: toNum($('rStartup').value), reject_short: toNum($('rShort').value),
+        reject_flow: toNum($('rFlow').value), reject_flashing: toNum($('rFlash').value),
+        reject_crack: toNum($('rCrack').value), reject_spot: toNum($('rSpot').value),
+        reject_scratch: toNum($('rScratch').value), reject_dirty: toNum($('rDirty').value),
+        
         reject_total_kecil: toNum($('rTotal').value), reject_max: toNum($('rMax').value)
     });
     $('loading').style.display='none';
@@ -547,15 +534,24 @@ async function saveEntry() {
 
 async function saveMaster() {
     if(!client) return alert("Database Belum Konek!");
-    const kode=$('mpKode').value.trim(); if(!kode) return alert("Isi Kode");
+    const kode=$('mpKode').value.trim(); const nama=$('mpNama').value.trim();
+    if(!kode) return alert("Isi Kode");
+    
+    // LOGIC BARU: CEK KODE && NAMA
     const allow = $('chkAllowDup').checked;
-    if(!allow) { const exist = master.find(m => m.kode.toLowerCase() === kode.toLowerCase()); if(exist && !confirm("Kode sudah ada. Update?")) return; }
+    if(!allow) { 
+        const exist = master.find(m => m.kode.toLowerCase() === kode.toLowerCase() && m.nama.toLowerCase() === nama.toLowerCase()); 
+        if(exist && !confirm("Produk dengan Kode & Nama ini sudah ada. Update?")) return; 
+    }
+    
     $('loading').style.display='flex';
     let targetID = uid();
-    const exist = master.find(m => m.kode.toLowerCase() === kode.toLowerCase());
+    // Cari ID kalau mau update
+    const exist = master.find(m => m.kode.toLowerCase() === kode.toLowerCase() && m.nama.toLowerCase() === nama.toLowerCase());
     if(exist) targetID = exist.id;
+
     const { error } = await client.from('master').upsert({
-        id: targetID, kode: kode, nama: $('mpNama').value, tipe: $('mpTipe').value,
+        id: targetID, kode: kode, nama: nama, tipe: $('mpTipe').value,
         gram: toNum($('mpGram').value), runner: toNum($('mpRunner').value),
         cavity: toNum($('mpCavity').value), per_dus: toNum($('mpPerDus').value), per_box: toNum($('mpPerBox').value)
     });
@@ -587,7 +583,8 @@ function importCSV(e) {
             if(cols.length<2) continue;
             let targetID = uid();
             const allowDup = $('chkAllowDup').checked;
-            const exist = allowDup ? null : master.find(m => m.kode.toLowerCase() === cols[idx.kode].toLowerCase());
+            // Check Duplikat by KODE && NAMA
+            const exist = allowDup ? null : master.find(m => m.kode.toLowerCase() === cols[idx.kode].toLowerCase() && m.nama.toLowerCase() === (cols[idx.nama]||'').toLowerCase());
             if(exist) targetID = exist.id;
             rows.push({ id: targetID, kode: cols[idx.kode], nama: cols[idx.nama] || cols[idx.kode], tipe: idx.tipe>=0 ? cols[idx.tipe] : 'pcs', gram: idx.gram>=0 ? toNum(cols[idx.gram].replace(',','.')) : 0, runner: idx.runner>=0 ? toNum(cols[idx.runner].replace(',','.')) : 0, cavity: idx.cavity>=0 ? toNum(cols[idx.cavity].replace(',','.')) : 1, per_dus: idx.dus>=0 ? toNum(cols[idx.dus].replace(',','.')) : 0, per_box: idx.box>=0 ? toNum(cols[idx.box].replace(',','.')) : 0 });
         }
