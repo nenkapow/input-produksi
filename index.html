@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
-<title>App Produksi v0.9.4 (Smart Flow)</title>
+<title>App Produksi v0.9.5 (Fitur Edit)</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -88,7 +88,7 @@ tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-
         <div>
             <h2>Production Dashboard</h2>
             <div class="row" style="align-items:center; gap:8px; margin-top:8px;">
-                <span class="badge">v0.9.4</span>
+                <span class="badge">v0.9.5</span>
                 <span id="statusDb" style="font-size:0.8rem; color:var(--danger)">Disconnected</span>
             </div>
         </div>
@@ -214,6 +214,8 @@ tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-
         <button id="mEntryClose" class="btn sm">Tutup ✕</button>
     </div>
     
+    <input type="hidden" id="eId" />
+
     <div class="grid" style="grid-template-columns:repeat(12,1fr)">
         <div style="grid-column:span 3"><div class="muted">Tanggal</div><input id="eTanggal" type="date" class="input" /></div>
         <div style="grid-column:span 2"><div class="muted">Shift</div><select id="eShift" class="input"><option>1</option><option>2</option><option>3</option></select></div>
@@ -353,11 +355,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- INISIALISASI AWAL (Sticky Start) ---
     const d = new Date();
-    // Default Tanggal Hari Ini & Shift 1 saat aplikasi pertama dibuka
     $('eTanggal').value = todayISO(); 
     $('eShift').value = '1';
 
-    // Filter Date Range Default
     $('fFrom').value = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0,10);
     $('fTo').value = new Date(d.getFullYear(), d.getMonth()+1, 0).toISOString().slice(0,10);
 
@@ -430,12 +430,10 @@ function showRekap() {
 
     const tbody = $('tbodyRekap'); tbody.innerHTML = '';
     
-    // --- SMART SORT LOGIC (NUMERIC SORT) ---
-    // Mengurutkan key berdasarkan Line secara numerik (1, 2, 10), bukan string (1, 10, 2)
+    // --- SMART SORT LOGIC ---
     const sortedKeys = Object.keys(groups).sort((a, b) => {
         const lineA = groups[a].line.toString();
         const lineB = groups[b].line.toString();
-        // numeric: true bikin "10" dianggap lebih besar dari "2"
         return lineA.localeCompare(lineB, undefined, {numeric: true, sensitivity: 'base'});
     });
 
@@ -450,18 +448,56 @@ function showRekap() {
 }
 
 function resetEntryForm() {
-    // List field yang WAJIB dibersihkan (Line, Produk, Angka2)
     const fields = ['eLine', 'eProduk', 'eGram', 'eRunner', 'eCavity', 'eCounter', 'eJatah', 'eStok', 'eBalokan', 'eSisaBahan', 'eSblm1', 'eSblm2', 'eSblm3', 'eSblm4', 'eSblm5', 'eSblm6', 'eSsdh1', 'eSsdh2', 'eSsdh3', 'eSsdh4', 'eSsdh5', 'eSsdh6', 'eQtyDus', 'eIsiDus', 'eQtyBox', 'eIsiBox', 'eQtyDusPlus', 'eIsiDusPlus', 'eCatatan', 'rUneven','rMottled','rStartup','rShort','rFlow','rFlash','rCrack','rSpot','rScratch','rDirty', 'rTotal', 'rMax'];
     fields.forEach(id => { if($(id)) $(id).value = ''; });
     
-    // --- STICKY DATE & SHIFT ---
-    // Script reset Tanggal & Shift DIHAPUS biar nilainya nempel terus (sesuai input terakhir).
-    // $('eShift').value = '1'; <--- HAPUS
-    // $('eTanggal').value = todayISO(); <--- HAPUS
+    // CLEAR HIDDEN ID AGAR JADI MODE "NEW"
+    $('eId').value = '';
     
     ['vHasil','vOkPcs','vRejectPcs','vYield','vOkKg','vRejectKg','vRunnerKg','vSisaBahanLabel'].forEach(id=>$(id).innerText='0');
     $('badgeTipe').innerText=''; $('warnOver').style.display='none';
 }
+
+// --- FUNGSI BARU UNTUK LOAD DATA KE FORM (EDIT) ---
+window.editLog = (id) => {
+    const r = logs.find(x => x.id === id);
+    if(!r) return;
+    
+    // Set ID ke Hidden Input
+    $('eId').value = r.id;
+    
+    // Load Data Dasar
+    $('eTanggal').value = r.tanggal;
+    $('eShift').value = r.shift;
+    $('eLine').value = r.line;
+    $('eProduk').value = r.kode + " — " + r.nama; // Format harus sama dgn seedProdukList
+    
+    // Load Parameter (via Hydrate)
+    hydrateProduk(); 
+    
+    // Override Counter & Cavity (siapa tau beda sama master)
+    $('eCounter').value = r.counter;
+    $('eCavity').value = r.cavity;
+    
+    // Load Packaging
+    $('eQtyDus').value = r.qty_dus || ''; $('eIsiDus').value = r.isi_dus || '';
+    $('eQtyBox').value = r.qty_box || ''; $('eIsiBox').value = r.isi_box || '';
+    $('eQtyDusPlus').value = r.qty_dus_plus || ''; $('eIsiDusPlus').value = r.isi_dus_plus || '';
+    $('eCatatan').value = r.catatan || '';
+    
+    // Load Rejects
+    $('rUneven').value = r.reject_uneven || ''; $('rMottled').value = r.reject_mottled || '';
+    $('rStartup').value = r.reject_startup || ''; $('rShort').value = r.reject_short || '';
+    $('rFlow').value = r.reject_flow || ''; $('rFlash').value = r.reject_flashing || '';
+    $('rCrack').value = r.reject_crack || ''; $('rSpot').value = r.reject_spot || '';
+    $('rScratch').value = r.reject_scratch || ''; $('rDirty').value = r.reject_dirty || '';
+    
+    // Load Hasil Perhitungan (Visual Saja)
+    recalc();
+    
+    // Buka Modal
+    $('mEntry').classList.add('open');
+};
 
 function hydrateProduk(){
     const val = $('eProduk').value;
@@ -510,6 +546,10 @@ function compute(){
 
     const jatah = toNum($('eJatah').value); const stok = toNum($('eStok').value);
     const balok = toNum($('eBalokan').value);
+    
+    // KHUSUS EDIT MODE: Kalau input material kosong (karena tdk disimpan), ambil nilai sisa_bahan dari log (jika ada)
+    // Tapi karena logic disini murni kalkulasi live, sisa_bahan akan ke-reset jadi negatif kalau Jatah kosong.
+    // User harus maklum: kalau mau benerin Sisa Bahan, harus isi Jatah lagi.
     const sisaBahan = (jatah + stok) - (runnerkg + rejectkg + okkg + balok);
 
     const yieldpct = hasil > 0 ? (okpcs / hasil) * 100 : 0;
@@ -529,8 +569,13 @@ async function saveEntry() {
     const p = compute(); if(!p.prod) return alert("Pilih produk valid");
     $('loading').style.display='flex';
     
-    const { error } = await client.from('logs').insert({
-        id: uid(), tanggal: $('eTanggal').value, shift: $('eShift').value, line: $('eLine').value,
+    // LOGIC UPSERT (Update or Insert)
+    const existingId = $('eId').value;
+    const targetId = existingId || uid(); // Pakai ID lama kalau edit, ID baru kalau new
+    
+    const { error } = await client.from('logs').upsert({
+        id: targetId, 
+        tanggal: $('eTanggal').value, shift: $('eShift').value, line: $('eLine').value,
         kode: p.prod.kode, nama: p.prod.nama, tipe: p.tipe,
         gram: p.gram, runner: toNum($('eRunner').value), cavity: p.cav, counter: p.counter,
         sisa_sblm: p.sblm_pcs, sisa_ssdh: p.ssdh_pcs, 
@@ -605,7 +650,6 @@ function importCSV(e) {
             if(cols.length<2) continue;
             let targetID = uid();
             const allowDup = $('chkAllowDup').checked;
-            // Check Duplikat by KODE && NAMA
             const exist = allowDup ? null : master.find(m => m.kode.toLowerCase() === cols[idx.kode].toLowerCase() && m.nama.toLowerCase() === (cols[idx.nama]||'').toLowerCase());
             if(exist) targetID = exist.id;
             rows.push({ id: targetID, kode: cols[idx.kode], nama: cols[idx.nama] || cols[idx.kode], tipe: idx.tipe>=0 ? cols[idx.tipe] : 'pcs', gram: idx.gram>=0 ? toNum(cols[idx.gram].replace(',','.')) : 0, runner: idx.runner>=0 ? toNum(cols[idx.runner].replace(',','.')) : 0, cavity: idx.cavity>=0 ? toNum(cols[idx.cavity].replace(',','.')) : 1, per_dus: idx.dus>=0 ? toNum(cols[idx.dus].replace(',','.')) : 0, per_box: idx.box>=0 ? toNum(cols[idx.box].replace(',','.')) : 0 });
@@ -619,7 +663,30 @@ function importCSV(e) {
 }
 
 function renderMaster() { const t = $('mpBody'); t.innerHTML = ''; master.forEach((p, idx) => { const tr = document.createElement('tr'); tr.innerHTML = `<td>${p.kode}</td><td>${p.nama}</td><td>${p.tipe}</td><td class="right">${p.gram}</td><td class="right">${p.runner}</td><td class="right">${p.cavity}</td><td class="right">${p.per_dus}</td><td style="text-align:center"><button class="btn sm" onclick="editMaster(${idx})">✏️</button> <button class="btn sm danger" onclick="deleteMaster('${p.id}')">🗑️</button></td>`; t.appendChild(tr); }); }
-function renderTable() { const t = $('tbody'); t.innerHTML = ''; const qFrom = $('fFrom').value, qTo = $('fTo').value; const from = qFrom ? new Date(qFrom) : null; const to = qTo ? new Date(qTo) : null; const qProd = $('fProduk').value.toLowerCase(); const filtered = logs.filter(r => { const d = new Date(r.tanggal); return (from ? d >= from : true) && (to ? d <= to : true) && (qProd ? r.nama.toLowerCase().includes(qProd) : true); }); $('rowCount').textContent = filtered.length + " data"; filtered.forEach(r => { const tr = document.createElement('tr'); tr.innerHTML = `<td>${r.tanggal}</td><td>${r.shift}</td><td>${r.line}</td><td><b>${r.nama}</b><br><small>${r.kode}</small></td><td>${r.tipe}</td><td class="right">${r.counter}</td><td class="right">${r.cavity}</td><td class="right">${r.qty_dus}</td><td class="right">${r.qty_box}</td><td class="right text-ok"><b>${(+r.okpcs).toLocaleString()}</b></td><td class="right">${(+r.okkg).toFixed(2)}</td><td class="right text-danger">${(+r.reject).toLocaleString()}</td><td class="right">${(+r.sisa_bahan).toFixed(2)}</td><td class="right"><b>${(+r.yieldpct).toFixed(2)}%</b></td><td class="right">${r.reject_max}</td><td style="text-align:center"><button class="btn sm danger" onclick="deleteLog('${r.id}')">Hapus</button></td>`; t.appendChild(tr); }); }
+
+// --- UPDATED RENDER TABLE WITH EDIT BUTTON ---
+function renderTable() { 
+    const t = $('tbody'); t.innerHTML = ''; 
+    const qFrom = $('fFrom').value, qTo = $('fTo').value; 
+    const from = qFrom ? new Date(qFrom) : null; const to = qTo ? new Date(qTo) : null; 
+    const qProd = $('fProduk').value.toLowerCase(); 
+    const filtered = logs.filter(r => { 
+        const d = new Date(r.tanggal); 
+        return (from ? d >= from : true) && (to ? d <= to : true) && (qProd ? r.nama.toLowerCase().includes(qProd) : true); 
+    }); 
+    $('rowCount').textContent = filtered.length + " data"; 
+    filtered.forEach(r => { 
+        const tr = document.createElement('tr'); 
+        // Tambahkan tombol EDIT di kolom Aksi
+        tr.innerHTML = `<td>${r.tanggal}</td><td>${r.shift}</td><td>${r.line}</td><td><b>${r.nama}</b><br><small>${r.kode}</small></td><td>${r.tipe}</td><td class="right">${r.counter}</td><td class="right">${r.cavity}</td><td class="right">${r.qty_dus}</td><td class="right">${r.qty_box}</td><td class="right text-ok"><b>${(+r.okpcs).toLocaleString()}</b></td><td class="right">${(+r.okkg).toFixed(2)}</td><td class="right text-danger">${(+r.reject).toLocaleString()}</td><td class="right">${(+r.sisa_bahan).toFixed(2)}</td><td class="right"><b>${(+r.yieldpct).toFixed(2)}%</b></td><td class="right">${r.reject_max}</td>
+        <td style="text-align:center; white-space:nowrap;">
+            <button class="btn sm info" onclick="editLog('${r.id}')" style="margin-right:4px;">Edit</button>
+            <button class="btn sm danger" onclick="deleteLog('${r.id}')">Hapus</button>
+        </td>`; 
+        t.appendChild(tr); 
+    }); 
+}
+
 function seedProdukList() { const l = $('produkList'); l.innerHTML = ''; master.forEach(p => { const opt = document.createElement('option'); opt.value = p.kode + " — " + p.nama; l.appendChild(opt); }); }
 function exportCSV() { const qFrom = $('fFrom').value; const qTo = $('fTo').value; const from = qFrom ? new Date(qFrom) : null; const to = qTo ? new Date(qTo) : null; const filtered = logs.filter(r => { const d = new Date(r.tanggal); return (from ? d >= from : true) && (to ? d <= to : true); }); if(filtered.length === 0) return alert("Data kosong"); const header = Object.keys(filtered[0]).join(","); const csv = [header].concat(filtered.map(row => Object.values(row).map(v => `"${v}"`).join(","))).join("\n"); const blob = new Blob([csv], { type: 'text/csv' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'Laporan.csv'; a.click(); }
 function sum(ids){ return ids.map(id=>toNum($(id).value)).reduce((a,b)=>a+b,0); }
