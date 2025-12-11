@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
-<title>App Produksi v0.9.12 (Smart Search)</title>
+<title>App Produksi v0.9.13 (Elegant Layout)</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -111,7 +111,7 @@ tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-
         <div>
             <h2>Production Dashboard</h2>
             <div class="row" style="align-items:center; gap:8px; margin-top:8px;">
-                <span class="badge">v0.9.12</span>
+                <span class="badge">v0.9.13</span>
                 <span id="statusDb" style="font-size:0.8rem; color:var(--danger)">Disconnected</span>
             </div>
         </div>
@@ -241,10 +241,12 @@ tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-
 
     <div class="grid" style="grid-template-columns:repeat(12,1fr)">
         <div style="grid-column:span 2"><div class="muted">Tanggal</div><input id="eTanggal" type="date" class="input" /></div>
-        <div style="grid-column:span 1"><div class="muted">Shift</div><select id="eShift" class="input"><option>1</option><option>2</option><option>3</option></select></div>
-        <div style="grid-column:span 1"><div class="muted">Line</div><input id="eLine" class="input" placeholder="L..." /></div>
         
-        <div style="grid-column:span 8; position:relative;">
+        <div style="grid-column:span 2"><div class="muted">Shift</div><select id="eShift" class="input"><option>1</option><option>2</option><option>3</option></select></div>
+        
+        <div style="grid-column:span 2"><div class="muted">Line</div><input id="eLine" class="input" placeholder="L..." /></div>
+        
+        <div style="grid-column:span 6; position:relative;">
             <div class="muted">Produk (Ketik Kode / Nama)</div>
             <input id="eProduk" class="input" placeholder="Cari..." autocomplete="off" style="border-color:var(--primary)" />
             <div id="produkSuggestions" class="search-list"></div>
@@ -683,39 +685,81 @@ function importCSV(e) {
     reader.onload = async (evt) => {
         const lines = evt.target.result.split(/\r?\n/).filter(l => l.trim() !== '');
         if(lines.length < 2) return alert('CSV Salah');
+        
+        // DETEKSI DELIMITER (; atau ,)
         const delim = lines[0].split(';').length > lines[0].split(',').length ? ';' : ',';
         const headers = lines[0].toLowerCase().split(delim).map(h=>h.trim().replace(/"/g,''));
+        
+        // MAPPING STANDARD
         const idx = { 
             kode: headers.findIndex(h=>h.includes('kode')), 
-            nama: headers.findIndex(h=>h.includes('nama') || h.includes('product')), 
-            gram: headers.findIndex(h=>h.includes('gram') || h.includes('berat satuan')), 
-            runner: headers.findIndex(h=>h.includes('runner') || h.includes('berat runner')), 
+            nama: headers.findIndex(h=>h.includes('nama') || h.includes('product')), // Support 'Nama Produk' or 'Product Name'
+            gram: headers.findIndex(h=>h.includes('gram') || h.includes('berat satuan')), // Support 'Berat Satuan'
+            runner: headers.findIndex(h=>h.includes('runner') || h.includes('berat runner')), // Support 'Berat Runner'
             cavity: headers.findIndex(h=>h.includes('cav')), 
-            dus: headers.findIndex(h=>h.includes('dus') || h.includes('doos')), 
+            dus: headers.findIndex(h=>h.includes('dus') || h.includes('doos')), // Support 'Doos'
             box: headers.findIndex(h=>h.includes('box')), 
             tipe: headers.findIndex(h=>h.includes('tipe')) 
         };
+
         if(idx.nama < 0) return alert('Header Nama Produk tidak ketemu');
+        
+        // MODE AUTO SPLIT (Jika kolom KODE tidak ada)
         const autoSplitKode = (idx.kode < 0);
+
         $('loading').style.display='flex';
         let rows = [];
+        
         for(let i=1; i<lines.length; i++){
             const cols = lines[i].split(delim).map(c=>c.trim().replace(/"/g,''));
             if(cols.length < 2) continue;
-            let kodeVal = '', namaVal = '';
+            
+            let kodeVal = '';
+            let namaVal = '';
+            
+            // LOGIC AUTO SPLIT ATAU STANDARD
             if(autoSplitKode) {
+                // Ambil dari kolom Nama
                 const rawName = cols[idx.nama];
                 const firstSpace = rawName.indexOf(' ');
-                if(firstSpace > 0) { kodeVal = rawName.substring(0, firstSpace).trim(); namaVal = rawName.substring(firstSpace + 1).trim(); } 
-                else { kodeVal = rawName; namaVal = rawName; }
-            } else { kodeVal = cols[idx.kode]; namaVal = cols[idx.nama] || kodeVal; }
-            const cleanNum = (val) => { if(!val || val === '-') return 0; return toNum(val.replace(',','.')); };
+                if(firstSpace > 0) {
+                    kodeVal = rawName.substring(0, firstSpace).trim();
+                    namaVal = rawName.substring(firstSpace + 1).trim();
+                } else {
+                    kodeVal = rawName; // Fallback kalau cuma 1 kata
+                    namaVal = rawName;
+                }
+            } else {
+                kodeVal = cols[idx.kode];
+                namaVal = cols[idx.nama] || kodeVal;
+            }
+
+            // BERSIHKAN NILAI ANGKA (Hilangkan '-' jadi 0, ganti koma jadi titik)
+            const cleanNum = (val) => {
+                if(!val || val === '-') return 0;
+                return toNum(val.replace(',','.'));
+            };
+
             let targetID = uid();
             const allowDup = $('chkAllowDup').checked;
+            
+            // Cek Duplikat
             const exist = allowDup ? null : master.find(m => m.kode.toLowerCase() === kodeVal.toLowerCase() && m.nama.toLowerCase() === namaVal.toLowerCase());
             if(exist) targetID = exist.id;
-            rows.push({ id: targetID, kode: kodeVal, nama: namaVal, tipe: (idx.tipe >= 0 ? cols[idx.tipe] : 'pcs'), gram: (idx.gram >= 0 ? cleanNum(cols[idx.gram]) : 0), runner: (idx.runner >= 0 ? cleanNum(cols[idx.runner]) : 0), cavity: (idx.cavity >= 0 ? cleanNum(cols[idx.cavity]) : 1), per_dus: (idx.dus >= 0 ? cleanNum(cols[idx.dus]) : 0), per_box: (idx.box >= 0 ? cleanNum(cols[idx.box]) : 0) });
+            
+            rows.push({ 
+                id: targetID, 
+                kode: kodeVal, 
+                nama: namaVal, 
+                tipe: (idx.tipe >= 0 ? cols[idx.tipe] : 'pcs'), // Default 'pcs'
+                gram: (idx.gram >= 0 ? cleanNum(cols[idx.gram]) : 0), 
+                runner: (idx.runner >= 0 ? cleanNum(cols[idx.runner]) : 0), 
+                cavity: (idx.cavity >= 0 ? cleanNum(cols[idx.cavity]) : 1), 
+                per_dus: (idx.dus >= 0 ? cleanNum(cols[idx.dus]) : 0), 
+                per_box: (idx.box >= 0 ? cleanNum(cols[idx.box]) : 0) 
+            });
         }
+        
         const { error } = await client.from('master').upsert(rows);
         $('loading').style.display='none';
         if(error) alert('Error Import: '+error.message); else { alert('Import Sukses!'); refreshData(); }
@@ -725,6 +769,8 @@ function importCSV(e) {
 }
 
 function renderMaster() { const t = $('mpBody'); t.innerHTML = ''; master.forEach((p, idx) => { const tr = document.createElement('tr'); tr.innerHTML = `<td>${p.kode}</td><td>${p.nama}</td><td>${p.tipe}</td><td class="right">${p.gram}</td><td class="right">${p.runner}</td><td class="right">${p.cavity}</td><td class="right">${p.per_dus}</td><td style="text-align:center"><button class="btn sm" onclick="editMaster(${idx})">✏️</button> <button class="btn sm danger" onclick="deleteMaster('${p.id}')">🗑️</button></td>`; t.appendChild(tr); }); }
+
+// --- UPDATED RENDER TABLE WITH EDIT BUTTON ---
 function renderTable() { 
     const t = $('tbody'); t.innerHTML = ''; 
     const qFrom = $('fFrom').value, qTo = $('fTo').value; 
@@ -737,15 +783,17 @@ function renderTable() {
     $('rowCount').textContent = filtered.length + " data"; 
     filtered.forEach(r => { 
         const tr = document.createElement('tr'); 
-        tr.innerHTML = `<td>${r.tanggal}</td><td>${r.shift}</td><td>${r.line}</td><td><b>${r.nama}</b><br><small>${r.kode}</small></td><td>${r.tipe}</td><td class="right">${r.counter}</td><td class="right">${r.cavity}</td><td class="right">${r.qty_dus}</td><td class="right">${r.qty_box}</td><td class="right text-ok"><b>${(+r.okpcs).toLocaleString()}</b></td><td class="right">${(+r.okkg).toFixed(2)}</td><td class="right text-danger">${(+r.reject).toLocaleString()}</td><td class="right">${(+r.sisa_bahan).toFixed(2)}</td><td class="right"><b>${(+r.yieldpct).toFixed(2)}%</b></td><td class="right">${r.reject_max}</td><td style="text-align:center; white-space:nowrap;"><button class="btn sm info" onclick="editLog('${r.id}')" style="margin-right:4px;">Edit</button><button class="btn sm danger" onclick="deleteLog('${r.id}')">Hapus</button></td>`; 
+        // Tambahkan tombol EDIT di kolom Aksi
+        tr.innerHTML = `<td>${r.tanggal}</td><td>${r.shift}</td><td>${r.line}</td><td><b>${r.nama}</b><br><small>${r.kode}</small></td><td>${r.tipe}</td><td class="right">${r.counter}</td><td class="right">${r.cavity}</td><td class="right">${r.qty_dus}</td><td class="right">${r.qty_box}</td><td class="right text-ok"><b>${(+r.okpcs).toLocaleString()}</b></td><td class="right">${(+r.okkg).toFixed(2)}</td><td class="right text-danger">${(+r.reject).toLocaleString()}</td><td class="right">${(+r.sisa_bahan).toFixed(2)}</td><td class="right"><b>${(+r.yieldpct).toFixed(2)}%</b></td><td class="right">${r.reject_max}</td>
+        <td style="text-align:center; white-space:nowrap;">
+            <button class="btn sm info" onclick="editLog('${r.id}')" style="margin-right:4px;">Edit</button>
+            <button class="btn sm danger" onclick="deleteLog('${r.id}')">Hapus</button>
+        </td>`; 
         t.appendChild(tr); 
     }); 
 }
 
-function seedProdukList() { 
-    // Gak perlu lagi karena udah pake Custom Search
-}
-
+function seedProdukList() { const l = $('produkList'); l.innerHTML = ''; master.forEach(p => { const opt = document.createElement('option'); opt.value = p.kode + " — " + p.nama; l.appendChild(opt); }); }
 function exportCSV() { const qFrom = $('fFrom').value; const qTo = $('fTo').value; const from = qFrom ? new Date(qFrom) : null; const to = qTo ? new Date(qTo) : null; const filtered = logs.filter(r => { const d = new Date(r.tanggal); return (from ? d >= from : true) && (to ? d <= to : true); }); if(filtered.length === 0) return alert("Data kosong"); const header = Object.keys(filtered[0]).join(","); const csv = [header].concat(filtered.map(row => Object.values(row).map(v => `"${v}"`).join(","))).join("\n"); const blob = new Blob([csv], { type: 'text/csv' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'Laporan.csv'; a.click(); }
 function sum(ids){ return ids.map(id=>toNum($(id).value)).reduce((a,b)=>a+b,0); }
 </script>
