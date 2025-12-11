@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
-<title>App Produksi v0.9.6 (Smart Import)</title>
+<title>App Produksi v0.9.7 (Layout Fix)</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -88,7 +88,7 @@ tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-
         <div>
             <h2>Production Dashboard</h2>
             <div class="row" style="align-items:center; gap:8px; margin-top:8px;">
-                <span class="badge">v0.9.6</span>
+                <span class="badge">v0.9.7</span>
                 <span id="statusDb" style="font-size:0.8rem; color:var(--danger)">Disconnected</span>
             </div>
         </div>
@@ -219,8 +219,8 @@ tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-
     <div class="grid" style="grid-template-columns:repeat(12,1fr)">
         <div style="grid-column:span 3"><div class="muted">Tanggal</div><input id="eTanggal" type="date" class="input" /></div>
         <div style="grid-column:span 2"><div class="muted">Shift</div><select id="eShift" class="input"><option>1</option><option>2</option><option>3</option></select></div>
-        <div style="grid-column:span 3"><div class="muted">Line</div><input id="eLine" class="input" placeholder="Line..." /></div>
-        <div style="grid-column:span 4"><div class="muted">Produk</div><input id="eProduk" class="input" placeholder="Cari..." list="produkList" style="border-color:var(--primary)" /></div>
+        <div style="grid-column:span 1"><div class="muted">Line</div><input id="eLine" class="input" placeholder="Line..." /></div>
+        <div style="grid-column:span 6"><div class="muted">Produk</div><input id="eProduk" class="input" placeholder="Cari..." list="produkList" style="border-color:var(--primary)" /></div>
         <datalist id="produkList"></datalist>
         
         <div style="grid-column:span 12; height:1px; background:var(--border); margin:8px 0;"></div>
