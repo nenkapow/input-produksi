@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
-<title>App Produksi v0.9.5 (Fitur Edit)</title>
+<title>App Produksi v0.9.6 (Smart Import)</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -88,7 +88,7 @@ tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-
         <div>
             <h2>Production Dashboard</h2>
             <div class="row" style="align-items:center; gap:8px; margin-top:8px;">
-                <span class="badge">v0.9.5</span>
+                <span class="badge">v0.9.6</span>
                 <span id="statusDb" style="font-size:0.8rem; color:var(--danger)">Disconnected</span>
             </div>
         </div>
@@ -632,6 +632,7 @@ window.editMaster = (idx) => { const p = master[idx]; $('mpKode').value = p.kode
 async function wipeLogs() { if(!confirm('HAPUS SEMUA DATA LAPORAN?')) return; $('loading').style.display='flex'; const { error } = await client.from('logs').delete().neq('id','0'); $('loading').style.display='none'; refreshData(); }
 async function wipeMaster() { if(!confirm('YAKIN HAPUS SEMUA MASTER PRODUK?')) return; $('loading').style.display='flex'; const { error } = await client.from('master').delete().neq('id','0'); $('loading').style.display='none'; refreshData(); }
 
+// --- UPDATED IMPORT CSV FUNCTION (SMART IMPORT) ---
 function importCSV(e) {
     if(!client) return alert("Database Belum Konek!");
     const file = e.target.files[0]; if(!file) return;
@@ -639,21 +640,81 @@ function importCSV(e) {
     reader.onload = async (evt) => {
         const lines = evt.target.result.split(/\r?\n/).filter(l => l.trim() !== '');
         if(lines.length < 2) return alert('CSV Salah');
+        
+        // DETEKSI DELIMITER (; atau ,)
         const delim = lines[0].split(';').length > lines[0].split(',').length ? ';' : ',';
         const headers = lines[0].toLowerCase().split(delim).map(h=>h.trim().replace(/"/g,''));
-        const idx = { kode: headers.findIndex(h=>h.includes('kode')), nama: headers.findIndex(h=>h.includes('nama')), gram: headers.findIndex(h=>h.includes('gram')), runner: headers.findIndex(h=>h.includes('runner')), cavity: headers.findIndex(h=>h.includes('cav')), dus: headers.findIndex(h=>h.includes('dus')), box: headers.findIndex(h=>h.includes('box')), tipe: headers.findIndex(h=>h.includes('tipe')) };
-        if(idx.kode < 0) return alert('Header Kode tidak ketemu');
+        
+        // MAPPING STANDARD
+        const idx = { 
+            kode: headers.findIndex(h=>h.includes('kode')), 
+            nama: headers.findIndex(h=>h.includes('nama') || h.includes('product')), // Support 'Nama Produk' or 'Product Name'
+            gram: headers.findIndex(h=>h.includes('gram') || h.includes('berat satuan')), // Support 'Berat Satuan'
+            runner: headers.findIndex(h=>h.includes('runner') || h.includes('berat runner')), // Support 'Berat Runner'
+            cavity: headers.findIndex(h=>h.includes('cav')), 
+            dus: headers.findIndex(h=>h.includes('dus') || h.includes('doos')), // Support 'Doos'
+            box: headers.findIndex(h=>h.includes('box')), 
+            tipe: headers.findIndex(h=>h.includes('tipe')) 
+        };
+
+        if(idx.nama < 0) return alert('Header Nama Produk tidak ketemu');
+        
+        // MODE AUTO SPLIT (Jika kolom KODE tidak ada)
+        const autoSplitKode = (idx.kode < 0);
+
         $('loading').style.display='flex';
         let rows = [];
+        
         for(let i=1; i<lines.length; i++){
             const cols = lines[i].split(delim).map(c=>c.trim().replace(/"/g,''));
-            if(cols.length<2) continue;
+            if(cols.length < 2) continue;
+            
+            let kodeVal = '';
+            let namaVal = '';
+            
+            // LOGIC AUTO SPLIT ATAU STANDARD
+            if(autoSplitKode) {
+                // Ambil dari kolom Nama
+                const rawName = cols[idx.nama];
+                const firstSpace = rawName.indexOf(' ');
+                if(firstSpace > 0) {
+                    kodeVal = rawName.substring(0, firstSpace).trim();
+                    namaVal = rawName.substring(firstSpace + 1).trim();
+                } else {
+                    kodeVal = rawName; // Fallback kalau cuma 1 kata
+                    namaVal = rawName;
+                }
+            } else {
+                kodeVal = cols[idx.kode];
+                namaVal = cols[idx.nama] || kodeVal;
+            }
+
+            // BERSIHKAN NILAI ANGKA (Hilangkan '-' jadi 0, ganti koma jadi titik)
+            const cleanNum = (val) => {
+                if(!val || val === '-') return 0;
+                return toNum(val.replace(',','.'));
+            };
+
             let targetID = uid();
             const allowDup = $('chkAllowDup').checked;
-            const exist = allowDup ? null : master.find(m => m.kode.toLowerCase() === cols[idx.kode].toLowerCase() && m.nama.toLowerCase() === (cols[idx.nama]||'').toLowerCase());
+            
+            // Cek Duplikat
+            const exist = allowDup ? null : master.find(m => m.kode.toLowerCase() === kodeVal.toLowerCase() && m.nama.toLowerCase() === namaVal.toLowerCase());
             if(exist) targetID = exist.id;
-            rows.push({ id: targetID, kode: cols[idx.kode], nama: cols[idx.nama] || cols[idx.kode], tipe: idx.tipe>=0 ? cols[idx.tipe] : 'pcs', gram: idx.gram>=0 ? toNum(cols[idx.gram].replace(',','.')) : 0, runner: idx.runner>=0 ? toNum(cols[idx.runner].replace(',','.')) : 0, cavity: idx.cavity>=0 ? toNum(cols[idx.cavity].replace(',','.')) : 1, per_dus: idx.dus>=0 ? toNum(cols[idx.dus].replace(',','.')) : 0, per_box: idx.box>=0 ? toNum(cols[idx.box].replace(',','.')) : 0 });
+            
+            rows.push({ 
+                id: targetID, 
+                kode: kodeVal, 
+                nama: namaVal, 
+                tipe: (idx.tipe >= 0 ? cols[idx.tipe] : 'pcs'), // Default 'pcs'
+                gram: (idx.gram >= 0 ? cleanNum(cols[idx.gram]) : 0), 
+                runner: (idx.runner >= 0 ? cleanNum(cols[idx.runner]) : 0), 
+                cavity: (idx.cavity >= 0 ? cleanNum(cols[idx.cavity]) : 1), 
+                per_dus: (idx.dus >= 0 ? cleanNum(cols[idx.dus]) : 0), 
+                per_box: (idx.box >= 0 ? cleanNum(cols[idx.box]) : 0) 
+            });
         }
+        
         const { error } = await client.from('master').upsert(rows);
         $('loading').style.display='none';
         if(error) alert('Error Import: '+error.message); else { alert('Import Sukses!'); refreshData(); }
