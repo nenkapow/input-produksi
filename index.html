@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
-<title>App Produksi v0.9.10 (Fix Search Format)</title>
+<title>App Produksi v0.9.11 (Max Layout)</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -91,7 +91,7 @@ tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-
         <div>
             <h2>Production Dashboard</h2>
             <div class="row" style="align-items:center; gap:8px; margin-top:8px;">
-                <span class="badge">v0.9.10</span>
+                <span class="badge">v0.9.11</span>
                 <span id="statusDb" style="font-size:0.8rem; color:var(--danger)">Disconnected</span>
             </div>
         </div>
@@ -220,10 +220,10 @@ tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-
     <input type="hidden" id="eId" />
 
     <div class="grid" style="grid-template-columns:repeat(12,1fr)">
-        <div style="grid-column:span 3"><div class="muted">Tanggal</div><input id="eTanggal" type="date" class="input" /></div>
-        <div style="grid-column:span 2"><div class="muted">Shift</div><select id="eShift" class="input"><option>1</option><option>2</option><option>3</option></select></div>
+        <div style="grid-column:span 2"><div class="muted">Tanggal</div><input id="eTanggal" type="date" class="input" /></div>
+        <div style="grid-column:span 1"><div class="muted">Shift</div><select id="eShift" class="input"><option>1</option><option>2</option><option>3</option></select></div>
         <div style="grid-column:span 1"><div class="muted">Line</div><input id="eLine" class="input" placeholder="L..." /></div>
-        <div style="grid-column:span 6"><div class="muted">Produk</div><input id="eProduk" class="input" placeholder="Cari Nama..." list="produkList" style="border-color:var(--primary)" /></div>
+        <div style="grid-column:span 8"><div class="muted">Produk</div><input id="eProduk" class="input" placeholder="Cari Nama..." list="produkList" style="border-color:var(--primary)" /></div>
         <datalist id="produkList"></datalist>
         
         <div style="grid-column:span 12; height:1px; background:var(--border); margin:8px 0;"></div>
@@ -347,7 +347,6 @@ document.addEventListener('DOMContentLoaded', () => {
     $('btnRekap').onclick = showRekap;
     $('mRekapClose').onclick = () => $('mRekap').classList.remove('open');
 
-    // 10 JENIS REJECT LISTENER
     const rejectInputs = ['rUneven','rMottled','rStartup','rShort','rFlow','rFlash','rCrack','rSpot','rScratch','rDirty'];
     const calcInputs = ['eProduk','eCavity','eCounter','eRunner','eJatah','eStok','eBalokan', 
     'eQtyDus','eQtyBox','eQtyDusPlus','eIsiDusPlus', 
@@ -356,7 +355,6 @@ document.addEventListener('DOMContentLoaded', () => {
     ...rejectInputs];
     calcInputs.forEach(id => { const el = $(id); if(el) el.oninput = () => { if(id === 'eProduk') hydrateProduk(); recalc(); }; });
 
-    // --- INISIALISASI AWAL (Sticky Start) ---
     const d = new Date();
     $('eTanggal').value = todayISO(); 
     $('eShift').value = '1';
@@ -401,7 +399,6 @@ async function refreshData() {
     const { data: mData, error: mErr } = await client.from('master').select('*');
     if(mErr) { $('loading').style.display='none'; return alert('Gagal Master: ' + mErr.message); }
     master = mData || [];
-    
     master.sort((a,b) => (a.kode || '').localeCompare(b.kode || ''));
 
     const { data: lData, error: lErr } = await client.from('logs').select('*');
@@ -422,7 +419,6 @@ function showRekap() {
     
     const groups = {};
     filtered.forEach(r => {
-        // GROUPING: LINE + KODE + NAMA (Biar produk dgn nama sama tapi kode beda gak gabung)
         const key = r.line + "|||" + r.kode + "|||" + r.nama;
         if(!groups[key]) groups[key] = { line: r.line, kode: r.kode, nama: r.nama, okpcs: 0, reject: 0, okkg: 0, yieldTotal: 0, count: 0 };
         groups[key].okpcs += (+r.okpcs || 0);
@@ -433,8 +429,6 @@ function showRekap() {
     });
 
     const tbody = $('tbodyRekap'); tbody.innerHTML = '';
-    
-    // --- SMART SORT LOGIC ---
     const sortedKeys = Object.keys(groups).sort((a, b) => {
         const lineA = groups[a].line.toString();
         const lineB = groups[b].line.toString();
@@ -445,16 +439,7 @@ function showRekap() {
         const g = groups[key];
         const avgYield = g.count > 0 ? (g.yieldTotal / g.count) : 0;
         const tr = document.createElement('tr');
-        // TAMPILKAN KODE DI ATAS NAMA PRODUK
-        tr.innerHTML = `<td>${g.line}</td>
-        <td style="line-height:1.2">
-            <span style="color:var(--primary); font-weight:700; font-size:0.85rem">${g.kode}</span><br>
-            <span style="font-weight:600; color:var(--text-main)">${g.nama}</span>
-        </td>
-        <td class="right text-ok"><b>${g.okpcs.toLocaleString()}</b></td>
-        <td class="right text-danger">${g.reject.toLocaleString()}</td>
-        <td class="right">${g.okkg.toFixed(2)}</td>
-        <td class="right"><b>${avgYield.toFixed(2)}%</b></td>`;
+        tr.innerHTML = `<td>${g.line}</td><td style="font-weight:600">${g.nama}</td><td class="right text-ok"><b>${g.okpcs.toLocaleString()}</b></td><td class="right text-danger">${g.reject.toLocaleString()}</td><td class="right">${g.okkg.toFixed(2)}</td><td class="right"><b>${avgYield.toFixed(2)}%</b></td>`;
         tbody.appendChild(tr);
     });
     $('mRekap').classList.add('open');
@@ -463,61 +448,38 @@ function showRekap() {
 function resetEntryForm() {
     const fields = ['eLine', 'eProduk', 'eGram', 'eRunner', 'eCavity', 'eCounter', 'eJatah', 'eStok', 'eBalokan', 'eSisaBahan', 'eSblm1', 'eSblm2', 'eSblm3', 'eSblm4', 'eSblm5', 'eSblm6', 'eSsdh1', 'eSsdh2', 'eSsdh3', 'eSsdh4', 'eSsdh5', 'eSsdh6', 'eQtyDus', 'eIsiDus', 'eQtyBox', 'eIsiBox', 'eQtyDusPlus', 'eIsiDusPlus', 'eCatatan', 'rUneven','rMottled','rStartup','rShort','rFlow','rFlash','rCrack','rSpot','rScratch','rDirty', 'rTotal', 'rMax'];
     fields.forEach(id => { if($(id)) $(id).value = ''; });
-    
-    // CLEAR HIDDEN ID AGAR JADI MODE "NEW"
     $('eId').value = '';
-    
     ['vHasil','vOkPcs','vRejectPcs','vYield','vOkKg','vRejectKg','vRunnerKg','vSisaBahanLabel'].forEach(id=>$(id).innerText='0');
     $('badgeTipe').innerText=''; $('warnOver').style.display='none';
 }
 
-// --- FUNGSI BARU UNTUK LOAD DATA KE FORM (EDIT) ---
 window.editLog = (id) => {
     const r = logs.find(x => x.id === id);
     if(!r) return;
-    
-    // Set ID ke Hidden Input
     $('eId').value = r.id;
-    
-    // Load Data Dasar
     $('eTanggal').value = r.tanggal;
     $('eShift').value = r.shift;
     $('eLine').value = r.line;
-    
-    // --- BALIKIN KE FORMAT KODE + NAMA ---
-    $('eProduk').value = r.kode + " " + r.nama; 
-    
-    // Load Parameter (via Hydrate)
+    $('eProduk').value = r.nama + " [" + r.kode + "]";
     hydrateProduk(); 
-    
-    // Override Counter & Cavity (siapa tau beda sama master)
     $('eCounter').value = r.counter;
     $('eCavity').value = r.cavity;
-    
-    // Load Packaging
     $('eQtyDus').value = r.qty_dus || ''; $('eIsiDus').value = r.isi_dus || '';
     $('eQtyBox').value = r.qty_box || ''; $('eIsiBox').value = r.isi_box || '';
     $('eQtyDusPlus').value = r.qty_dus_plus || ''; $('eIsiDusPlus').value = r.isi_dus_plus || '';
     $('eCatatan').value = r.catatan || '';
-    
-    // Load Rejects
     $('rUneven').value = r.reject_uneven || ''; $('rMottled').value = r.reject_mottled || '';
     $('rStartup').value = r.reject_startup || ''; $('rShort').value = r.reject_short || '';
     $('rFlow').value = r.reject_flow || ''; $('rFlash').value = r.reject_flashing || '';
     $('rCrack').value = r.reject_crack || ''; $('rSpot').value = r.reject_spot || '';
     $('rScratch').value = r.reject_scratch || ''; $('rDirty').value = r.reject_dirty || '';
-    
-    // Load Hasil Perhitungan (Visual Saja)
     recalc();
-    
-    // Buka Modal
     $('mEntry').classList.add('open');
 };
 
 function hydrateProduk(){
     const val = $('eProduk').value;
-    // --- LOGIC BALIK LAGI: CARI BERDASARKAN "KODE + NAMA" ---
-    const p = master.find(x => (x.kode + " " + x.nama) === val);
+    const p = master.find(x => x.nama + " [" + x.kode + "]" === val);
     if(p) {
         $('eGram').value = p.gram; $('eRunner').value = p.runner; $('eCavity').value = p.cavity;
         $('eIsiDus').value = p.per_dus; $('eIsiBox').value = p.per_box;
@@ -539,8 +501,7 @@ function recalc(){
 
 function compute(){
     const prodNameFull = $('eProduk').value; 
-    // --- LOGIC BALIK LAGI: CARI BERDASARKAN "KODE + NAMA" ---
-    const prod = master.find(p => (p.kode + " " + p.nama) === prodNameFull);
+    const prod = master.find(p => p.nama + " [" + p.kode + "]" === prodNameFull);
     const gram = toNum($('eGram').value); const tipe = $('badgeTipe').innerText.includes('KG') ? 'kg_sisa' : 'pcs';
     const cav = Math.max(1, toNum($('eCavity').value)); const counter = toNum($('eCounter').value);
     
@@ -564,16 +525,11 @@ function compute(){
 
     const jatah = toNum($('eJatah').value); const stok = toNum($('eStok').value);
     const balok = toNum($('eBalokan').value);
-    
-    // KHUSUS EDIT MODE: Kalau input material kosong (karena tdk disimpan), ambil nilai sisa_bahan dari log (jika ada)
-    // Tapi karena logic disini murni kalkulasi live, sisa_bahan akan ke-reset jadi negatif kalau Jatah kosong.
-    // User harus maklum: kalau mau benerin Sisa Bahan, harus isi Jatah lagi.
     const sisaBahan = (jatah + stok) - (runnerkg + rejectkg + okkg + balok);
 
     const yieldpct = hasil > 0 ? (okpcs / hasil) * 100 : 0;
     const overpack = packpcs > hasil;
     
-    // 10 JENIS REJECT
     let rIds = ['rUneven','rMottled','rStartup','rShort','rFlow','rFlash','rCrack','rSpot','rScratch','rDirty'];
     let rTotalInput = sum(rIds);
     let rMax = Math.max(...rIds.map(id=>toNum($(id).value)));
@@ -587,9 +543,8 @@ async function saveEntry() {
     const p = compute(); if(!p.prod) return alert("Pilih produk valid");
     $('loading').style.display='flex';
     
-    // LOGIC UPSERT (Update or Insert)
     const existingId = $('eId').value;
-    const targetId = existingId || uid(); // Pakai ID lama kalau edit, ID baru kalau new
+    const targetId = existingId || uid(); 
     
     const { error } = await client.from('logs').upsert({
         id: targetId, 
@@ -604,13 +559,11 @@ async function saveEntry() {
         qty_box: toNum($('eQtyBox').value), isi_box: toNum($('eIsiBox').value),
         qty_dus_plus: toNum($('eQtyDusPlus').value), isi_dus_plus: toNum($('eIsiDusPlus').value),
         catatan: $('eCatatan').value,
-        // REJECT 10 JENIS BARU
         reject_uneven: toNum($('rUneven').value), reject_mottled: toNum($('rMottled').value),
         reject_startup: toNum($('rStartup').value), reject_short: toNum($('rShort').value),
         reject_flow: toNum($('rFlow').value), reject_flashing: toNum($('rFlash').value),
         reject_crack: toNum($('rCrack').value), reject_spot: toNum($('rSpot').value),
         reject_scratch: toNum($('rScratch').value), reject_dirty: toNum($('rDirty').value),
-        
         reject_total_kecil: toNum($('rTotal').value), reject_max: toNum($('rMax').value)
     });
     $('loading').style.display='none';
@@ -622,7 +575,6 @@ async function saveMaster() {
     const kode=$('mpKode').value.trim(); const nama=$('mpNama').value.trim();
     if(!kode) return alert("Isi Kode");
     
-    // LOGIC BARU: CEK KODE && NAMA
     const allow = $('chkAllowDup').checked;
     if(!allow) { 
         const exist = master.find(m => m.kode.toLowerCase() === kode.toLowerCase() && m.nama.toLowerCase() === nama.toLowerCase()); 
@@ -631,7 +583,6 @@ async function saveMaster() {
     
     $('loading').style.display='flex';
     let targetID = uid();
-    // Cari ID kalau mau update
     const exist = master.find(m => m.kode.toLowerCase() === kode.toLowerCase() && m.nama.toLowerCase() === nama.toLowerCase());
     if(exist) targetID = exist.id;
 
@@ -650,7 +601,6 @@ window.editMaster = (idx) => { const p = master[idx]; $('mpKode').value = p.kode
 async function wipeLogs() { if(!confirm('HAPUS SEMUA DATA LAPORAN?')) return; $('loading').style.display='flex'; const { error } = await client.from('logs').delete().neq('id','0'); $('loading').style.display='none'; refreshData(); }
 async function wipeMaster() { if(!confirm('YAKIN HAPUS SEMUA MASTER PRODUK?')) return; $('loading').style.display='flex'; const { error } = await client.from('master').delete().neq('id','0'); $('loading').style.display='none'; refreshData(); }
 
-// --- UPDATED IMPORT CSV FUNCTION (SMART IMPORT) ---
 function importCSV(e) {
     if(!client) return alert("Database Belum Konek!");
     const file = e.target.files[0]; if(!file) return;
@@ -658,81 +608,39 @@ function importCSV(e) {
     reader.onload = async (evt) => {
         const lines = evt.target.result.split(/\r?\n/).filter(l => l.trim() !== '');
         if(lines.length < 2) return alert('CSV Salah');
-        
-        // DETEKSI DELIMITER (; atau ,)
         const delim = lines[0].split(';').length > lines[0].split(',').length ? ';' : ',';
         const headers = lines[0].toLowerCase().split(delim).map(h=>h.trim().replace(/"/g,''));
-        
-        // MAPPING STANDARD
         const idx = { 
             kode: headers.findIndex(h=>h.includes('kode')), 
-            nama: headers.findIndex(h=>h.includes('nama') || h.includes('product')), // Support 'Nama Produk' or 'Product Name'
-            gram: headers.findIndex(h=>h.includes('gram') || h.includes('berat satuan')), // Support 'Berat Satuan'
-            runner: headers.findIndex(h=>h.includes('runner') || h.includes('berat runner')), // Support 'Berat Runner'
+            nama: headers.findIndex(h=>h.includes('nama') || h.includes('product')), 
+            gram: headers.findIndex(h=>h.includes('gram') || h.includes('berat satuan')), 
+            runner: headers.findIndex(h=>h.includes('runner') || h.includes('berat runner')), 
             cavity: headers.findIndex(h=>h.includes('cav')), 
-            dus: headers.findIndex(h=>h.includes('dus') || h.includes('doos')), // Support 'Doos'
+            dus: headers.findIndex(h=>h.includes('dus') || h.includes('doos')), 
             box: headers.findIndex(h=>h.includes('box')), 
             tipe: headers.findIndex(h=>h.includes('tipe')) 
         };
-
         if(idx.nama < 0) return alert('Header Nama Produk tidak ketemu');
-        
-        // MODE AUTO SPLIT (Jika kolom KODE tidak ada)
         const autoSplitKode = (idx.kode < 0);
-
         $('loading').style.display='flex';
         let rows = [];
-        
         for(let i=1; i<lines.length; i++){
             const cols = lines[i].split(delim).map(c=>c.trim().replace(/"/g,''));
             if(cols.length < 2) continue;
-            
-            let kodeVal = '';
-            let namaVal = '';
-            
-            // LOGIC AUTO SPLIT ATAU STANDARD
+            let kodeVal = '', namaVal = '';
             if(autoSplitKode) {
-                // Ambil dari kolom Nama
                 const rawName = cols[idx.nama];
                 const firstSpace = rawName.indexOf(' ');
-                if(firstSpace > 0) {
-                    kodeVal = rawName.substring(0, firstSpace).trim();
-                    namaVal = rawName.substring(firstSpace + 1).trim();
-                } else {
-                    kodeVal = rawName; // Fallback kalau cuma 1 kata
-                    namaVal = rawName;
-                }
-            } else {
-                kodeVal = cols[idx.kode];
-                namaVal = cols[idx.nama] || kodeVal;
-            }
-
-            // BERSIHKAN NILAI ANGKA (Hilangkan '-' jadi 0, ganti koma jadi titik)
-            const cleanNum = (val) => {
-                if(!val || val === '-') return 0;
-                return toNum(val.replace(',','.'));
-            };
-
+                if(firstSpace > 0) { kodeVal = rawName.substring(0, firstSpace).trim(); namaVal = rawName.substring(firstSpace + 1).trim(); } 
+                else { kodeVal = rawName; namaVal = rawName; }
+            } else { kodeVal = cols[idx.kode]; namaVal = cols[idx.nama] || kodeVal; }
+            const cleanNum = (val) => { if(!val || val === '-') return 0; return toNum(val.replace(',','.')); };
             let targetID = uid();
             const allowDup = $('chkAllowDup').checked;
-            
-            // Cek Duplikat
             const exist = allowDup ? null : master.find(m => m.kode.toLowerCase() === kodeVal.toLowerCase() && m.nama.toLowerCase() === namaVal.toLowerCase());
             if(exist) targetID = exist.id;
-            
-            rows.push({ 
-                id: targetID, 
-                kode: kodeVal, 
-                nama: namaVal, 
-                tipe: (idx.tipe >= 0 ? cols[idx.tipe] : 'pcs'), // Default 'pcs'
-                gram: (idx.gram >= 0 ? cleanNum(cols[idx.gram]) : 0), 
-                runner: (idx.runner >= 0 ? cleanNum(cols[idx.runner]) : 0), 
-                cavity: (idx.cavity >= 0 ? cleanNum(cols[idx.cavity]) : 1), 
-                per_dus: (idx.dus >= 0 ? cleanNum(cols[idx.dus]) : 0), 
-                per_box: (idx.box >= 0 ? cleanNum(cols[idx.box]) : 0) 
-            });
+            rows.push({ id: targetID, kode: kodeVal, nama: namaVal, tipe: (idx.tipe >= 0 ? cols[idx.tipe] : 'pcs'), gram: (idx.gram >= 0 ? cleanNum(cols[idx.gram]) : 0), runner: (idx.runner >= 0 ? cleanNum(cols[idx.runner]) : 0), cavity: (idx.cavity >= 0 ? cleanNum(cols[idx.cavity]) : 1), per_dus: (idx.dus >= 0 ? cleanNum(cols[idx.dus]) : 0), per_box: (idx.box >= 0 ? cleanNum(cols[idx.box]) : 0) });
         }
-        
         const { error } = await client.from('master').upsert(rows);
         $('loading').style.display='none';
         if(error) alert('Error Import: '+error.message); else { alert('Import Sukses!'); refreshData(); }
@@ -742,8 +650,6 @@ function importCSV(e) {
 }
 
 function renderMaster() { const t = $('mpBody'); t.innerHTML = ''; master.forEach((p, idx) => { const tr = document.createElement('tr'); tr.innerHTML = `<td>${p.kode}</td><td>${p.nama}</td><td>${p.tipe}</td><td class="right">${p.gram}</td><td class="right">${p.runner}</td><td class="right">${p.cavity}</td><td class="right">${p.per_dus}</td><td style="text-align:center"><button class="btn sm" onclick="editMaster(${idx})">✏️</button> <button class="btn sm danger" onclick="deleteMaster('${p.id}')">🗑️</button></td>`; t.appendChild(tr); }); }
-
-// --- UPDATED RENDER TABLE WITH EDIT BUTTON ---
 function renderTable() { 
     const t = $('tbody'); t.innerHTML = ''; 
     const qFrom = $('fFrom').value, qTo = $('fTo').value; 
@@ -756,23 +662,18 @@ function renderTable() {
     $('rowCount').textContent = filtered.length + " data"; 
     filtered.forEach(r => { 
         const tr = document.createElement('tr'); 
-        // Tambahkan tombol EDIT di kolom Aksi
-        tr.innerHTML = `<td>${r.tanggal}</td><td>${r.shift}</td><td>${r.line}</td><td><b>${r.nama}</b><br><small>${r.kode}</small></td><td>${r.tipe}</td><td class="right">${r.counter}</td><td class="right">${r.cavity}</td><td class="right">${r.qty_dus}</td><td class="right">${r.qty_box}</td><td class="right text-ok"><b>${(+r.okpcs).toLocaleString()}</b></td><td class="right">${(+r.okkg).toFixed(2)}</td><td class="right text-danger">${(+r.reject).toLocaleString()}</td><td class="right">${(+r.sisa_bahan).toFixed(2)}</td><td class="right"><b>${(+r.yieldpct).toFixed(2)}%</b></td><td class="right">${r.reject_max}</td>
-        <td style="text-align:center; white-space:nowrap;">
-            <button class="btn sm info" onclick="editLog('${r.id}')" style="margin-right:4px;">Edit</button>
-            <button class="btn sm danger" onclick="deleteLog('${r.id}')">Hapus</button>
-        </td>`; 
+        tr.innerHTML = `<td>${r.tanggal}</td><td>${r.shift}</td><td>${r.line}</td><td><b>${r.nama}</b><br><small>${r.kode}</small></td><td>${r.tipe}</td><td class="right">${r.counter}</td><td class="right">${r.cavity}</td><td class="right">${r.qty_dus}</td><td class="right">${r.qty_box}</td><td class="right text-ok"><b>${(+r.okpcs).toLocaleString()}</b></td><td class="right">${(+r.okkg).toFixed(2)}</td><td class="right text-danger">${(+r.reject).toLocaleString()}</td><td class="right">${(+r.sisa_bahan).toFixed(2)}</td><td class="right"><b>${(+r.yieldpct).toFixed(2)}%</b></td><td class="right">${r.reject_max}</td><td style="text-align:center; white-space:nowrap;"><button class="btn sm info" onclick="editLog('${r.id}')" style="margin-right:4px;">Edit</button><button class="btn sm danger" onclick="deleteLog('${r.id}')">Hapus</button></td>`; 
         t.appendChild(tr); 
     }); 
 }
 
-// --- SEED PRODUK LIST (BALIK KE KODE + NAMA) ---
+// --- SEED PRODUK LIST (FORMAT BARU: NAMA [KODE]) ---
 function seedProdukList() { 
     const l = $('produkList'); l.innerHTML = ''; 
     master.forEach(p => { 
         const opt = document.createElement('option'); 
-        // FORMAT BALIK KE AWAL: KODE + SPASI + NAMA
-        opt.value = p.kode + " " + p.nama; 
+        // FORMAT DIBALIK: NAMA DULU, BARU KODE
+        opt.value = p.nama + " [" + p.kode + "]"; 
         l.appendChild(opt); 
     }); 
 }
