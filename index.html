@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
-<title>App Produksi v0.9.11 (Max Layout)</title>
+<title>App Produksi v0.9.12 (Smart Search)</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -73,7 +73,27 @@ tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-
 .reject-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
 .reject-label { font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
-/* FIX FONT INPUT PRODUK BIAR MUAT NAMA PANJANG */
+/* --- CUSTOM SEARCH DROPDOWN --- */
+.search-wrapper { position: relative; width: 100%; }
+.search-list {
+    position: absolute; top: 100%; left: 0; width: 100%;
+    max-height: 250px; overflow-y: auto;
+    background: #1e293b; border: 1px solid var(--primary);
+    border-radius: 8px; z-index: 150;
+    display: none; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+}
+.search-item {
+    padding: 10px 12px; cursor: pointer; border-bottom: 1px solid var(--border);
+    font-size: 0.85rem; color: var(--text-main);
+    transition: 0.2s;
+    /* MAGIC: BIAR TEKS TURUN KE BAWAH (WRAP) */
+    white-space: normal; 
+    line-height: 1.4;
+}
+.search-item:hover { background: var(--primary); color: white; }
+.search-item span { font-weight: 700; color: #a5b4fc; }
+.search-item:hover span { color: white; }
+
 #eProduk { font-size: 0.85rem; letter-spacing: -0.01em; }
 
 @media (max-width: 768px) { .wrap { padding: 1rem; } .grid, .reject-grid { grid-template-columns: repeat(2, 1fr) !important; } .header-row { flex-direction: column; align-items: flex-start; gap: 16px; } .row { width: 100%; } .btn { flex: 1; } }
@@ -91,7 +111,7 @@ tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-
         <div>
             <h2>Production Dashboard</h2>
             <div class="row" style="align-items:center; gap:8px; margin-top:8px;">
-                <span class="badge">v0.9.11</span>
+                <span class="badge">v0.9.12</span>
                 <span id="statusDb" style="font-size:0.8rem; color:var(--danger)">Disconnected</span>
             </div>
         </div>
@@ -223,8 +243,12 @@ tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-
         <div style="grid-column:span 2"><div class="muted">Tanggal</div><input id="eTanggal" type="date" class="input" /></div>
         <div style="grid-column:span 1"><div class="muted">Shift</div><select id="eShift" class="input"><option>1</option><option>2</option><option>3</option></select></div>
         <div style="grid-column:span 1"><div class="muted">Line</div><input id="eLine" class="input" placeholder="L..." /></div>
-        <div style="grid-column:span 8"><div class="muted">Produk</div><input id="eProduk" class="input" placeholder="Cari Nama..." list="produkList" style="border-color:var(--primary)" /></div>
-        <datalist id="produkList"></datalist>
+        
+        <div style="grid-column:span 8; position:relative;">
+            <div class="muted">Produk (Ketik Kode / Nama)</div>
+            <input id="eProduk" class="input" placeholder="Cari..." autocomplete="off" style="border-color:var(--primary)" />
+            <div id="produkSuggestions" class="search-list"></div>
+        </div>
         
         <div style="grid-column:span 12; height:1px; background:var(--border); margin:8px 0;"></div>
         
@@ -347,13 +371,16 @@ document.addEventListener('DOMContentLoaded', () => {
     $('btnRekap').onclick = showRekap;
     $('mRekapClose').onclick = () => $('mRekap').classList.remove('open');
 
+    // === SETUP CUSTOM SEARCH ===
+    setupCustomSearch();
+
     const rejectInputs = ['rUneven','rMottled','rStartup','rShort','rFlow','rFlash','rCrack','rSpot','rScratch','rDirty'];
-    const calcInputs = ['eProduk','eCavity','eCounter','eRunner','eJatah','eStok','eBalokan', 
+    const calcInputs = ['eCavity','eCounter','eRunner','eJatah','eStok','eBalokan', 
     'eQtyDus','eQtyBox','eQtyDusPlus','eIsiDusPlus', 
     'eSblm1','eSblm2','eSblm3','eSblm4','eSblm5','eSblm6',
     'eSsdh1','eSsdh2','eSsdh3','eSsdh4','eSsdh5','eSsdh6',
     ...rejectInputs];
-    calcInputs.forEach(id => { const el = $(id); if(el) el.oninput = () => { if(id === 'eProduk') hydrateProduk(); recalc(); }; });
+    calcInputs.forEach(id => { const el = $(id); if(el) el.oninput = () => { recalc(); }; });
 
     const d = new Date();
     $('eTanggal').value = todayISO(); 
@@ -368,6 +395,50 @@ document.addEventListener('DOMContentLoaded', () => {
     if(savedUrl && savedKey) { initSupabase(savedUrl, savedKey); } 
     else { $('mConfig').classList.add('open'); }
 });
+
+// === LOGIC CUSTOM SEARCH DROPDOWN ===
+function setupCustomSearch() {
+    const input = $('eProduk');
+    const list = $('produkSuggestions');
+
+    // Show list on input
+    input.addEventListener('input', function() {
+        const val = this.value.toLowerCase();
+        if(!val) { list.style.display = 'none'; return; }
+        
+        // Filter master (Kode + Nama)
+        const matches = master.filter(p => 
+            p.kode.toLowerCase().includes(val) || 
+            p.nama.toLowerCase().includes(val)
+        );
+
+        if(matches.length > 0) {
+            list.innerHTML = matches.map(p => {
+                // Tampilan di dropdown: KODE - NAMA
+                return `<div class="search-item" onclick="selectProduk('${p.kode} - ${p.nama}')">
+                    <span>${p.kode}</span> - ${p.nama}
+                </div>`;
+            }).join('');
+            list.style.display = 'block';
+        } else {
+            list.style.display = 'none';
+        }
+    });
+
+    // Hide on click outside
+    document.addEventListener('click', function(e) {
+        if (e.target !== input && e.target !== list) {
+            list.style.display = 'none';
+        }
+    });
+}
+
+// Function dipanggil saat user klik item di dropdown
+window.selectProduk = (val) => {
+    $('eProduk').value = val;
+    $('produkSuggestions').style.display = 'none';
+    hydrateProduk(); // Load data gram/runner
+};
 
 function saveConfig() {
     const url = $('cfgUrl').value.trim();
@@ -404,7 +475,7 @@ async function refreshData() {
     const { data: lData, error: lErr } = await client.from('logs').select('*');
     if(lErr) { $('loading').style.display='none'; return alert('Gagal Logs: ' + lErr.message); }
     logs = lData || [];
-    renderTable(); renderMaster(); seedProdukList();
+    renderTable(); renderMaster(); // seedProdukList gak perlu lagi karena pake custom search
     $('loading').style.display = 'none';
 }
 
@@ -439,7 +510,7 @@ function showRekap() {
         const g = groups[key];
         const avgYield = g.count > 0 ? (g.yieldTotal / g.count) : 0;
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${g.line}</td><td style="font-weight:600">${g.nama}</td><td class="right text-ok"><b>${g.okpcs.toLocaleString()}</b></td><td class="right text-danger">${g.reject.toLocaleString()}</td><td class="right">${g.okkg.toFixed(2)}</td><td class="right"><b>${avgYield.toFixed(2)}%</b></td>`;
+        tr.innerHTML = `<td>${g.line}</td><td style="line-height:1.2"><span style="color:var(--primary); font-weight:700; font-size:0.85rem">${g.kode}</span><br><span style="font-weight:600; color:var(--text-main)">${g.nama}</span></td><td class="right text-ok"><b>${g.okpcs.toLocaleString()}</b></td><td class="right text-danger">${g.reject.toLocaleString()}</td><td class="right">${g.okkg.toFixed(2)}</td><td class="right"><b>${avgYield.toFixed(2)}%</b></td>`;
         tbody.appendChild(tr);
     });
     $('mRekap').classList.add('open');
@@ -460,7 +531,8 @@ window.editLog = (id) => {
     $('eTanggal').value = r.tanggal;
     $('eShift').value = r.shift;
     $('eLine').value = r.line;
-    $('eProduk').value = r.nama + " [" + r.kode + "]";
+    // Format Edit: KODE - NAMA
+    $('eProduk').value = r.kode + " - " + r.nama; 
     hydrateProduk(); 
     $('eCounter').value = r.counter;
     $('eCavity').value = r.cavity;
@@ -479,7 +551,8 @@ window.editLog = (id) => {
 
 function hydrateProduk(){
     const val = $('eProduk').value;
-    const p = master.find(x => x.nama + " [" + x.kode + "]" === val);
+    // Logic: KODE - NAMA
+    const p = master.find(x => (x.kode + " - " + x.nama) === val);
     if(p) {
         $('eGram').value = p.gram; $('eRunner').value = p.runner; $('eCavity').value = p.cavity;
         $('eIsiDus').value = p.per_dus; $('eIsiBox').value = p.per_box;
@@ -501,7 +574,8 @@ function recalc(){
 
 function compute(){
     const prodNameFull = $('eProduk').value; 
-    const prod = master.find(p => p.nama + " [" + p.kode + "]" === prodNameFull);
+    // Logic: KODE - NAMA
+    const prod = master.find(p => (p.kode + " - " + p.nama) === prodNameFull);
     const gram = toNum($('eGram').value); const tipe = $('badgeTipe').innerText.includes('KG') ? 'kg_sisa' : 'pcs';
     const cav = Math.max(1, toNum($('eCavity').value)); const counter = toNum($('eCounter').value);
     
@@ -601,6 +675,7 @@ window.editMaster = (idx) => { const p = master[idx]; $('mpKode').value = p.kode
 async function wipeLogs() { if(!confirm('HAPUS SEMUA DATA LAPORAN?')) return; $('loading').style.display='flex'; const { error } = await client.from('logs').delete().neq('id','0'); $('loading').style.display='none'; refreshData(); }
 async function wipeMaster() { if(!confirm('YAKIN HAPUS SEMUA MASTER PRODUK?')) return; $('loading').style.display='flex'; const { error } = await client.from('master').delete().neq('id','0'); $('loading').style.display='none'; refreshData(); }
 
+// --- UPDATED IMPORT CSV FUNCTION (SMART IMPORT) ---
 function importCSV(e) {
     if(!client) return alert("Database Belum Konek!");
     const file = e.target.files[0]; if(!file) return;
@@ -667,15 +742,8 @@ function renderTable() {
     }); 
 }
 
-// --- SEED PRODUK LIST (FORMAT BARU: NAMA [KODE]) ---
 function seedProdukList() { 
-    const l = $('produkList'); l.innerHTML = ''; 
-    master.forEach(p => { 
-        const opt = document.createElement('option'); 
-        // FORMAT DIBALIK: NAMA DULU, BARU KODE
-        opt.value = p.nama + " [" + p.kode + "]"; 
-        l.appendChild(opt); 
-    }); 
+    // Gak perlu lagi karena udah pake Custom Search
 }
 
 function exportCSV() { const qFrom = $('fFrom').value; const qTo = $('fTo').value; const from = qFrom ? new Date(qFrom) : null; const to = qTo ? new Date(qTo) : null; const filtered = logs.filter(r => { const d = new Date(r.tanggal); return (from ? d >= from : true) && (to ? d <= to : true); }); if(filtered.length === 0) return alert("Data kosong"); const header = Object.keys(filtered[0]).join(","); const csv = [header].concat(filtered.map(row => Object.values(row).map(v => `"${v}"`).join(","))).join("\n"); const blob = new Blob([csv], { type: 'text/csv' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'Laporan.csv'; a.click(); }
