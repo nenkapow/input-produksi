@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
-<title>App Produksi v0.9.13 (Elegant Layout)</title>
+<title>App Produksi v0.9.14 (Auto-Recall)</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -111,7 +111,7 @@ tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-
         <div>
             <h2>Production Dashboard</h2>
             <div class="row" style="align-items:center; gap:8px; margin-top:8px;">
-                <span class="badge">v0.9.13</span>
+                <span class="badge">v0.9.14</span>
                 <span id="statusDb" style="font-size:0.8rem; color:var(--danger)">Disconnected</span>
             </div>
         </div>
@@ -241,9 +241,7 @@ tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-
 
     <div class="grid" style="grid-template-columns:repeat(12,1fr)">
         <div style="grid-column:span 2"><div class="muted">Tanggal</div><input id="eTanggal" type="date" class="input" /></div>
-        
         <div style="grid-column:span 2"><div class="muted">Shift</div><select id="eShift" class="input"><option>1</option><option>2</option><option>3</option></select></div>
-        
         <div style="grid-column:span 2"><div class="muted">Line</div><input id="eLine" class="input" placeholder="L..." /></div>
         
         <div style="grid-column:span 6; position:relative;">
@@ -376,6 +374,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // === SETUP CUSTOM SEARCH ===
     setupCustomSearch();
 
+    // === SETUP AUTO RECALL LINE ===
+    $('eLine').onchange = autoFillProductByLine;
+
     const rejectInputs = ['rUneven','rMottled','rStartup','rShort','rFlow','rFlash','rCrack','rSpot','rScratch','rDirty'];
     const calcInputs = ['eCavity','eCounter','eRunner','eJatah','eStok','eBalokan', 
     'eQtyDus','eQtyBox','eQtyDusPlus','eIsiDusPlus', 
@@ -398,17 +399,33 @@ document.addEventListener('DOMContentLoaded', () => {
     else { $('mConfig').classList.add('open'); }
 });
 
+// === LOGIC AUTO FILL PRODUCT BY LINE ===
+function autoFillProductByLine() {
+    const lineVal = $('eLine').value.trim();
+    if (!lineVal || logs.length === 0) return;
+
+    // Cari log terakhir yang line-nya sama
+    // Sort logs by date desc to get latest
+    const sortedLogs = [...logs].sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal) || b.id.localeCompare(a.id));
+    const lastLog = sortedLogs.find(r => r.line == lineVal);
+
+    if(lastLog) {
+        // Format: KODE - NAMA
+        const val = lastLog.kode + " - " + lastLog.nama;
+        $('eProduk').value = val;
+        hydrateProduk(); // Isi gram, runner, dll otomatis
+    }
+}
+
 // === LOGIC CUSTOM SEARCH DROPDOWN ===
 function setupCustomSearch() {
     const input = $('eProduk');
     const list = $('produkSuggestions');
 
-    // Show list on input
     input.addEventListener('input', function() {
         const val = this.value.toLowerCase();
         if(!val) { list.style.display = 'none'; return; }
         
-        // Filter master (Kode + Nama)
         const matches = master.filter(p => 
             p.kode.toLowerCase().includes(val) || 
             p.nama.toLowerCase().includes(val)
@@ -416,7 +433,6 @@ function setupCustomSearch() {
 
         if(matches.length > 0) {
             list.innerHTML = matches.map(p => {
-                // Tampilan di dropdown: KODE - NAMA
                 return `<div class="search-item" onclick="selectProduk('${p.kode} - ${p.nama}')">
                     <span>${p.kode}</span> - ${p.nama}
                 </div>`;
@@ -427,7 +443,6 @@ function setupCustomSearch() {
         }
     });
 
-    // Hide on click outside
     document.addEventListener('click', function(e) {
         if (e.target !== input && e.target !== list) {
             list.style.display = 'none';
@@ -435,11 +450,10 @@ function setupCustomSearch() {
     });
 }
 
-// Function dipanggil saat user klik item di dropdown
 window.selectProduk = (val) => {
     $('eProduk').value = val;
     $('produkSuggestions').style.display = 'none';
-    hydrateProduk(); // Load data gram/runner
+    hydrateProduk(); 
 };
 
 function saveConfig() {
@@ -477,7 +491,7 @@ async function refreshData() {
     const { data: lData, error: lErr } = await client.from('logs').select('*');
     if(lErr) { $('loading').style.display='none'; return alert('Gagal Logs: ' + lErr.message); }
     logs = lData || [];
-    renderTable(); renderMaster(); // seedProdukList gak perlu lagi karena pake custom search
+    renderTable(); renderMaster(); 
     $('loading').style.display = 'none';
 }
 
@@ -533,7 +547,6 @@ window.editLog = (id) => {
     $('eTanggal').value = r.tanggal;
     $('eShift').value = r.shift;
     $('eLine').value = r.line;
-    // Format Edit: KODE - NAMA
     $('eProduk').value = r.kode + " - " + r.nama; 
     hydrateProduk(); 
     $('eCounter').value = r.counter;
@@ -553,7 +566,6 @@ window.editLog = (id) => {
 
 function hydrateProduk(){
     const val = $('eProduk').value;
-    // Logic: KODE - NAMA
     const p = master.find(x => (x.kode + " - " + x.nama) === val);
     if(p) {
         $('eGram').value = p.gram; $('eRunner').value = p.runner; $('eCavity').value = p.cavity;
@@ -576,7 +588,6 @@ function recalc(){
 
 function compute(){
     const prodNameFull = $('eProduk').value; 
-    // Logic: KODE - NAMA
     const prod = master.find(p => (p.kode + " - " + p.nama) === prodNameFull);
     const gram = toNum($('eGram').value); const tipe = $('badgeTipe').innerText.includes('KG') ? 'kg_sisa' : 'pcs';
     const cav = Math.max(1, toNum($('eCavity').value)); const counter = toNum($('eCounter').value);
@@ -685,81 +696,39 @@ function importCSV(e) {
     reader.onload = async (evt) => {
         const lines = evt.target.result.split(/\r?\n/).filter(l => l.trim() !== '');
         if(lines.length < 2) return alert('CSV Salah');
-        
-        // DETEKSI DELIMITER (; atau ,)
         const delim = lines[0].split(';').length > lines[0].split(',').length ? ';' : ',';
         const headers = lines[0].toLowerCase().split(delim).map(h=>h.trim().replace(/"/g,''));
-        
-        // MAPPING STANDARD
         const idx = { 
             kode: headers.findIndex(h=>h.includes('kode')), 
-            nama: headers.findIndex(h=>h.includes('nama') || h.includes('product')), // Support 'Nama Produk' or 'Product Name'
-            gram: headers.findIndex(h=>h.includes('gram') || h.includes('berat satuan')), // Support 'Berat Satuan'
-            runner: headers.findIndex(h=>h.includes('runner') || h.includes('berat runner')), // Support 'Berat Runner'
+            nama: headers.findIndex(h=>h.includes('nama') || h.includes('product')), 
+            gram: headers.findIndex(h=>h.includes('gram') || h.includes('berat satuan')), 
+            runner: headers.findIndex(h=>h.includes('runner') || h.includes('berat runner')), 
             cavity: headers.findIndex(h=>h.includes('cav')), 
-            dus: headers.findIndex(h=>h.includes('dus') || h.includes('doos')), // Support 'Doos'
+            dus: headers.findIndex(h=>h.includes('dus') || h.includes('doos')), 
             box: headers.findIndex(h=>h.includes('box')), 
             tipe: headers.findIndex(h=>h.includes('tipe')) 
         };
-
         if(idx.nama < 0) return alert('Header Nama Produk tidak ketemu');
-        
-        // MODE AUTO SPLIT (Jika kolom KODE tidak ada)
         const autoSplitKode = (idx.kode < 0);
-
         $('loading').style.display='flex';
         let rows = [];
-        
         for(let i=1; i<lines.length; i++){
             const cols = lines[i].split(delim).map(c=>c.trim().replace(/"/g,''));
             if(cols.length < 2) continue;
-            
-            let kodeVal = '';
-            let namaVal = '';
-            
-            // LOGIC AUTO SPLIT ATAU STANDARD
+            let kodeVal = '', namaVal = '';
             if(autoSplitKode) {
-                // Ambil dari kolom Nama
                 const rawName = cols[idx.nama];
                 const firstSpace = rawName.indexOf(' ');
-                if(firstSpace > 0) {
-                    kodeVal = rawName.substring(0, firstSpace).trim();
-                    namaVal = rawName.substring(firstSpace + 1).trim();
-                } else {
-                    kodeVal = rawName; // Fallback kalau cuma 1 kata
-                    namaVal = rawName;
-                }
-            } else {
-                kodeVal = cols[idx.kode];
-                namaVal = cols[idx.nama] || kodeVal;
-            }
-
-            // BERSIHKAN NILAI ANGKA (Hilangkan '-' jadi 0, ganti koma jadi titik)
-            const cleanNum = (val) => {
-                if(!val || val === '-') return 0;
-                return toNum(val.replace(',','.'));
-            };
-
+                if(firstSpace > 0) { kodeVal = rawName.substring(0, firstSpace).trim(); namaVal = rawName.substring(firstSpace + 1).trim(); } 
+                else { kodeVal = rawName; namaVal = rawName; }
+            } else { kodeVal = cols[idx.kode]; namaVal = cols[idx.nama] || kodeVal; }
+            const cleanNum = (val) => { if(!val || val === '-') return 0; return toNum(val.replace(',','.')); };
             let targetID = uid();
             const allowDup = $('chkAllowDup').checked;
-            
-            // Cek Duplikat
             const exist = allowDup ? null : master.find(m => m.kode.toLowerCase() === kodeVal.toLowerCase() && m.nama.toLowerCase() === namaVal.toLowerCase());
             if(exist) targetID = exist.id;
-            
-            rows.push({ 
-                id: targetID, 
-                kode: kodeVal, 
-                nama: namaVal, 
-                tipe: (idx.tipe >= 0 ? cols[idx.tipe] : 'pcs'), // Default 'pcs'
-                gram: (idx.gram >= 0 ? cleanNum(cols[idx.gram]) : 0), 
-                runner: (idx.runner >= 0 ? cleanNum(cols[idx.runner]) : 0), 
-                cavity: (idx.cavity >= 0 ? cleanNum(cols[idx.cavity]) : 1), 
-                per_dus: (idx.dus >= 0 ? cleanNum(cols[idx.dus]) : 0), 
-                per_box: (idx.box >= 0 ? cleanNum(cols[idx.box]) : 0) 
-            });
+            rows.push({ id: targetID, kode: kodeVal, nama: namaVal, tipe: (idx.tipe >= 0 ? cols[idx.tipe] : 'pcs'), gram: (idx.gram >= 0 ? cleanNum(cols[idx.gram]) : 0), runner: (idx.runner >= 0 ? cleanNum(cols[idx.runner]) : 0), cavity: (idx.cavity >= 0 ? cleanNum(cols[idx.cavity]) : 1), per_dus: (idx.dus >= 0 ? cleanNum(cols[idx.dus]) : 0), per_box: (idx.box >= 0 ? cleanNum(cols[idx.box]) : 0) });
         }
-        
         const { error } = await client.from('master').upsert(rows);
         $('loading').style.display='none';
         if(error) alert('Error Import: '+error.message); else { alert('Import Sukses!'); refreshData(); }
@@ -769,8 +738,6 @@ function importCSV(e) {
 }
 
 function renderMaster() { const t = $('mpBody'); t.innerHTML = ''; master.forEach((p, idx) => { const tr = document.createElement('tr'); tr.innerHTML = `<td>${p.kode}</td><td>${p.nama}</td><td>${p.tipe}</td><td class="right">${p.gram}</td><td class="right">${p.runner}</td><td class="right">${p.cavity}</td><td class="right">${p.per_dus}</td><td style="text-align:center"><button class="btn sm" onclick="editMaster(${idx})">✏️</button> <button class="btn sm danger" onclick="deleteMaster('${p.id}')">🗑️</button></td>`; t.appendChild(tr); }); }
-
-// --- UPDATED RENDER TABLE WITH EDIT BUTTON ---
 function renderTable() { 
     const t = $('tbody'); t.innerHTML = ''; 
     const qFrom = $('fFrom').value, qTo = $('fTo').value; 
@@ -783,12 +750,7 @@ function renderTable() {
     $('rowCount').textContent = filtered.length + " data"; 
     filtered.forEach(r => { 
         const tr = document.createElement('tr'); 
-        // Tambahkan tombol EDIT di kolom Aksi
-        tr.innerHTML = `<td>${r.tanggal}</td><td>${r.shift}</td><td>${r.line}</td><td><b>${r.nama}</b><br><small>${r.kode}</small></td><td>${r.tipe}</td><td class="right">${r.counter}</td><td class="right">${r.cavity}</td><td class="right">${r.qty_dus}</td><td class="right">${r.qty_box}</td><td class="right text-ok"><b>${(+r.okpcs).toLocaleString()}</b></td><td class="right">${(+r.okkg).toFixed(2)}</td><td class="right text-danger">${(+r.reject).toLocaleString()}</td><td class="right">${(+r.sisa_bahan).toFixed(2)}</td><td class="right"><b>${(+r.yieldpct).toFixed(2)}%</b></td><td class="right">${r.reject_max}</td>
-        <td style="text-align:center; white-space:nowrap;">
-            <button class="btn sm info" onclick="editLog('${r.id}')" style="margin-right:4px;">Edit</button>
-            <button class="btn sm danger" onclick="deleteLog('${r.id}')">Hapus</button>
-        </td>`; 
+        tr.innerHTML = `<td>${r.tanggal}</td><td>${r.shift}</td><td>${r.line}</td><td><b>${r.nama}</b><br><small>${r.kode}</small></td><td>${r.tipe}</td><td class="right">${r.counter}</td><td class="right">${r.cavity}</td><td class="right">${r.qty_dus}</td><td class="right">${r.qty_box}</td><td class="right text-ok"><b>${(+r.okpcs).toLocaleString()}</b></td><td class="right">${(+r.okkg).toFixed(2)}</td><td class="right text-danger">${(+r.reject).toLocaleString()}</td><td class="right">${(+r.sisa_bahan).toFixed(2)}</td><td class="right"><b>${(+r.yieldpct).toFixed(2)}%</b></td><td class="right">${r.reject_max}</td><td style="text-align:center; white-space:nowrap;"><button class="btn sm info" onclick="editLog('${r.id}')" style="margin-right:4px;">Edit</button><button class="btn sm danger" onclick="deleteLog('${r.id}')">Hapus</button></td>`; 
         t.appendChild(tr); 
     }); 
 }
