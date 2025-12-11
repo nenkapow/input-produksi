@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
-<title>App Produksi v0.9.8 (Fix Search)</title>
+<title>App Produksi v0.9.9 (Fix Rekap)</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -91,7 +91,7 @@ tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-
         <div>
             <h2>Production Dashboard</h2>
             <div class="row" style="align-items:center; gap:8px; margin-top:8px;">
-                <span class="badge">v0.9.8</span>
+                <span class="badge">v0.9.9</span>
                 <span id="statusDb" style="font-size:0.8rem; color:var(--danger)">Disconnected</span>
             </div>
         </div>
@@ -168,7 +168,7 @@ tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-
         <table>
             <thead>
                 <tr>
-                    <th>Line / Mesin</th><th>Nama Produk</th><th class="right">Total OK (pcs)</th><th class="right">Total Reject</th><th class="right">Total OK (kg)</th><th class="right">Avg Yield</th>
+                    <th>Line / Mesin</th><th>Produk (Kode)</th><th class="right">Total OK (pcs)</th><th class="right">Total Reject</th><th class="right">Total OK (kg)</th><th class="right">Avg Yield</th>
                 </tr>
             </thead>
             <tbody id="tbodyRekap"></tbody>
@@ -408,6 +408,7 @@ async function refreshData() {
     $('loading').style.display = 'none';
 }
 
+// --- FIX REKAP LOGIC ---
 function showRekap() {
     const qFrom = $('fFrom').value, qTo = $('fTo').value;
     const from = qFrom ? new Date(qFrom) : null; const to = qTo ? new Date(qTo) : null;
@@ -419,8 +420,9 @@ function showRekap() {
     
     const groups = {};
     filtered.forEach(r => {
-        const key = r.line + "|||" + r.nama;
-        if(!groups[key]) groups[key] = { line: r.line, nama: r.nama, okpcs: 0, reject: 0, okkg: 0, yieldTotal: 0, count: 0 };
+        // GROUPING: LINE + KODE + NAMA (Biar produk dgn nama sama tapi kode beda gak gabung)
+        const key = r.line + "|||" + r.kode + "|||" + r.nama;
+        if(!groups[key]) groups[key] = { line: r.line, kode: r.kode, nama: r.nama, okpcs: 0, reject: 0, okkg: 0, yieldTotal: 0, count: 0 };
         groups[key].okpcs += (+r.okpcs || 0);
         groups[key].reject += (+r.reject || 0);
         groups[key].okkg += (+r.okkg || 0);
@@ -439,7 +441,16 @@ function showRekap() {
         const g = groups[key];
         const avgYield = g.count > 0 ? (g.yieldTotal / g.count) : 0;
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${g.line}</td><td style="font-weight:600">${g.nama}</td><td class="right text-ok"><b>${g.okpcs.toLocaleString()}</b></td><td class="right text-danger">${g.reject.toLocaleString()}</td><td class="right">${g.okkg.toFixed(2)}</td><td class="right"><b>${avgYield.toFixed(2)}%</b></td>`;
+        // TAMPILKAN KODE DI ATAS NAMA PRODUK
+        tr.innerHTML = `<td>${g.line}</td>
+        <td style="line-height:1.2">
+            <span style="color:var(--primary); font-weight:700; font-size:0.85rem">${g.kode}</span><br>
+            <span style="font-weight:600; color:var(--text-main)">${g.nama}</span>
+        </td>
+        <td class="right text-ok"><b>${g.okpcs.toLocaleString()}</b></td>
+        <td class="right text-danger">${g.reject.toLocaleString()}</td>
+        <td class="right">${g.okkg.toFixed(2)}</td>
+        <td class="right"><b>${avgYield.toFixed(2)}%</b></td>`;
         tbody.appendChild(tr);
     });
     $('mRekap').classList.add('open');
@@ -460,7 +471,6 @@ window.editLog = (id) => {
     $('eTanggal').value = r.tanggal;
     $('eShift').value = r.shift;
     $('eLine').value = r.line;
-    // --- FORMAT EDIT: NAMA [KODE] ---
     $('eProduk').value = r.nama + " [" + r.kode + "]";
     hydrateProduk(); 
     $('eCounter').value = r.counter;
@@ -480,7 +490,6 @@ window.editLog = (id) => {
 
 function hydrateProduk(){
     const val = $('eProduk').value;
-    // --- LOGIC BARU: CARI BERDASARKAN FORMAT "NAMA [KODE]" ---
     const p = master.find(x => x.nama + " [" + x.kode + "]" === val);
     if(p) {
         $('eGram').value = p.gram; $('eRunner').value = p.runner; $('eCavity').value = p.cavity;
@@ -503,7 +512,6 @@ function recalc(){
 
 function compute(){
     const prodNameFull = $('eProduk').value; 
-    // --- LOGIC BARU: CARI BERDASARKAN FORMAT "NAMA [KODE]" ---
     const prod = master.find(p => p.nama + " [" + p.kode + "]" === prodNameFull);
     const gram = toNum($('eGram').value); const tipe = $('badgeTipe').innerText.includes('KG') ? 'kg_sisa' : 'pcs';
     const cav = Math.max(1, toNum($('eCavity').value)); const counter = toNum($('eCounter').value);
