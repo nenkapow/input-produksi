@@ -1,123 +1,208 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
-<title>App Produksi v0.9.14 (Auto-Recall)</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<style>
-/* --- PREMIUM DARK THEME VARIABLES --- */
-:root {
-    --bg-body: #0f172a; --bg-card: rgba(30, 41, 59, 0.7); --bg-input: #1e293b;
-    --text-main: #f8fafc; --text-muted: #94a3b8; --border: #334155;
-    --primary: #6366f1; --primary-hover: #4f46e5;
-    --success: #10b981; --danger: #ef4444; --info: #0ea5e9;
-    --radius: 12px; --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-}
-* { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
-body { 
-    margin: 0; background-color: var(--bg-body); color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif; 
-    min-height: 100vh; background-image: radial-gradient(at 0% 0%, rgba(99,102,241,0.15) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(16,185,129,0.1) 0px, transparent 50%);
-    background-attachment: fixed;
-}
-.wrap { max-width: 1400px; margin: 0 auto; padding: 2rem; }
-.card {
-    background: var(--bg-card); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-    border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 20px; box-shadow: var(--shadow);
-}
-h2 { font-size: 1.75rem; font-weight: 700; margin:0; background: linear-gradient(to right, #fff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-h3, h4 { margin: 0; }
-.muted { color: var(--text-muted); font-size: 0.85rem; }
-.btn {
-    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-    padding: 10px 20px; font-size: 0.9rem; font-weight: 600; border-radius: 8px; border: 1px solid var(--border);
-    background: #1e293b; color: var(--text-main); cursor: pointer; transition: all 0.2s ease;
-}
-.btn:hover { border-color: var(--text-muted); transform: translateY(-1px); }
-.btn.primary { background: var(--primary); border-color: var(--primary); color: white; }
-.btn.ok { background: rgba(16, 185, 129, 0.15); border-color: var(--success); color: #34d399; }
-.btn.danger { background: rgba(239, 68, 68, 0.15); border-color: var(--danger); color: #f87171; }
-.btn.info { background: rgba(14, 165, 233, 0.15); border-color: var(--info); color: #38bdf8; }
-.btn.sm { padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; }
-.input, select {
-    width: 100%; padding: 12px 16px; background: var(--bg-input); border: 1px solid var(--border);
-    border-radius: 8px; color: white; font-size: 0.95rem; transition: 0.2s;
-}
-.input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2); }
-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-.table-container { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
-thead th {
-    background: #1e293b; color: var(--text-muted); padding: 14px 16px; text-align: left;
-    font-weight: 600; text-transform: uppercase; font-size: 0.75rem; border-bottom: 1px solid var(--border); white-space: nowrap;
-}
-tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; color: var(--text-main); }
-.right { text-align: right; font-family: 'JetBrains Mono', monospace; }
-.badge { font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; background: rgba(99, 102, 241, 0.2); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); }
-.stat-box { background: #1e293b; border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center; }
-.stat-value { font-family: 'JetBrains Mono', monospace; font-size: 1.25rem; font-weight: 700; margin-top: 6px; display: block; }
-.row { display: flex; gap: 12px; flex-wrap: wrap; }
-.grid { display: grid; gap: 16px; }
-.text-ok { color: #34d399; } .text-danger { color: #f87171; }
-.modal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 100; }
-.modal.open { display: flex; }
-.modal .card { width: 100%; max-width: 1100px; max-height: 90vh; overflow-y: auto; border: 1px solid var(--border); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); animation: modalPop 0.3s; }
-@keyframes modalPop { from { transform: scale(0.95) translateY(20px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
-.loading-overlay { position: fixed; inset: 0; background: #0f172a; z-index: 200; display: none; align-items: center; justify-content: center; flex-direction: column; }
-.spinner { width: 50px; height: 50px; border: 4px solid #1e293b; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
-@keyframes spin { 100% { transform: rotate(360deg); } }
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+    <title>Production App v0.9.15 (Berkah Edition)</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- ISLAMIC THEME VARIABLES (EMERALD & GOLD) --- */
+        :root {
+            --bg-body: #022c22;       /* Hijau Gelap */
+            --bg-card: #064e3b;       /* Hijau Emerald */
+            --bg-input: #065f46;      /* Hijau Input */
+            --text-main: #ecfdf5;     /* Putih Kehijauan */
+            --text-muted: #a7f3d0;    /* Hijau Muda Pucat */
+            --border: #d4af37;        /* EMAS (Gold) */
+            
+            --primary: #d4af37;       /* Gold Utama */
+            --primary-hover: #b4942b;
+            
+            --success: #10b981; 
+            --danger: #ef4444; 
+            --info: #38bdf8;
+            
+            --radius: 16px; 
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+        }
 
-/* REJECT GRID SPECIAL */
-.reject-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
-.reject-label { font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            margin: 0; 
+            background-color: var(--bg-body); 
+            /* Pattern Halus */
+            background-image: radial-gradient(circle at 2px 2px, rgba(212, 175, 55, 0.1) 1px, transparent 0);
+            background-size: 30px 30px;
+            color: var(--text-main); 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            min-height: 100vh;
+        }
 
-/* --- CUSTOM SEARCH DROPDOWN --- */
-.search-wrapper { position: relative; width: 100%; }
-.search-list {
-    position: absolute; top: 100%; left: 0; width: 100%;
-    max-height: 250px; overflow-y: auto;
-    background: #1e293b; border: 1px solid var(--primary);
-    border-radius: 8px; z-index: 150;
-    display: none; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
-}
-.search-item {
-    padding: 10px 12px; cursor: pointer; border-bottom: 1px solid var(--border);
-    font-size: 0.85rem; color: var(--text-main);
-    transition: 0.2s;
-    /* MAGIC: BIAR TEKS TURUN KE BAWAH (WRAP) */
-    white-space: normal; 
-    line-height: 1.4;
-}
-.search-item:hover { background: var(--primary); color: white; }
-.search-item span { font-weight: 700; color: #a5b4fc; }
-.search-item:hover span { color: white; }
+        .wrap { max-width: 1400px; margin: 0 auto; padding: 2rem; }
 
-#eProduk { font-size: 0.85rem; letter-spacing: -0.01em; }
+        /* HEADER BISMILLAH */
+        .bismillah {
+            font-family: 'Amiri', serif;
+            font-size: 2rem;
+            color: var(--primary);
+            text-align: center;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .slogan {
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            font-style: italic;
+            margin-bottom: 2rem;
+        }
 
-@media (max-width: 768px) { .wrap { padding: 1rem; } .grid, .reject-grid { grid-template-columns: repeat(2, 1fr) !important; } .header-row { flex-direction: column; align-items: flex-start; gap: 16px; } .row { width: 100%; } .btn { flex: 1; } }
-</style>
+        .card { 
+            background: var(--bg-card); 
+            border: 1px solid var(--border); 
+            border-radius: var(--radius); 
+            padding: 24px; 
+            margin-bottom: 20px; 
+            box-shadow: var(--shadow);
+            position: relative;
+        }
+
+        /* Aksen Emas di Card */
+        .card::after {
+            content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+            width: 30%; height: 2px; background: linear-gradient(90deg, transparent, var(--primary), transparent);
+        }
+
+        h2 { font-size: 1.75rem; font-weight: 700; margin:0; color: var(--text-main); }
+        h3, h4 { margin: 0; }
+        
+        .muted { color: var(--text-muted); font-size: 0.85rem; }
+
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 10px 20px; font-size: 0.9rem; font-weight: 600; 
+            border-radius: 50px; /* Pill Shape */
+            border: 1px solid var(--border);
+            background: #022c22; color: var(--primary); 
+            cursor: pointer; transition: all 0.2s ease;
+        }
+        .btn:hover { background: var(--primary); color: #022c22; transform: translateY(-2px); }
+        
+        .btn.primary { 
+            background: linear-gradient(to bottom, #d4af37, #b4942b); 
+            border: none; color: #022c22; 
+            box-shadow: 0 4px 10px rgba(212, 175, 55, 0.3);
+        }
+        .btn.ok { border-color: var(--success); color: var(--success); }
+        .btn.ok:hover { background: var(--success); color: white; }
+        
+        .btn.danger { border-color: var(--danger); color: var(--danger); }
+        .btn.danger:hover { background: var(--danger); color: white; }
+        
+        .btn.info { border-color: var(--info); color: var(--info); }
+        .btn.sm { padding: 6px 12px; font-size: 0.8rem; }
+
+        .input, select { 
+            width: 100%; padding: 12px 16px; 
+            background: var(--bg-input); 
+            border: 1px solid #374151; /* Border biasa */
+            border-radius: 10px; color: white; font-size: 0.95rem; transition: 0.2s; 
+        }
+        .input:focus, select:focus { 
+            border-color: var(--primary); 
+            box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); 
+        }
+
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        .table-container { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
+        
+        thead th { 
+            background: #022c22; color: var(--primary); padding: 14px 16px; text-align: left; 
+            font-weight: 700; text-transform: uppercase; font-size: 0.75rem; 
+            border-bottom: 1px solid var(--border); white-space: nowrap; 
+        }
+        tbody td { padding: 14px 16px; border-bottom: 1px solid #374151; vertical-align: middle; color: var(--text-main); }
+        
+        .right { text-align: right; font-family: 'JetBrains Mono', monospace; }
+        
+        .badge { 
+            font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; 
+            background: rgba(212, 175, 55, 0.2); color: var(--primary); 
+            border: 1px solid var(--primary); 
+        }
+
+        .stat-box { 
+            background: #022c22; border: 1px solid var(--border); 
+            border-radius: 12px; padding: 16px; text-align: center; 
+        }
+        .stat-value { font-family: 'JetBrains Mono', monospace; font-size: 1.25rem; font-weight: 700; margin-top: 6px; display: block; }
+
+        .row { display: flex; gap: 12px; flex-wrap: wrap; }
+        .grid { display: grid; gap: 16px; }
+        
+        .text-ok { color: var(--success); } .text-danger { color: var(--danger); }
+
+        .modal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 100; }
+        .modal.open { display: flex; }
+        .modal .card { width: 100%; max-width: 1100px; max-height: 90vh; overflow-y: auto; border: 2px solid var(--border); animation: modalPop 0.3s; }
+        @keyframes modalPop { from { transform: scale(0.95) translateY(20px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+
+        .loading-overlay { position: fixed; inset: 0; background: var(--bg-body); z-index: 200; display: none; align-items: center; justify-content: center; flex-direction: column; }
+        .spinner { width: 50px; height: 50px; border: 4px solid var(--bg-card); border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* REJECT GRID */
+        .reject-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+        .reject-label { font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+        /* SEARCH DROPDOWN */
+        .search-wrapper { position: relative; width: 100%; }
+        .search-list { 
+            position: absolute; top: 100%; left: 0; width: 100%; max-height: 250px; overflow-y: auto; 
+            background: var(--bg-body); border: 1px solid var(--primary); border-radius: 8px; z-index: 150; 
+            display: none; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5); 
+        }
+        .search-item { padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #374151; font-size: 0.85rem; color: var(--text-main); transition: 0.2s; white-space: normal; line-height: 1.4; }
+        .search-item:hover { background: var(--primary); color: #022c22; }
+        .search-item span { font-weight: 700; color: var(--primary); }
+        .search-item:hover span { color: #022c22; }
+
+        @media (max-width: 768px) { 
+            .wrap { padding: 1rem; } 
+            .grid, .reject-grid { grid-template-columns: repeat(2, 1fr) !important; } 
+            .header-row { flex-direction: column; align-items: flex-start; gap: 16px; } 
+            .row { width: 100%; } .btn { flex: 1; } 
+        }
+    </style>
 </head>
 <body>
 
 <div id="loading" class="loading-overlay">
     <div class="spinner"></div>
-    <div style="margin-top:16px; font-weight:600; color:var(--text-muted); letter-spacing:1px;">CONNECTING...</div>
+    <div style="margin-top:16px; font-weight:600; color:var(--primary); letter-spacing:1px;">MENGHUBUNGKAN...</div>
 </div>
 
 <div class="wrap">
+    
+    <div class="bismillah">بسم الله الرحمن الرحيم</div>
+    <div class="slogan">"Insya Allah Memudahkan Pekerjaan & Rezeki Lancar"</div>
+
     <div class="row header-row" style="justify-content:space-between; align-items:center; margin-bottom:32px;">
         <div>
             <h2>Production Dashboard</h2>
             <div class="row" style="align-items:center; gap:8px; margin-top:8px;">
-                <span class="badge">v0.9.14</span>
+                <span class="badge">v0.9.15 (Berkah)</span>
                 <span id="statusDb" style="font-size:0.8rem; color:var(--danger)">Disconnected</span>
             </div>
         </div>
         <div class="row">
-            <button id="btnConfig" class="btn">⚙️ Config</button>
-            <button id="btnRefresh" class="btn">🔄 Refresh</button>
+            <button id="btnConfig" class="btn">Config</button>
+            <button id="btnRefresh" class="btn">Refresh</button>
         </div>
     </div>
 
@@ -125,11 +210,11 @@ tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-
         <div class="row" style="align-items:center; justify-content:space-between;">
             <div class="row">
                 <button id="btnAdd" class="btn primary" style="padding:12px 24px;">+ Input Baru</button>
-                <button id="btnMaster" class="btn">📦 Master Produk</button>
-                <button id="btnRekap" class="btn info">📊 Rekap Line</button>
-                <button id="btnExport" class="btn ok">📥 Export CSV</button>
+                <button id="btnMaster" class="btn">Master Produk</button>
+                <button id="btnRekap" class="btn info">Rekap Line</button>
+                <button id="btnExport" class="btn ok">Export CSV</button>
             </div>
-            <button id="btnClear" class="btn danger" style="margin-left:auto">🗑 Reset Data</button>
+            <button id="btnClear" class="btn danger" style="margin-left:auto">Reset Data</button>
         </div>
     </div>
 
@@ -146,8 +231,8 @@ tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-
     </div>
 
     <div class="card" style="padding:0; overflow:hidden;">
-        <div style="padding: 20px 24px; border-bottom: 1px solid var(--border); display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.02);">
-            <h3 style="font-size:1rem;">Laporan Harian</h3>
+        <div style="padding: 20px 24px; border-bottom: 1px solid var(--border); display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.2);">
+            <h3 style="font-size:1rem; color:var(--primary);">Laporan Harian</h3>
             <span id="rowCount" class="badge">0 data</span>
         </div>
         <div class="table-container" style="border:none; border-radius:0;">
@@ -170,7 +255,7 @@ tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-
 </div>
 
 <div id="mConfig" class="modal"><div class="card" style="max-width:500px">
-    <h3 style="margin-bottom:8px; color:var(--text-main)">Database Setup</h3>
+    <h3 style="margin-bottom:8px; color:var(--primary)">Database Setup</h3>
     <div class="grid">
         <div><div class="muted">Project URL</div><input id="cfgUrl" class="input" /></div>
         <div><div class="muted">Anon Public Key</div><textarea id="cfgKey" class="input" rows="4"></textarea></div>
@@ -181,16 +266,12 @@ tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-
 
 <div id="mRekap" class="modal"><div class="card">
     <div class="row" style="justify-content:space-between; margin-bottom:20px;">
-        <h3 style="color:var(--info)">📊 Rekapitulasi Line</h3>
+        <h3 style="color:var(--primary)">Rekapitulasi Line</h3>
         <button id="mRekapClose" class="btn sm">Tutup</button>
     </div>
     <div class="table-container">
         <table>
-            <thead>
-                <tr>
-                    <th>Line / Mesin</th><th>Produk (Kode)</th><th class="right">Total OK (pcs)</th><th class="right">Total Reject</th><th class="right">Total OK (kg)</th><th class="right">Avg Yield</th>
-                </tr>
-            </thead>
+            <thead><tr><th>Line / Mesin</th><th>Produk (Kode)</th><th class="right">Total OK (pcs)</th><th class="right">Total Reject</th><th class="right">Total OK (kg)</th><th class="right">Avg Yield</th></tr></thead>
             <tbody id="tbodyRekap"></tbody>
         </table>
     </div>
@@ -198,7 +279,7 @@ tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-
 
 <div id="mMaster" class="modal"><div class="card">
     <div class="row" style="justify-content:space-between; margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:16px;">
-        <h3>Master Produk</h3>
+        <h3 style="color:var(--primary)">Master Produk</h3>
         <div class="row">
             <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; background:var(--bg-input); padding:8px 12px; border-radius:8px; cursor:pointer; border:1px solid var(--border);">
                 <input type="checkbox" id="chkAllowDup" style="accent-color:var(--primary)" /> Allow Duplicate
@@ -209,7 +290,7 @@ tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-
             <input type="file" id="fileCsvMaster" accept=".csv" style="display:none;" />
         </div>
     </div>
-    <div style="background:rgba(255,255,255,0.03); padding:20px; border-radius:var(--radius); margin-bottom:24px; border:1px solid var(--border);">
+    <div style="background:rgba(0,0,0,0.2); padding:20px; border-radius:var(--radius); margin-bottom:24px; border:1px solid var(--border);">
         <h4 style="font-size:0.85rem; margin-bottom:16px; color:var(--primary);">TAMBAH / EDIT MANUAL</h4>
         <div class="grid" style="grid-template-columns:repeat(12,1fr)">
             <div style="grid-column:span 2"><div class="muted">Kode</div><input id="mpKode" class="input" placeholder="AUTO..." /></div>
@@ -234,39 +315,38 @@ tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-
             <h3 style="color:var(--primary)">Input Produksi</h3>
             <span id="badgeTipe" class="badge"></span>
         </div>
-        <button id="mEntryClose" class="btn sm">Tutup ✕</button>
+        <button id="mEntryClose" class="btn sm">Tutup X</button>
     </div>
     
     <input type="hidden" id="eId" />
-
+    
     <div class="grid" style="grid-template-columns:repeat(12,1fr)">
         <div style="grid-column:span 2"><div class="muted">Tanggal</div><input id="eTanggal" type="date" class="input" /></div>
         <div style="grid-column:span 2"><div class="muted">Shift</div><select id="eShift" class="input"><option>1</option><option>2</option><option>3</option></select></div>
         <div style="grid-column:span 2"><div class="muted">Line</div><input id="eLine" class="input" placeholder="L..." /></div>
-        
         <div style="grid-column:span 6; position:relative;">
             <div class="muted">Produk (Ketik Kode / Nama)</div>
             <input id="eProduk" class="input" placeholder="Cari..." autocomplete="off" style="border-color:var(--primary)" />
             <div id="produkSuggestions" class="search-list"></div>
         </div>
-        
+
         <div style="grid-column:span 12; height:1px; background:var(--border); margin:8px 0;"></div>
-        
+
         <div style="grid-column:span 2"><div class="muted">Gram</div><input id="eGram" type="number" class="input" step="0.01" readonly style="background:rgba(0,0,0,0.2); color:var(--text-muted);" /></div>
         <div style="grid-column:span 2"><div class="muted">Runner</div><input id="eRunner" type="number" class="input" step="0.01" readonly style="background:rgba(0,0,0,0.2); color:var(--text-muted);" /></div>
         <div style="grid-column:span 2"><div class="muted">Cavity</div><input id="eCavity" type="number" class="input" /></div>
-        <div style="grid-column:span 6"><div class="muted">Counter (Shot)</div><input id="eCounter" type="number" class="input" style="font-weight:bold; font-size:1.1rem;" /></div>
-        
-        <div style="grid-column:span 12; background:rgba(255,255,255,0.03); padding:16px; border-radius:8px; border:1px solid var(--border);">
-            <h4 style="margin:0 0 12px; font-size:0.8rem; color:var(--text-muted);">MATERIAL USAGE (KG)</h4>
+        <div style="grid-column:span 6"><div class="muted">Counter (Shot)</div><input id="eCounter" type="number" class="input" style="font-weight:bold; font-size:1.1rem; border-color:var(--primary);" /></div>
+
+        <div style="grid-column:span 12; background:rgba(0,0,0,0.2); padding:16px; border-radius:8px; border:1px solid var(--border);">
+            <h4 style="margin:0 0 12px; font-size:0.8rem; color:var(--primary);">MATERIAL USAGE (KG)</h4>
             <div class="grid" style="grid-template-columns:repeat(8,1fr)">
                 <div style="grid-column:span 2"><div class="muted">Jatah</div><input id="eJatah" type="number" step="0.01" class="input" /></div>
                 <div style="grid-column:span 2"><div class="muted">Stok Awal</div><input id="eStok" type="number" step="0.01" class="input" /></div>
                 <div style="grid-column:span 2"><div class="muted">Balokan</div><input id="eBalokan" type="number" step="0.01" class="input" /></div>
-                <div style="grid-column:span 2"><div class="muted">Sisa (Auto)</div><input id="eSisaBahan" type="number" readonly class="input" style="background:rgba(0,0,0,0.3); font-weight:bold;" /></div>
+                <div style="grid-column:span 2"><div class="muted">Sisa (Auto)</div><input id="eSisaBahan" type="number" readonly class="input" style="background:rgba(0,0,0,0.3); font-weight:bold; color:var(--primary);" /></div>
             </div>
         </div>
-        
+
         <div style="grid-column:span 6; border-right:1px solid var(--border); padding-right:16px;">
             <div class="muted" style="margin-bottom:8px;"><b>Sisa Sebelum</b></div>
             <div class="grid" style="grid-template-columns:repeat(3,1fr); gap:8px;">
@@ -281,11 +361,11 @@ tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-
                 <input id="eSsdh4" class="input" type="number" step="0.01" /> <input id="eSsdh5" class="input" type="number" step="0.01" /> <input id="eSsdh6" class="input" type="number" step="0.01" />
             </div>
         </div>
-        
+
         <div style="grid-column:span 12; height:1px; background:var(--border); margin:8px 0;"></div>
-        
+
         <div style="grid-column:span 12">
-            <h4 style="margin:0 0 12px; font-size:0.8rem; color:var(--text-muted);">PACKAGING</h4>
+            <h4 style="margin:0 0 12px; font-size:0.8rem; color:var(--primary);">PACKAGING</h4>
             <div class="grid" style="grid-template-columns:repeat(12,1fr)">
                 <div style="grid-column:span 2"><div class="muted">Dus</div><input id="eQtyDus" type="number" class="input" /></div>
                 <div style="grid-column:span 2"><div class="muted">Isi/D</div><input id="eIsiDus" type="number" class="input" readonly style="background:rgba(0,0,0,0.2)" /></div>
@@ -296,30 +376,29 @@ tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-
                 <div style="grid-column:span 12"><div class="muted">Catatan Tambahan</div><input id="eCatatan" class="input" /></div>
             </div>
         </div>
-        
-        <div style="grid-column:span 12" class="card" style="background:rgba(239, 68, 68, 0.1); border:1px solid rgba(239, 68, 68, 0.3); padding:16px;">
-            <h4 style="margin:0 0 12px; color:#fca5a5; font-size:0.9rem;">REJECT DETAIL (PCS)</h4>
+
+        <div style="grid-column:span 12" class="card" style="background:rgba(239, 68, 68, 0.1); border:1px solid var(--danger); padding:16px;">
+            <h4 style="margin:0 0 12px; color:var(--danger); font-size:0.9rem;">REJECT DETAIL (PCS)</h4>
             <div class="reject-grid">
                 <div><div class="reject-label">Uneven Color</div><input id="rUneven" type="number" class="input" /></div>
                 <div><div class="reject-label">Mottled</div><input id="rMottled" type="number" class="input" /></div>
                 <div><div class="reject-label">Start Up</div><input id="rStartup" type="number" class="input" /></div>
                 <div><div class="reject-label">Short Shot</div><input id="rShort" type="number" class="input" /></div>
                 <div><div class="reject-label">Flow Mark</div><input id="rFlow" type="number" class="input" /></div>
-                
                 <div><div class="reject-label">Flashing</div><input id="rFlash" type="number" class="input" /></div>
                 <div><div class="reject-label">Crack</div><input id="rCrack" type="number" class="input" /></div>
                 <div><div class="reject-label">Spot</div><input id="rSpot" type="number" class="input" /></div>
                 <div><div class="reject-label">Scratch</div><input id="rScratch" type="number" class="input" /></div>
                 <div><div class="reject-label">Dirty</div><input id="rDirty" type="number" class="input" /></div>
             </div>
-            <div style="margin-top:12px; border-top:1px dashed rgba(239, 68, 68, 0.3); padding-top:12px;">
-                <div class="muted" style="color:#fca5a5; font-weight:bold;">Total Reject (Auto)</div>
-                <input id="rTotal" type="number" class="input" readonly style="font-weight:bold; font-size:1.1rem; color:#fca5a5; background:rgba(0,0,0,0.3);" />
+            <div style="margin-top:12px; border-top:1px dashed var(--danger); padding-top:12px;">
+                <div class="muted" style="color:var(--danger); font-weight:bold;">Total Reject (Auto)</div>
+                <input id="rTotal" type="number" class="input" readonly style="font-weight:bold; font-size:1.1rem; color:var(--danger); background:rgba(0,0,0,0.3);" />
                 <input id="rMax" type="hidden" />
             </div>
         </div>
-        
-        <div style="grid-column:span 12" class="card" style="background:rgba(16, 185, 129, 0.05); border:1px solid rgba(16, 185, 129, 0.2); padding:20px; margin-bottom:0;">
+
+        <div style="grid-column:span 12" class="card" style="background:rgba(16, 185, 129, 0.05); border:1px solid var(--success); padding:20px; margin-bottom:0;">
             <div class="grid" style="grid-template-columns:repeat(4,1fr); text-align:center;">
                 <div class="stat-box"><div class="muted">Hasil (Pcs)</div><span class="stat-value" id="vHasil" style="color:var(--primary)">0</span></div>
                 <div class="stat-box"><div class="muted">OK (Pcs)</div><span class="stat-value" id="vOkPcs" style="color:var(--success)">0</span></div>
@@ -333,431 +412,466 @@ tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-
                 <div class="stat-box"><div class="muted">Runner (Kg)</div><span class="stat-value" id="vRunnerKg">0.00</span></div>
                 <div class="stat-box"><div class="muted">Sisa Bhn (Kg)</div><span class="stat-value" id="vSisaBahanLabel">0.00</span></div>
             </div>
-            <div id="warnOver" style="color:#fca5a5; background:rgba(239, 68, 68, 0.2); padding:10px; border-radius:8px; margin-top:16px; font-weight:600; display:none; text-align:center; border:1px solid var(--danger);">⚠️ Packaging melebihi Hasil Produksi!</div>
+            
+            <div id="warnOver" style="color:var(--danger); background:rgba(239, 68, 68, 0.2); padding:10px; border-radius:8px; margin-top:16px; font-weight:600; display:none; text-align:center; border:1px solid var(--danger);">⚠ Packaging melebihi Hasil Produksi!</div>
+            
             <button id="btnSaveEntry" class="btn primary" style="width:100%; margin-top:24px; padding:16px; font-size:1rem; letter-spacing:1px;">SIMPAN DATA</button>
         </div>
     </div>
 </div></div>
 
 <script>
-const $ = id => document.getElementById(id);
-const toNum = v => isNaN(+v) ? 0 : +v;
-const uid = () => Math.random().toString(36).slice(2);
-const todayISO = () => new Date().toISOString().slice(0, 10);
+    // --- HELPER FUNCTIONS ---
+    const $ = id => document.getElementById(id);
+    const toNum = v => isNaN(+v) ? 0 : +v;
+    const uid = () => Math.random().toString(36).slice(2);
+    const todayISO = () => new Date().toISOString().slice(0, 10);
 
-let client = null;
-let logs = [];
-let master = [];
+    let client = null;
+    let logs = [];
+    let master = [];
 
-document.addEventListener('DOMContentLoaded', () => {
-    $('btnConfig').onclick = () => $('mConfig').classList.add('open');
-    $('mConfigClose').onclick = () => $('mConfig').classList.remove('open');
-    $('btnSaveConfig').onclick = saveConfig;
-    
-    $('btnRefresh').onclick = refreshData;
-    $('btnClearFilter').onclick = () => { $('fFrom').value=''; $('fTo').value=''; renderTable(); };
-    $('fFrom').onchange = renderTable; $('fTo').onchange = renderTable;
-    $('btnAdd').onclick = () => { $('mEntry').classList.add('open'); resetEntryForm(); };
-    $('mEntryClose').onclick = () => { $('mEntry').classList.remove('open'); };
-    $('btnMaster').onclick = () => { $('mMaster').classList.add('open'); };
-    $('mMasterClose').onclick = () => { $('mMaster').classList.remove('open'); };
-    $('btnExport').onclick = exportCSV;
-    $('btnSaveEntry').onclick = saveEntry;
-    $('mpAdd').onclick = saveMaster;
-    $('btnImportCsv').onclick = () => $('fileCsvMaster').click();
-    $('fileCsvMaster').onchange = importCSV;
-    $('btnClear').onclick = wipeLogs;
-    $('btnWipeMaster').onclick = wipeMaster;
-    $('btnRekap').onclick = showRekap;
-    $('mRekapClose').onclick = () => $('mRekap').classList.remove('open');
+    document.addEventListener('DOMContentLoaded', () => {
+        $('btnConfig').onclick = () => $('mConfig').classList.add('open');
+        $('mConfigClose').onclick = () => $('mConfig').classList.remove('open');
+        $('btnSaveConfig').onclick = saveConfig;
+        $('btnRefresh').onclick = refreshData;
+        $('btnClearFilter').onclick = () => { $('fFrom').value=''; $('fTo').value=''; renderTable(); };
+        $('fFrom').onchange = renderTable; $('fTo').onchange = renderTable;
+        $('btnAdd').onclick = () => { $('mEntry').classList.add('open'); resetEntryForm(); };
+        $('mEntryClose').onclick = () => { $('mEntry').classList.remove('open'); };
+        $('btnMaster').onclick = () => { $('mMaster').classList.add('open'); };
+        $('mMasterClose').onclick = () => { $('mMaster').classList.remove('open'); };
+        $('btnExport').onclick = exportCSV;
+        $('btnSaveEntry').onclick = saveEntry;
+        $('mpAdd').onclick = saveMaster;
+        $('btnImportCsv').onclick = () => $('fileCsvMaster').click();
+        $('fileCsvMaster').onchange = importCSV;
+        $('btnClear').onclick = wipeLogs;
+        $('btnWipeMaster').onclick = wipeMaster;
+        $('btnRekap').onclick = showRekap;
+        $('mRekapClose').onclick = () => $('mRekap').classList.remove('open');
 
-    // === SETUP CUSTOM SEARCH ===
-    setupCustomSearch();
+        // === SETUP SEARCH & AUTO-RECALL ===
+        setupCustomSearch();
+        $('eLine').onchange = autoFillProductByLine;
 
-    // === SETUP AUTO RECALL LINE ===
-    $('eLine').onchange = autoFillProductByLine;
-
-    const rejectInputs = ['rUneven','rMottled','rStartup','rShort','rFlow','rFlash','rCrack','rSpot','rScratch','rDirty'];
-    const calcInputs = ['eCavity','eCounter','eRunner','eJatah','eStok','eBalokan', 
-    'eQtyDus','eQtyBox','eQtyDusPlus','eIsiDusPlus', 
-    'eSblm1','eSblm2','eSblm3','eSblm4','eSblm5','eSblm6',
-    'eSsdh1','eSsdh2','eSsdh3','eSsdh4','eSsdh5','eSsdh6',
-    ...rejectInputs];
-    calcInputs.forEach(id => { const el = $(id); if(el) el.oninput = () => { recalc(); }; });
-
-    const d = new Date();
-    $('eTanggal').value = todayISO(); 
-    $('eShift').value = '1';
-
-    $('fFrom').value = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0,10);
-    $('fTo').value = new Date(d.getFullYear(), d.getMonth()+1, 0).toISOString().slice(0,10);
-
-    const savedUrl = localStorage.getItem('prod_sb_url');
-    const savedKey = localStorage.getItem('prod_sb_key');
-    
-    if(savedUrl && savedKey) { initSupabase(savedUrl, savedKey); } 
-    else { $('mConfig').classList.add('open'); }
-});
-
-// === LOGIC AUTO FILL PRODUCT BY LINE ===
-function autoFillProductByLine() {
-    const lineVal = $('eLine').value.trim();
-    if (!lineVal || logs.length === 0) return;
-
-    // Cari log terakhir yang line-nya sama
-    // Sort logs by date desc to get latest
-    const sortedLogs = [...logs].sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal) || b.id.localeCompare(a.id));
-    const lastLog = sortedLogs.find(r => r.line == lineVal);
-
-    if(lastLog) {
-        // Format: KODE - NAMA
-        const val = lastLog.kode + " - " + lastLog.nama;
-        $('eProduk').value = val;
-        hydrateProduk(); // Isi gram, runner, dll otomatis
-    }
-}
-
-// === LOGIC CUSTOM SEARCH DROPDOWN ===
-function setupCustomSearch() {
-    const input = $('eProduk');
-    const list = $('produkSuggestions');
-
-    input.addEventListener('input', function() {
-        const val = this.value.toLowerCase();
-        if(!val) { list.style.display = 'none'; return; }
+        // CALC TRIGGERS
+        const rejectInputs = ['rUneven', 'rMottled', 'rStartup', 'rShort', 'rFlow', 'rFlash', 'rCrack', 'rSpot', 'rScratch', 'rDirty'];
+        const calcInputs = ['eCavity', 'eCounter', 'eRunner', 'eJatah', 'eStok', 'eBalokan', 
+                            'eQtyDus', 'eQtyBox', 'eQtyDusPlus', 'eIsiDusPlus', 
+                            'eSblm1','eSblm2', 'eSblm3', 'eSblm4', 'eSblm5', 'eSblm6',
+                            'eSsdh1', 'eSsdh2', 'eSsdh3', 'eSsdh4', 'eSsdh5', 'eSsdh6',
+                            ...rejectInputs];
         
-        const matches = master.filter(p => 
-            p.kode.toLowerCase().includes(val) || 
-            p.nama.toLowerCase().includes(val)
-        );
+        calcInputs.forEach(id => { const el = $(id); if(el) el.oninput = () => { recalc(); }; });
 
-        if(matches.length > 0) {
-            list.innerHTML = matches.map(p => {
-                return `<div class="search-item" onclick="selectProduk('${p.kode} - ${p.nama}')">
-                    <span>${p.kode}</span> - ${p.nama}
-                </div>`;
-            }).join('');
-            list.style.display = 'block';
-        } else {
-            list.style.display = 'none';
+        // INIT DATE
+        const d = new Date();
+        $('eTanggal').value = todayISO();
+        $('eShift').value = '1';
+        $('fFrom').value = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0,10);
+        $('fTo').value = new Date(d.getFullYear(), d.getMonth()+1, 0).toISOString().slice(0,10);
+
+        // CHECK DB CONFIG
+        const savedUrl = localStorage.getItem('prod_sb_url');
+        const savedKey = localStorage.getItem('prod_sb_key');
+        if(savedUrl && savedKey) { initSupabase(savedUrl, savedKey); }
+        else { $('mConfig').classList.add('open'); }
+    });
+
+    // === LOGIC AUTO RECALL LINE (v0.9.14 Logic) ===
+    function autoFillProductByLine() {
+        const lineVal = $('eLine').value.trim();
+        if(!lineVal || logs.length === 0) return;
+        
+        // Cari log terakhir dari line ini (Sort descending date)
+        const sortedLogs = [...logs].sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal) || b.id.localeCompare(a.id));
+        const lastLog = sortedLogs.find(r => r.line == lineVal);
+        
+        if(lastLog) {
+            const val = lastLog.kode + " - " + lastLog.nama;
+            $('eProduk').value = val;
+            hydrateProduk();
         }
-    });
-
-    document.addEventListener('click', function(e) {
-        if (e.target !== input && e.target !== list) {
-            list.style.display = 'none';
-        }
-    });
-}
-
-window.selectProduk = (val) => {
-    $('eProduk').value = val;
-    $('produkSuggestions').style.display = 'none';
-    hydrateProduk(); 
-};
-
-function saveConfig() {
-    const url = $('cfgUrl').value.trim();
-    const key = $('cfgKey').value.trim();
-    if(!url || !key) return alert("Isi lengkap bro!");
-    localStorage.setItem('prod_sb_url', url);
-    localStorage.setItem('prod_sb_key', key);
-    initSupabase(url, key);
-    $('mConfig').classList.remove('open');
-}
-
-function initSupabase(url, key) {
-    try {
-        if(typeof supabase === 'undefined') throw new Error("Library Supabase Error.");
-        client = supabase.createClient(url, key);
-        $('statusDb').innerText = "ONLINE";
-        $('statusDb').style.color = "var(--success)";
-        refreshData();
-    } catch(e) {
-        alert("Gagal konek: " + e.message);
-        $('statusDb').innerText = "ERROR";
-        $('mConfig').classList.add('open');
     }
-}
 
-async function refreshData() {
-    if(!client) return;
-    $('loading').style.display = 'flex';
-    const { data: mData, error: mErr } = await client.from('master').select('*');
-    if(mErr) { $('loading').style.display='none'; return alert('Gagal Master: ' + mErr.message); }
-    master = mData || [];
-    master.sort((a,b) => (a.kode || '').localeCompare(b.kode || ''));
+    // === CUSTOM SEARCH DROPDOWN ===
+    function setupCustomSearch() {
+        const input = $('eProduk');
+        const list = $('produkSuggestions');
+        
+        input.addEventListener('input', function() {
+            const val = this.value.toLowerCase();
+            if(!val) { list.style.display = 'none'; return; }
+            
+            const matches = master.filter(p => p.kode.toLowerCase().includes(val) || p.nama.toLowerCase().includes(val));
+            if(matches.length > 0) {
+                list.innerHTML = matches.map(p => {
+                    return `<div class="search-item" onclick="selectProduk('${p.kode} - ${p.nama}')">
+                                <span>${p.kode}</span> - ${p.nama}
+                            </div>`;
+                }).join('');
+                list.style.display = 'block';
+            } else {
+                list.style.display = 'none';
+            }
+        });
 
-    const { data: lData, error: lErr } = await client.from('logs').select('*');
-    if(lErr) { $('loading').style.display='none'; return alert('Gagal Logs: ' + lErr.message); }
-    logs = lData || [];
-    renderTable(); renderMaster(); 
-    $('loading').style.display = 'none';
-}
-
-function showRekap() {
-    const qFrom = $('fFrom').value, qTo = $('fTo').value;
-    const from = qFrom ? new Date(qFrom) : null; const to = qTo ? new Date(qTo) : null;
-    const filtered = logs.filter(r => {
-        const d = new Date(r.tanggal);
-        return (from ? d >= from : true) && (to ? d <= to : true);
-    });
-    if(filtered.length === 0) return alert("Data kosong di rentang ini.");
-    
-    const groups = {};
-    filtered.forEach(r => {
-        const key = r.line + "|||" + r.kode + "|||" + r.nama;
-        if(!groups[key]) groups[key] = { line: r.line, kode: r.kode, nama: r.nama, okpcs: 0, reject: 0, okkg: 0, yieldTotal: 0, count: 0 };
-        groups[key].okpcs += (+r.okpcs || 0);
-        groups[key].reject += (+r.reject || 0);
-        groups[key].okkg += (+r.okkg || 0);
-        groups[key].yieldTotal += (+r.yieldpct || 0);
-        groups[key].count++;
-    });
-
-    const tbody = $('tbodyRekap'); tbody.innerHTML = '';
-    const sortedKeys = Object.keys(groups).sort((a, b) => {
-        const lineA = groups[a].line.toString();
-        const lineB = groups[b].line.toString();
-        return lineA.localeCompare(lineB, undefined, {numeric: true, sensitivity: 'base'});
-    });
-
-    sortedKeys.forEach(key => {
-        const g = groups[key];
-        const avgYield = g.count > 0 ? (g.yieldTotal / g.count) : 0;
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${g.line}</td><td style="line-height:1.2"><span style="color:var(--primary); font-weight:700; font-size:0.85rem">${g.kode}</span><br><span style="font-weight:600; color:var(--text-main)">${g.nama}</span></td><td class="right text-ok"><b>${g.okpcs.toLocaleString()}</b></td><td class="right text-danger">${g.reject.toLocaleString()}</td><td class="right">${g.okkg.toFixed(2)}</td><td class="right"><b>${avgYield.toFixed(2)}%</b></td>`;
-        tbody.appendChild(tr);
-    });
-    $('mRekap').classList.add('open');
-}
-
-function resetEntryForm() {
-    const fields = ['eLine', 'eProduk', 'eGram', 'eRunner', 'eCavity', 'eCounter', 'eJatah', 'eStok', 'eBalokan', 'eSisaBahan', 'eSblm1', 'eSblm2', 'eSblm3', 'eSblm4', 'eSblm5', 'eSblm6', 'eSsdh1', 'eSsdh2', 'eSsdh3', 'eSsdh4', 'eSsdh5', 'eSsdh6', 'eQtyDus', 'eIsiDus', 'eQtyBox', 'eIsiBox', 'eQtyDusPlus', 'eIsiDusPlus', 'eCatatan', 'rUneven','rMottled','rStartup','rShort','rFlow','rFlash','rCrack','rSpot','rScratch','rDirty', 'rTotal', 'rMax'];
-    fields.forEach(id => { if($(id)) $(id).value = ''; });
-    $('eId').value = '';
-    ['vHasil','vOkPcs','vRejectPcs','vYield','vOkKg','vRejectKg','vRunnerKg','vSisaBahanLabel'].forEach(id=>$(id).innerText='0');
-    $('badgeTipe').innerText=''; $('warnOver').style.display='none';
-}
-
-window.editLog = (id) => {
-    const r = logs.find(x => x.id === id);
-    if(!r) return;
-    $('eId').value = r.id;
-    $('eTanggal').value = r.tanggal;
-    $('eShift').value = r.shift;
-    $('eLine').value = r.line;
-    $('eProduk').value = r.kode + " - " + r.nama; 
-    hydrateProduk(); 
-    $('eCounter').value = r.counter;
-    $('eCavity').value = r.cavity;
-    $('eQtyDus').value = r.qty_dus || ''; $('eIsiDus').value = r.isi_dus || '';
-    $('eQtyBox').value = r.qty_box || ''; $('eIsiBox').value = r.isi_box || '';
-    $('eQtyDusPlus').value = r.qty_dus_plus || ''; $('eIsiDusPlus').value = r.isi_dus_plus || '';
-    $('eCatatan').value = r.catatan || '';
-    $('rUneven').value = r.reject_uneven || ''; $('rMottled').value = r.reject_mottled || '';
-    $('rStartup').value = r.reject_startup || ''; $('rShort').value = r.reject_short || '';
-    $('rFlow').value = r.reject_flow || ''; $('rFlash').value = r.reject_flashing || '';
-    $('rCrack').value = r.reject_crack || ''; $('rSpot').value = r.reject_spot || '';
-    $('rScratch').value = r.reject_scratch || ''; $('rDirty').value = r.reject_dirty || '';
-    recalc();
-    $('mEntry').classList.add('open');
-};
-
-function hydrateProduk(){
-    const val = $('eProduk').value;
-    const p = master.find(x => (x.kode + " - " + x.nama) === val);
-    if(p) {
-        $('eGram').value = p.gram; $('eRunner').value = p.runner; $('eCavity').value = p.cavity;
-        $('eIsiDus').value = p.per_dus; $('eIsiBox').value = p.per_box;
-        $('badgeTipe').innerText = (p.tipe === 'kg_sisa') ? 'Mode KG' : 'Mode PCS';
-        recalc();
+        document.addEventListener('click', function(e) {
+            if (e.target !== input && e.target !== list) {
+                list.style.display = 'none';
+            }
+        });
     }
-}
 
-function recalc(){
-    const p = compute();
-    $('vHasil').innerText = p.hasil.toFixed(0); $('vOkPcs').innerText = p.okpcs.toFixed(0);
-    $('vRejectPcs').innerText = p.rejectpcs.toFixed(0); $('eSisaBahan').value = p.sisaBahan.toFixed(2);
-    $('vYield').innerText = p.yieldpct.toFixed(2) + "%"; $('vOkKg').innerText = p.okkg.toFixed(2);
-    $('vRejectKg').innerText = p.rejectkg.toFixed(2); $('vRunnerKg').innerText = p.runnerkg.toFixed(2);
-    $('vSisaBahanLabel').innerText = p.sisaBahan.toFixed(2);
-    $('rTotal').value = p.rtotal; 
-    $('warnOver').style.display = p.overpack ? 'block' : 'none';
-}
-
-function compute(){
-    const prodNameFull = $('eProduk').value; 
-    const prod = master.find(p => (p.kode + " - " + p.nama) === prodNameFull);
-    const gram = toNum($('eGram').value); const tipe = $('badgeTipe').innerText.includes('KG') ? 'kg_sisa' : 'pcs';
-    const cav = Math.max(1, toNum($('eCavity').value)); const counter = toNum($('eCounter').value);
-    
-    let sblm_disp = sum(['eSblm1','eSblm2','eSblm3','eSblm4','eSblm5','eSblm6']);
-    let ssdh_disp = sum(['eSsdh1','eSsdh2','eSsdh3','eSsdh4','eSsdh5','eSsdh6']);
-    let sblm_pcs = sblm_disp, ssdh_pcs = ssdh_disp;
-    if(tipe === 'kg_sisa'){ const conv = gram > 0 ? (1000/gram) : 0; sblm_pcs = sblm_disp * conv; ssdh_pcs = ssdh_disp * conv; }
-
-    const qtyDus = toNum($('eQtyDus').value), isiDus = toNum($('eIsiDus').value);
-    const qtyBox = toNum($('eQtyBox').value), isiBox = toNum($('eIsiBox').value);
-    const qtyDusPlus = toNum($('eQtyDusPlus').value), isiDusPlus = toNum($('eIsiDusPlus').value);
-    const packpcs = (qtyDus*isiDus) + (qtyBox*isiBox) + (qtyDusPlus*isiDusPlus);
-
-    const okpcs = packpcs - sblm_pcs + ssdh_pcs;
-    const produksi = counter * cav;
-    const hasil = produksi + sblm_pcs - ssdh_pcs;
-    const rejectpcs = produksi - okpcs;
-
-    const okkg = (okpcs * gram) / 1000; const rejectkg = (rejectpcs * gram) / 1000;
-    const runnerkg = (counter * toNum($('eRunner').value)) / 1000;
-
-    const jatah = toNum($('eJatah').value); const stok = toNum($('eStok').value);
-    const balok = toNum($('eBalokan').value);
-    const sisaBahan = (jatah + stok) - (runnerkg + rejectkg + okkg + balok);
-
-    const yieldpct = hasil > 0 ? (okpcs / hasil) * 100 : 0;
-    const overpack = packpcs > hasil;
-    
-    let rIds = ['rUneven','rMottled','rStartup','rShort','rFlow','rFlash','rCrack','rSpot','rScratch','rDirty'];
-    let rTotalInput = sum(rIds);
-    let rMax = Math.max(...rIds.map(id=>toNum($(id).value)));
-    $('rTotal').value = rTotalInput; $('rMax').value = rMax;
-
-    return { prod, tipe, gram, cav, counter, sblm_pcs, ssdh_pcs, hasil, okpcs, okkg, rejectpcs, rejectkg, runnerkg, yieldpct, sisaBahan, overpack, packpcs, rtotal: rTotalInput, rmax: rMax };
-}
-
-async function saveEntry() {
-    if(!client) return alert("Database Belum Konek!");
-    const p = compute(); if(!p.prod) return alert("Pilih produk valid");
-    $('loading').style.display='flex';
-    
-    const existingId = $('eId').value;
-    const targetId = existingId || uid(); 
-    
-    const { error } = await client.from('logs').upsert({
-        id: targetId, 
-        tanggal: $('eTanggal').value, shift: $('eShift').value, line: $('eLine').value,
-        kode: p.prod.kode, nama: p.prod.nama, tipe: p.tipe,
-        gram: p.gram, runner: toNum($('eRunner').value), cavity: p.cav, counter: p.counter,
-        sisa_sblm: p.sblm_pcs, sisa_ssdh: p.ssdh_pcs, 
-        hasil: p.hasil, okpcs: p.okpcs, okkg: p.okkg,
-        reject: p.rejectpcs, rejectkg: p.rejectkg, runnerkg: p.runnerkg, 
-        sisa_bahan: p.sisaBahan, yieldpct: p.yieldpct,
-        qty_dus: toNum($('eQtyDus').value), isi_dus: toNum($('eIsiDus').value),
-        qty_box: toNum($('eQtyBox').value), isi_box: toNum($('eIsiBox').value),
-        qty_dus_plus: toNum($('eQtyDusPlus').value), isi_dus_plus: toNum($('eIsiDusPlus').value),
-        catatan: $('eCatatan').value,
-        reject_uneven: toNum($('rUneven').value), reject_mottled: toNum($('rMottled').value),
-        reject_startup: toNum($('rStartup').value), reject_short: toNum($('rShort').value),
-        reject_flow: toNum($('rFlow').value), reject_flashing: toNum($('rFlash').value),
-        reject_crack: toNum($('rCrack').value), reject_spot: toNum($('rSpot').value),
-        reject_scratch: toNum($('rScratch').value), reject_dirty: toNum($('rDirty').value),
-        reject_total_kecil: toNum($('rTotal').value), reject_max: toNum($('rMax').value)
-    });
-    $('loading').style.display='none';
-    if(error) alert('Error Save: ' + error.message); else { alert('✅ Tersimpan!'); resetEntryForm(); refreshData(); }
-}
-
-async function saveMaster() {
-    if(!client) return alert("Database Belum Konek!");
-    const kode=$('mpKode').value.trim(); const nama=$('mpNama').value.trim();
-    if(!kode) return alert("Isi Kode");
-    
-    const allow = $('chkAllowDup').checked;
-    if(!allow) { 
-        const exist = master.find(m => m.kode.toLowerCase() === kode.toLowerCase() && m.nama.toLowerCase() === nama.toLowerCase()); 
-        if(exist && !confirm("Produk dengan Kode & Nama ini sudah ada. Update?")) return; 
-    }
-    
-    $('loading').style.display='flex';
-    let targetID = uid();
-    const exist = master.find(m => m.kode.toLowerCase() === kode.toLowerCase() && m.nama.toLowerCase() === nama.toLowerCase());
-    if(exist) targetID = exist.id;
-
-    const { error } = await client.from('master').upsert({
-        id: targetID, kode: kode, nama: nama, tipe: $('mpTipe').value,
-        gram: toNum($('mpGram').value), runner: toNum($('mpRunner').value),
-        cavity: toNum($('mpCavity').value), per_dus: toNum($('mpPerDus').value), per_box: toNum($('mpPerBox').value)
-    });
-    $('loading').style.display='none';
-    if(error) alert(error.message); else { refreshData(); ['mpKode','mpNama','mpGram','mpRunner','mpCavity','mpPerDus','mpPerBox'].forEach(id=>$(id).value=''); }
-}
-
-window.deleteLog = async (id) => { if(!confirm("Hapus?")) return; $('loading').style.display='flex'; const { error } = await client.from('logs').delete().eq('id', id); $('loading').style.display='none'; if(!error) refreshData(); };
-window.deleteMaster = async (id) => { if(!confirm("Hapus Master?")) return; $('loading').style.display='flex'; const { error } = await client.from('master').delete().eq('id', id); $('loading').style.display='none'; if(!error) refreshData(); };
-window.editMaster = (idx) => { const p = master[idx]; $('mpKode').value = p.kode; $('mpNama').value = p.nama; $('mpTipe').value = p.tipe; $('mpGram').value = p.gram; $('mpRunner').value = p.runner; $('mpCavity').value = p.cavity; $('mpPerDus').value = p.per_dus; $('mpPerBox').value = p.per_box; };
-async function wipeLogs() { if(!confirm('HAPUS SEMUA DATA LAPORAN?')) return; $('loading').style.display='flex'; const { error } = await client.from('logs').delete().neq('id','0'); $('loading').style.display='none'; refreshData(); }
-async function wipeMaster() { if(!confirm('YAKIN HAPUS SEMUA MASTER PRODUK?')) return; $('loading').style.display='flex'; const { error } = await client.from('master').delete().neq('id','0'); $('loading').style.display='none'; refreshData(); }
-
-// --- UPDATED IMPORT CSV FUNCTION (SMART IMPORT) ---
-function importCSV(e) {
-    if(!client) return alert("Database Belum Konek!");
-    const file = e.target.files[0]; if(!file) return;
-    const reader = new FileReader();
-    reader.onload = async (evt) => {
-        const lines = evt.target.result.split(/\r?\n/).filter(l => l.trim() !== '');
-        if(lines.length < 2) return alert('CSV Salah');
-        const delim = lines[0].split(';').length > lines[0].split(',').length ? ';' : ',';
-        const headers = lines[0].toLowerCase().split(delim).map(h=>h.trim().replace(/"/g,''));
-        const idx = { 
-            kode: headers.findIndex(h=>h.includes('kode')), 
-            nama: headers.findIndex(h=>h.includes('nama') || h.includes('product')), 
-            gram: headers.findIndex(h=>h.includes('gram') || h.includes('berat satuan')), 
-            runner: headers.findIndex(h=>h.includes('runner') || h.includes('berat runner')), 
-            cavity: headers.findIndex(h=>h.includes('cav')), 
-            dus: headers.findIndex(h=>h.includes('dus') || h.includes('doos')), 
-            box: headers.findIndex(h=>h.includes('box')), 
-            tipe: headers.findIndex(h=>h.includes('tipe')) 
-        };
-        if(idx.nama < 0) return alert('Header Nama Produk tidak ketemu');
-        const autoSplitKode = (idx.kode < 0);
-        $('loading').style.display='flex';
-        let rows = [];
-        for(let i=1; i<lines.length; i++){
-            const cols = lines[i].split(delim).map(c=>c.trim().replace(/"/g,''));
-            if(cols.length < 2) continue;
-            let kodeVal = '', namaVal = '';
-            if(autoSplitKode) {
-                const rawName = cols[idx.nama];
-                const firstSpace = rawName.indexOf(' ');
-                if(firstSpace > 0) { kodeVal = rawName.substring(0, firstSpace).trim(); namaVal = rawName.substring(firstSpace + 1).trim(); } 
-                else { kodeVal = rawName; namaVal = rawName; }
-            } else { kodeVal = cols[idx.kode]; namaVal = cols[idx.nama] || kodeVal; }
-            const cleanNum = (val) => { if(!val || val === '-') return 0; return toNum(val.replace(',','.')); };
-            let targetID = uid();
-            const allowDup = $('chkAllowDup').checked;
-            const exist = allowDup ? null : master.find(m => m.kode.toLowerCase() === kodeVal.toLowerCase() && m.nama.toLowerCase() === namaVal.toLowerCase());
-            if(exist) targetID = exist.id;
-            rows.push({ id: targetID, kode: kodeVal, nama: namaVal, tipe: (idx.tipe >= 0 ? cols[idx.tipe] : 'pcs'), gram: (idx.gram >= 0 ? cleanNum(cols[idx.gram]) : 0), runner: (idx.runner >= 0 ? cleanNum(cols[idx.runner]) : 0), cavity: (idx.cavity >= 0 ? cleanNum(cols[idx.cavity]) : 1), per_dus: (idx.dus >= 0 ? cleanNum(cols[idx.dus]) : 0), per_box: (idx.box >= 0 ? cleanNum(cols[idx.box]) : 0) });
-        }
-        const { error } = await client.from('master').upsert(rows);
-        $('loading').style.display='none';
-        if(error) alert('Error Import: '+error.message); else { alert('Import Sukses!'); refreshData(); }
-        $('fileCsvMaster').value='';
+    window.selectProduk = (val) => {
+        $('eProduk').value = val;
+        $('produkSuggestions').style.display = 'none';
+        hydrateProduk(); 
     };
-    reader.readAsText(file);
-}
 
-function renderMaster() { const t = $('mpBody'); t.innerHTML = ''; master.forEach((p, idx) => { const tr = document.createElement('tr'); tr.innerHTML = `<td>${p.kode}</td><td>${p.nama}</td><td>${p.tipe}</td><td class="right">${p.gram}</td><td class="right">${p.runner}</td><td class="right">${p.cavity}</td><td class="right">${p.per_dus}</td><td style="text-align:center"><button class="btn sm" onclick="editMaster(${idx})">✏️</button> <button class="btn sm danger" onclick="deleteMaster('${p.id}')">🗑️</button></td>`; t.appendChild(tr); }); }
-function renderTable() { 
-    const t = $('tbody'); t.innerHTML = ''; 
-    const qFrom = $('fFrom').value, qTo = $('fTo').value; 
-    const from = qFrom ? new Date(qFrom) : null; const to = qTo ? new Date(qTo) : null; 
-    const qProd = $('fProduk').value.toLowerCase(); 
-    const filtered = logs.filter(r => { 
-        const d = new Date(r.tanggal); 
-        return (from ? d >= from : true) && (to ? d <= to : true) && (qProd ? r.nama.toLowerCase().includes(qProd) : true); 
-    }); 
-    $('rowCount').textContent = filtered.length + " data"; 
-    filtered.forEach(r => { 
-        const tr = document.createElement('tr'); 
-        tr.innerHTML = `<td>${r.tanggal}</td><td>${r.shift}</td><td>${r.line}</td><td><b>${r.nama}</b><br><small>${r.kode}</small></td><td>${r.tipe}</td><td class="right">${r.counter}</td><td class="right">${r.cavity}</td><td class="right">${r.qty_dus}</td><td class="right">${r.qty_box}</td><td class="right text-ok"><b>${(+r.okpcs).toLocaleString()}</b></td><td class="right">${(+r.okkg).toFixed(2)}</td><td class="right text-danger">${(+r.reject).toLocaleString()}</td><td class="right">${(+r.sisa_bahan).toFixed(2)}</td><td class="right"><b>${(+r.yieldpct).toFixed(2)}%</b></td><td class="right">${r.reject_max}</td><td style="text-align:center; white-space:nowrap;"><button class="btn sm info" onclick="editLog('${r.id}')" style="margin-right:4px;">Edit</button><button class="btn sm danger" onclick="deleteLog('${r.id}')">Hapus</button></td>`; 
-        t.appendChild(tr); 
-    }); 
-}
+    // === DATABASE & LOGIC ===
+    function saveConfig() {
+        const url = $('cfgUrl').value.trim();
+        const key = $('cfgKey').value.trim();
+        if(!url || !key) return alert("Isi lengkap bro!");
+        localStorage.setItem('prod_sb_url', url);
+        localStorage.setItem('prod_sb_key', key);
+        initSupabase(url, key);
+        $('mConfig').classList.remove('open');
+    }
 
-function seedProdukList() { const l = $('produkList'); l.innerHTML = ''; master.forEach(p => { const opt = document.createElement('option'); opt.value = p.kode + " — " + p.nama; l.appendChild(opt); }); }
-function exportCSV() { const qFrom = $('fFrom').value; const qTo = $('fTo').value; const from = qFrom ? new Date(qFrom) : null; const to = qTo ? new Date(qTo) : null; const filtered = logs.filter(r => { const d = new Date(r.tanggal); return (from ? d >= from : true) && (to ? d <= to : true); }); if(filtered.length === 0) return alert("Data kosong"); const header = Object.keys(filtered[0]).join(","); const csv = [header].concat(filtered.map(row => Object.values(row).map(v => `"${v}"`).join(","))).join("\n"); const blob = new Blob([csv], { type: 'text/csv' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'Laporan.csv'; a.click(); }
-function sum(ids){ return ids.map(id=>toNum($(id).value)).reduce((a,b)=>a+b,0); }
+    function initSupabase(url, key) {
+        try {
+            if(typeof supabase === 'undefined') throw new Error("Library Supabase Error.");
+            client = supabase.createClient(url, key);
+            $('statusDb').innerText = "ONLINE";
+            $('statusDb').style.color = "var(--success)";
+            refreshData();
+        } catch(e) {
+            alert("Gagal konek: " + e.message);
+            $('statusDb').innerText = "ERROR";
+            $('mConfig').classList.add('open');
+        }
+    }
+
+    async function refreshData() {
+        if(!client) return;
+        $('loading').style.display = 'flex';
+        
+        const { data: mData, error: mErr } = await client.from('master').select('*');
+        if(mErr) { $('loading').style.display='none'; return alert('Gagal Master: ' + mErr.message); }
+        master = mData || [];
+        master.sort((a,b) => (a.kode || '').localeCompare(b.kode || ''));
+
+        const { data: lData, error: lErr } = await client.from('logs').select('*');
+        if(lErr) { $('loading').style.display='none'; return alert('Gagal Logs: ' + lErr.message); }
+        logs = lData || [];
+        
+        renderTable(); 
+        renderMaster();
+        $('loading').style.display = 'none';
+    }
+
+    function resetEntryForm() {
+        const fields = ['eLine', 'eProduk', 'eGram', 'eRunner', 'eCavity', 'eCounter', 'eJatah', 'eStok', 'eBalokan', 'eSisaBahan', 'eSblm1', 'eSblm2', 'eSblm3', 'eSblm4', 'eSblm5', 'eSblm6', 'eSsdh1', 'eSsdh2', 'eSsdh3', 'eSsdh4', 'eSsdh5', 'eSsdh6', 'eQtyDus', 'eIsiDus', 'eQtyBox', 'eIsiBox', 'eQtyDusPlus', 'eIsiDusPlus', 'eCatatan', 'rUneven', 'rMottled', 'rStartup', 'rShort', 'rFlow', 'rFlash', 'rCrack', 'rSpot', 'rScratch', 'rDirty', 'rTotal', 'rMax'];
+        fields.forEach(id => { if($(id)) $(id).value = ''; });
+        $('eId').value = '';
+        ['vHasil', 'vOkPcs', 'vRejectPcs', 'vYield', 'vOkKg', 'vRejectKg', 'vRunnerKg', 'vSisaBahanLabel'].forEach(id => $(id).innerText='0');
+        $('badgeTipe').innerText=''; $('warnOver').style.display='none';
+    }
+
+    function hydrateProduk(){
+        const val = $('eProduk').value;
+        const p = master.find(x => (x.kode + " - " + x.nama) === val);
+        if(p) {
+            $('eGram').value = p.gram; $('eRunner').value = p.runner; $('eCavity').value = p.cavity;
+            $('eIsiDus').value = p.per_dus; $('eIsiBox').value = p.per_box;
+            $('badgeTipe').innerText = (p.tipe === 'kg_sisa') ? 'Mode KG' : 'Mode PCS';
+            recalc();
+        }
+    }
+
+    function recalc(){
+        const p = compute();
+        $('vHasil').innerText = p.hasil.toFixed(0); $('vOkPcs').innerText = p.okpcs.toFixed(0);
+        $('vRejectPcs').innerText = p.rejectpcs.toFixed(0); $('eSisaBahan').value = p.sisaBahan.toFixed(2);
+        $('vYield').innerText = p.yieldpct.toFixed(2) + "%"; $('vOkKg').innerText = p.okkg.toFixed(2);
+        $('vRejectKg').innerText = p.rejectkg.toFixed(2); $('vRunnerKg').innerText = p.runnerkg.toFixed(2);
+        $('vSisaBahanLabel').innerText = p.sisaBahan.toFixed(2);
+        $('rTotal').value = p.rtotal;
+        $('warnOver').style.display = p.overpack ? 'block' : 'none';
+    }
+
+    function sum(ids){ return ids.map(id => toNum($(id).value)).reduce((a,b)=>a+b,0); }
+
+    function compute(){
+        const prodNameFull = $('eProduk').value;
+        const prod = master.find(p => (p.kode + " - " + p.nama) === prodNameFull);
+        const gram = toNum($('eGram').value); 
+        const tipe = $('badgeTipe').innerText.includes('KG') ? 'kg_sisa' : 'pcs';
+        
+        const cav = Math.max(1, toNum($('eCavity').value)); 
+        const counter = toNum($('eCounter').value);
+        
+        let sblm_disp = sum(['eSblm1','eSblm2','eSblm3','eSblm4','eSblm5','eSblm6']);
+        let ssdh_disp = sum(['eSsdh1','eSsdh2','eSsdh3','eSsdh4','eSsdh5','eSsdh6']);
+        
+        let sblm_pcs = sblm_disp, ssdh_pcs = ssdh_disp;
+        if(tipe === 'kg_sisa'){ 
+            const conv = gram > 0 ? (1000/gram) : 0; 
+            sblm_pcs = sblm_disp * conv; ssdh_pcs = ssdh_disp * conv; 
+        }
+
+        const qtyDus = toNum($('eQtyDus').value), isiDus = toNum($('eIsiDus').value);
+        const qtyBox = toNum($('eQtyBox').value), isiBox = toNum($('eIsiBox').value);
+        const qtyDusPlus = toNum($('eQtyDusPlus').value), isiDusPlus = toNum($('eIsiDusPlus').value);
+        
+        const packpcs = (qtyDus*isiDus) + (qtyBox*isiBox) + (qtyDusPlus*isiDusPlus);
+        const okpcs = packpcs - sblm_pcs + ssdh_pcs;
+        const produksi = counter * cav; 
+        const hasil = produksi + sblm_pcs - ssdh_pcs;
+        const rejectpcs = produksi - okpcs;
+        
+        const okkg = (okpcs * gram)/1000; 
+        const rejectkg = (rejectpcs * gram)/1000;
+        const runnerkg = (counter * toNum($('eRunner').value)) / 1000;
+        
+        const jatah = toNum($('eJatah').value); 
+        const stok = toNum($('eStok').value);
+        const balok = toNum($('eBalokan').value);
+        
+        const sisaBahan = (jatah + stok) - (runnerkg + rejectkg + okkg + balok);
+        const yieldpct = hasil > 0 ? (okpcs / hasil) * 100 : 0;
+        const overpack = packpcs > hasil;
+
+        let rIds = ['rUneven', 'rMottled', 'rStartup', 'rShort', 'rFlow', 'rFlash', 'rCrack', 'rSpot', 'rScratch', 'rDirty'];
+        let rTotalInput = sum(rIds);
+        let rMax = Math.max(...rIds.map(id => toNum($(id).value)));
+
+        return { prod, tipe, gram, cav, counter, sblm_pcs, ssdh_pcs, hasil, okpcs, okkg, rejectpcs, rejectkg, runnerkg, yieldpct, sisaBahan, overpack, packpcs, rtotal: rTotalInput, rmax: rMax };
+    }
+
+    async function saveEntry() {
+        if(!client) return alert("Database Belum Konek!");
+        const p = compute(); 
+        if(!p.prod) return alert("Pilih produk valid");
+        
+        $('loading').style.display='flex';
+        const existingId = $('eId').value;
+        const targetId = existingId || uid();
+        
+        const { error } = await client.from('logs').upsert({
+            id: targetId,
+            tanggal: $('eTanggal').value, shift: $('eShift').value, line: $('eLine').value,
+            kode: p.prod.kode, nama: p.prod.nama, tipe: p.tipe,
+            gram: p.gram, runner: toNum($('eRunner').value), cavity: p.cav, counter: p.counter,
+            sisa_sblm: p.sblm_pcs, sisa_ssdh: p.ssdh_pcs,
+            hasil: p.hasil, okpcs: p.okpcs, okkg: p.okkg,
+            reject: p.rejectpcs, rejectkg: p.rejectkg, runnerkg: p.runnerkg,
+            sisa_bahan: p.sisaBahan, yieldpct: p.yieldpct,
+            qty_dus: toNum($('eQtyDus').value), isi_dus: toNum($('eIsiDus').value),
+            qty_box: toNum($('eQtyBox').value), isi_box: toNum($('eIsiBox').value),
+            qty_dus_plus: toNum($('eQtyDusPlus').value), isi_dus_plus: toNum($('eIsiDusPlus').value),
+            catatan: $('eCatatan').value,
+            reject_uneven: toNum($('rUneven').value), reject_mottled: toNum($('rMottled').value),
+            reject_startup: toNum($('rStartup').value), reject_short: toNum($('rShort').value),
+            reject_flow: toNum($('rFlow').value), reject_flashing: toNum($('rFlash').value),
+            reject_crack: toNum($('rCrack').value), reject_spot: toNum($('rSpot').value),
+            reject_scratch: toNum($('rScratch').value), reject_dirty: toNum($('rDirty').value),
+            reject_total_kecil: toNum($('rTotal').value), reject_max: toNum($('rMax').value)
+        });
+        
+        $('loading').style.display='none';
+        if(error) alert('Error Save: ' + error.message); 
+        else { alert('Alhamdulillah Tersimpan!'); resetEntryForm(); refreshData(); }
+    }
+
+    async function saveMaster() {
+        if(!client) return alert("Database Belum Konek!");
+        const kode = $('mpKode').value.trim(); const nama = $('mpNama').value.trim();
+        if(!kode) return alert("Isi Kode");
+        
+        const allow = $('chkAllowDup').checked;
+        if(!allow) {
+            const exist = master.find(m => m.kode.toLowerCase() === kode.toLowerCase() && m.nama.toLowerCase() === nama.toLowerCase());
+            if(exist && !confirm("Produk sudah ada. Update?")) return;
+        }
+
+        $('loading').style.display='flex';
+        let targetID = uid();
+        const exist = master.find(m => m.kode.toLowerCase() === kode.toLowerCase() && m.nama.toLowerCase() === nama.toLowerCase());
+        if(exist) targetID = exist.id;
+
+        const { error } = await client.from('master').upsert({
+            id: targetID, kode: kode, nama: nama, tipe: $('mpTipe').value,
+            gram: toNum($('mpGram').value), runner: toNum($('mpRunner').value),
+            cavity: toNum($('mpCavity').value), per_dus: toNum($('mpPerDus').value), per_box: toNum($('mpPerBox').value)
+        });
+
+        $('loading').style.display='none';
+        if(error) alert(error.message); else { refreshData(); ['mpKode','mpNama','mpGram','mpRunner','mpCavity','mpPerDus','mpPerBox'].forEach(id => $(id).value=''); }
+    }
+
+    window.deleteLog = async (id) => { if(!confirm("Hapus?")) return; $('loading').style.display='flex'; const { error } = await client.from('logs').delete().eq('id', id); $('loading').style.display='none'; if(!error) refreshData(); };
+    window.deleteMaster = async (id) => { if(!confirm("Hapus Master?")) return; $('loading').style.display='flex'; const { error } = await client.from('master').delete().eq('id', id); $('loading').style.display='none'; if(!error) refreshData(); };
+    
+    window.editLog = (id) => {
+        const r = logs.find(x => x.id === id); if(!r) return;
+        $('eId').value = r.id; $('eTanggal').value = r.tanggal; $('eShift').value = r.shift; $('eLine').value = r.line;
+        $('eProduk').value = r.kode + " - " + r.nama; hydrateProduk();
+        $('eCounter').value = r.counter; $('eCavity').value = r.cavity;
+        $('eQtyDus').value = r.qty_dus||''; $('eIsiDus').value = r.isi_dus||'';
+        $('eQtyBox').value = r.qty_box||''; $('eIsiBox').value = r.isi_box||'';
+        $('eQtyDusPlus').value = r.qty_dus_plus||''; $('eIsiDusPlus').value = r.isi_dus_plus||'';
+        $('eCatatan').value = r.catatan||'';
+        $('rUneven').value = r.reject_uneven||''; $('rMottled').value = r.reject_mottled||'';
+        $('rStartup').value = r.reject_startup||''; $('rShort').value = r.reject_short||'';
+        $('rFlow').value = r.reject_flow||''; $('rFlash').value = r.reject_flashing||'';
+        $('rCrack').value = r.reject_crack||''; $('rSpot').value = r.reject_spot||'';
+        $('rScratch').value = r.reject_scratch||''; $('rDirty').value = r.reject_dirty||'';
+        recalc(); $('mEntry').classList.add('open');
+    };
+
+    window.editMaster = (idx) => {
+        const p = master[idx]; $('mpKode').value = p.kode; $('mpNama').value = p.nama; $('mpTipe').value = p.tipe;
+        $('mpGram').value = p.gram; $('mpRunner').value = p.runner; $('mpCavity').value = p.cavity; $('mpPerDus').value = p.per_dus; $('mpPerBox').value = p.per_box;
+    };
+
+    async function wipeLogs() { if(!confirm('HAPUS SEMUA DATA LAPORAN?')) return; $('loading').style.display='flex'; const { error } = await client.from('logs').delete().neq('id','0'); $('loading').style.display='none'; refreshData(); }
+    async function wipeMaster() { if(!confirm('YAKIN HAPUS SEMUA MASTER?')) return; $('loading').style.display='flex'; const { error } = await client.from('master').delete().neq('id','0'); $('loading').style.display='none'; refreshData(); }
+
+    function importCSV(e) {
+        if(!client) return alert("Database Belum Konek!");
+        const file = e.target.files[0]; if(!file) return;
+        const reader = new FileReader();
+        reader.onload = async (evt) => {
+            const lines = evt.target.result.split(/\r\n/).filter(l => l.trim() !== '');
+            if(lines.length < 2) return alert('CSV Salah');
+            const delim = lines[0].split(';').length > lines[0].split(',').length ? ';' : ',';
+            const headers = lines[0].toLowerCase().split(delim).map(h => h.trim().replace(/"/g, ''));
+            
+            const idx = {
+                kode: headers.findIndex(h => h.includes('kode')),
+                nama: headers.findIndex(h => h.includes('nama') || h.includes('product')),
+                gram: headers.findIndex(h => h.includes('gram') || h.includes('berat satuan')),
+                runner: headers.findIndex(h => h.includes('runner')),
+                cavity: headers.findIndex(h => h.includes('cav')),
+                dus: headers.findIndex(h => h.includes('dus') || h.includes('doos')),
+                box: headers.findIndex(h => h.includes('box')),
+                tipe: headers.findIndex(h => h.includes('tipe'))
+            };
+            if(idx.nama < 0) return alert('Header Nama tidak ketemu');
+            const autoSplitKode = (idx.kode < 0);
+
+            $('loading').style.display='flex';
+            let rows = [];
+            for(let i=1; i<lines.length; i++){
+                const cols = lines[i].split(delim).map(c => c.trim().replace(/"/g, ''));
+                if(cols.length < 2) continue;
+                let kodeVal = '', namaVal = '';
+                if(autoSplitKode) {
+                    const rawName = cols[idx.nama];
+                    const firstSpace = rawName.indexOf(' ');
+                    if(firstSpace > 0) { kodeVal = rawName.substring(0, firstSpace).trim(); namaVal = rawName.substring(firstSpace+1).trim(); }
+                    else { kodeVal = rawName; namaVal = rawName; }
+                } else { kodeVal = cols[idx.kode]; namaVal = cols[idx.nama] || kodeVal; }
+
+                const cleanNum = (val) => { if(!val || val==='-') return 0; return toNum(val.replace(',','.')); };
+                let targetID = uid();
+                const exist = master.find(m => m.kode.toLowerCase() === kodeVal.toLowerCase() && m.nama.toLowerCase() === namaVal.toLowerCase());
+                if(exist) targetID = exist.id;
+
+                rows.push({
+                    id: targetID, kode: kodeVal, nama: namaVal, 
+                    tipe: (idx.tipe >= 0 ? cols[idx.tipe] : 'pcs'),
+                    gram: (idx.gram >= 0 ? cleanNum(cols[idx.gram]) : 0),
+                    runner: (idx.runner >= 0 ? cleanNum(cols[idx.runner]) : 0),
+                    cavity: (idx.cavity >= 0 ? cleanNum(cols[idx.cavity]) : 1),
+                    per_dus: (idx.dus >= 0 ? cleanNum(cols[idx.dus]) : 0),
+                    per_box: (idx.box >= 0 ? cleanNum(cols[idx.box]) : 0)
+                });
+            }
+            const { error } = await client.from('master').upsert(rows);
+            $('loading').style.display='none';
+            if(error) alert('Error Import: '+error.message); else { alert('Import Sukses!'); refreshData(); }
+            $('fileCsvMaster').value='';
+        };
+        reader.readAsText(file);
+    }
+
+    function renderMaster() { 
+        const t = $('mpBody'); t.innerHTML = ''; 
+        master.forEach((p, idx) => { 
+            const tr = document.createElement('tr'); 
+            tr.innerHTML = `<td>${p.kode}</td><td>${p.nama}</td><td>${p.tipe}</td><td class="right">${p.gram}</td><td class="right">${p.runner}</td><td class="right">${p.cavity}</td><td class="right">${p.per_dus}</td><td style="text-align:center"><button class="btn sm" onclick="editMaster(${idx})">✎</button> <button class="btn sm danger" onclick="deleteMaster('${p.id}')">🗑</button></td>`; 
+            t.appendChild(tr); 
+        }); 
+    }
+
+    function renderTable() {
+        const t = $('tbody'); t.innerHTML = '';
+        const qFrom = $('fFrom').value, qTo = $('fTo').value;
+        const from = qFrom ? new Date(qFrom) : null; const to = qTo ? new Date(qTo) : null;
+        const qProd = $('fProduk').value.toLowerCase();
+        
+        const filtered = logs.filter(r => {
+            const d = new Date(r.tanggal);
+            return (from ? d >= from : true) && (to ? d <= to : true) && (qProd ? r.nama.toLowerCase().includes(qProd) : true);
+        });
+        $('rowCount').textContent = filtered.length + " data";
+        
+        filtered.forEach(r => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${r.tanggal}</td><td>${r.shift}</td><td>${r.line}</td><td><b>${r.nama}</b><br><small>${r.kode}</small></td><td>${r.tipe}</td><td class="right">${r.counter}</td><td class="right">${r.cavity}</td><td class="right">${r.qty_dus}</td><td class="right">${r.qty_box}</td><td class="right text-ok"><b>${(+r.okpcs).toLocaleString()}</b></td><td class="right">${(+r.okkg).toFixed(2)}</td><td class="right text-danger">${(+r.reject).toLocaleString()}</td><td class="right">${(+r.sisa_bahan).toFixed(2)}</td><td class="right"><b>${(+r.yieldpct).toFixed(2)}%</b></td><td class="right">${r.reject_max}</td><td style="text-align:center; white-space:nowrap;"><button class="btn sm info" onclick="editLog('${r.id}')" style="margin-right:4px;">Edit</button><button class="btn sm danger" onclick="deleteLog('${r.id}')">Hapus</button></td>`;
+            t.appendChild(tr);
+        });
+    }
+
+    function showRekap() {
+        const qFrom = $('fFrom').value, qTo = $('fTo').value;
+        const from = qFrom ? new Date(qFrom) : null; const to = qTo ? new Date(qTo) : null;
+        const filtered = logs.filter(r => { const d = new Date(r.tanggal); return (from ? d >= from : true) && (to ? d <= to : true); });
+        if(filtered.length === 0) return alert("Data kosong di rentang ini.");
+        
+        const groups = {};
+        filtered.forEach(r => {
+            const key = r.line + "|||" + r.kode + "|||" + r.nama;
+            if(!groups[key]) groups[key] = { line: r.line, kode: r.kode, nama: r.nama, okpcs: 0, reject: 0, okkg: 0, yieldTotal: 0, count: 0 };
+            groups[key].okpcs += (+r.okpcs || 0);
+            groups[key].reject += (+r.reject || 0);
+            groups[key].okkg += (+r.okkg || 0);
+            groups[key].yieldTotal += (+r.yieldpct || 0);
+            groups[key].count++;
+        });
+
+        const tbody = $('tbodyRekap'); tbody.innerHTML = '';
+        const sortedKeys = Object.keys(groups).sort((a, b) => groups[a].line.localeCompare(groups[b].line, undefined, {numeric: true, sensitivity: 'base'}));
+        
+        sortedKeys.forEach(key => {
+            const g = groups[key];
+            const avgYield = g.count > 0 ? (g.yieldTotal/g.count) : 0;
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${g.line}</td><td style="line-height:1.2"><span style="color:var(--primary); font-weight:700; font-size:0.85rem">${g.kode}</span><br><span style="font-weight:600; color:var(--text-main)">${g.nama}</span></td><td class="right text-ok"><b>${g.okpcs.toLocaleString()}</b></td><td class="right text-danger">${g.reject.toLocaleString()}</td><td class="right">${g.okkg.toFixed(2)}</td><td class="right"><b>${avgYield.toFixed(2)}%</b></td>`;
+            tbody.appendChild(tr);
+        });
+        $('mRekap').classList.add('open');
+    }
+
+    function exportCSV() {
+        const qFrom = $('fFrom').value; const qTo = $('fTo').value;
+        const from = qFrom ? new Date(qFrom) : null; const to = qTo ? new Date(qTo) : null;
+        const filtered = logs.filter(r => { const d = new Date(r.tanggal); return (from ? d >= from : true) && (to ? d <= to : true); });
+        
+        if(filtered.length === 0) return alert("Data kosong");
+        const header = Object.keys(filtered[0]).join(",");
+        const csv = [header].concat(filtered.map(row => Object.values(row).map(v => `"${v}"`).join(","))).join("\n");
+        
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'Laporan_Produksi.csv'; a.click();
+    }
 </script>
 </body>
 </html>
