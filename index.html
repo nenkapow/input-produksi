@@ -1,620 +1,945 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="utf-8" />
-  <link rel="manifest" href="manifest.webmanifest">
-  <meta name="theme-color" content="#022c22">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
-  <title>Absen Produksi (Berkah Edition)</title>
-  
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+    <title>Production Dashboard v0.9.16 (Filter Shift)</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- ISLAMIC THEME VARIABLES (EMERALD & GOLD) --- */
+        :root {
+            --bg-body: #022c22;       /* Hijau Gelap */
+            --bg-card: #064e3b;       /* Hijau Emerald */
+            --bg-input: #065f46;      /* Hijau Input */
+            --text-main: #ecfdf5;     /* Putih Kehijauan */
+            --text-muted: #a7f3d0;    /* Hijau Muda Pucat */
+            --border: #d4af37;        /* EMAS (Gold) */
+            
+            --primary: #d4af37;       /* Gold Utama */
+            --primary-hover: #b4942b;
+            
+            --success: #10b981; 
+            --danger: #ef4444; 
+            --info: #38bdf8;
+            
+            --radius: 16px; 
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+        }
 
-  <style>
-    :root {
-      /* === TEMA ISLAMI (EMERALD & GOLD) === */
-      --bg-body: #022c22;
-      --bg-card: #064e3b;
-      --bg-input: #065f46;
-      --text-main: #ecfdf5;
-      --text-muted: #a7f3d0;
-      --gold: #d4af37;
-      --gold-hover: #b4942b;
-      --success: #10b981;
-      --warn: #fbbf24;
-      --danger: #ef4444;
-      --border: #d4af37;
-      --radius: 12px;
-      --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
-    }
-    
-    * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-    
-    body { 
-      margin: 0; background-color: var(--bg-body);
-      background-image: radial-gradient(circle at 2px 2px, rgba(212, 175, 55, 0.15) 1px, transparent 0);
-      background-size: 30px 30px;
-      color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; line-height: 1.5; 
-    }
-    
-    .wrap { max-width:1200px; margin:0 auto; padding:20px; }
+        * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            margin: 0; 
+            background-color: var(--bg-body); 
+            background-image: radial-gradient(circle at 2px 2px, rgba(212, 175, 55, 0.1) 1px, transparent 0);
+            background-size: 30px 30px;
+            color: var(--text-main); 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            min-height: 100vh;
+        }
 
-    /* HEADER */
-    .bismillah {
-      font-family: 'Amiri', serif; font-size: 2.2rem; color: var(--gold);
-      text-align: center; margin-bottom: 0.2rem; text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-    }
-    .slogan {
-      text-align: center; font-size: 0.9rem; color: var(--text-muted);
-      font-style: italic; margin-bottom: 2rem;
-    }
-    
-    .header-card {
-      background: var(--bg-card); border: 1px solid var(--gold); border-radius: var(--radius);
-      padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow);
-    }
-    
-    .controls { display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:16px; align-items:end; }
-    .form-group { display:flex; flex-direction:column; gap:6px; }
-    .form-group label { font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; }
-    
-    input, select {
-      background: var(--bg-input); border: 1px solid #374151; color: var(--text-main);
-      padding: 10px 12px; border-radius: 8px; font-size: 14px; width: 100%; outline: none; transition: border-color 0.2s;
-    }
-    input:focus, select:focus { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); }
+        .wrap { max-width: 1400px; margin: 0 auto; padding: 2rem; }
 
-    /* TABS */
-    .tabs { background: var(--bg-input); padding: 4px; border-radius: 10px; border: 1px solid #374151; display: flex; }
-    .tab {
-      flex: 1; border: none; background: transparent; color: var(--text-muted);
-      padding: 8px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s;
-    }
-    .tab.active { background: var(--gold); color: #022c22; box-shadow: 0 2px 4px rgba(0,0,0,0.2); font-weight: 800; }
+        /* HEADER BISMILLAH */
+        .bismillah {
+            font-family: 'Amiri', serif;
+            font-size: 2rem;
+            color: var(--primary);
+            text-align: center;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .slogan {
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            font-style: italic;
+            margin-bottom: 2rem;
+        }
 
-    /* INFO BAR */
-    .info-bar { margin-top: 16px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(212, 175, 55, 0.3); padding-top: 16px; flex-wrap: wrap; gap: 10px; }
-    .badge { background: rgba(16, 185, 129, 0.2); color: var(--success); padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; border: 1px solid var(--success); }
-    .shortcuts { font-size: 12px; color: var(--text-muted); display: flex; gap: 12px; }
-    .shortcuts b { color: var(--gold); background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; }
+        .card { 
+            background: var(--bg-card); 
+            border: 1px solid var(--border); 
+            border-radius: var(--radius); 
+            padding: 24px; 
+            margin-bottom: 20px; 
+            box-shadow: var(--shadow);
+            position: relative;
+        }
 
-    /* GRID TABLE */
-    .grid-card {
-      background: var(--bg-card); border: 1px solid var(--gold); border-radius: var(--radius);
-      overflow: hidden; box-shadow: var(--shadow);
-    }
-    .table-wrap { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; min-width: 600px; }
-    
-    th {
-      background: #022c22; color: var(--gold); font-weight: 700; font-size: 12px;
-      text-transform: uppercase; text-align: left; padding: 14px 16px; border-bottom: 2px solid var(--gold);
-    }
-    td { padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,0.1); vertical-align: middle; }
-    tr:last-child td { border-bottom: none; }
-    tr:hover td { background: rgba(212, 175, 55, 0.05); }
+        .card::after {
+            content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+            width: 30%; height: 2px; background: linear-gradient(90deg, transparent, var(--primary), transparent);
+        }
 
-    input.cell {
-      background: rgba(0,0,0,0.2); border: 1px solid transparent; text-align: center;
-      font-weight: 700; color: var(--gold); width: 100%; max-width: 80px;
-    }
-    input.cell:focus { border-color: var(--gold); background: var(--bg-input); color: var(--text-main); }
-    
-    .process-name { font-weight: 600; color: var(--text-main); }
-    .total-cell { font-weight: 800; color: var(--success); text-align: center; font-size: 1.1em; }
+        h2 { font-size: 1.75rem; font-weight: 700; margin:0; color: var(--text-main); }
+        h3, h4 { margin: 0; }
+        
+        .muted { color: var(--text-muted); font-size: 0.85rem; }
 
-    tfoot tr { background: #022c22; font-weight: 700; }
-    tfoot td { color: var(--gold); text-align: center; padding: 16px; font-size: 15px; border-top: 2px solid var(--gold); }
-    tfoot td:first-child { text-align: right; color: var(--text-muted); }
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 10px 20px; font-size: 0.9rem; font-weight: 600; 
+            border-radius: 50px; 
+            border: 1px solid var(--border);
+            background: #022c22; color: var(--primary); 
+            cursor: pointer; transition: all 0.2s ease;
+        }
+        .btn:hover { background: var(--primary); color: #022c22; transform: translateY(-2px); }
+        
+        .btn.primary { 
+            background: linear-gradient(to bottom, #d4af37, #b4942b); 
+            border: none; color: #022c22; 
+            box-shadow: 0 4px 10px rgba(212, 175, 55, 0.3);
+        }
+        .btn.ok { border-color: var(--success); color: var(--success); }
+        .btn.ok:hover { background: var(--success); color: white; }
+        
+        .btn.danger { border-color: var(--danger); color: var(--danger); }
+        .btn.danger:hover { background: var(--danger); color: white; }
+        
+        .btn.info { border-color: var(--info); color: var(--info); }
+        .btn.sm { padding: 6px 12px; font-size: 0.8rem; }
 
-    /* ACTIONS */
-    .actions {
-      padding: 16px; background: #022c22; border-top: 1px solid var(--gold);
-      display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
-    }
-    .btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-      background: var(--bg-input); border: 1px solid var(--gold); color: var(--text-main);
-      padding: 10px 16px; border-radius: 50px; font-weight: 600; cursor: pointer;
-      transition: all 0.2s; font-size: 13px;
-    }
-    .btn:hover { background: var(--gold); color: #022c22; transform: translateY(-1px); }
-    .btn.primary { background: linear-gradient(to bottom, #d4af37, #b4942b); border: none; color: #022c22; box-shadow: 0 4px 10px rgba(212, 175, 55, 0.3); }
-    .btn.success { border-color: var(--success); color: var(--success); background: transparent; }
-    .btn.success:hover { background: var(--success); color: #022c22; }
-    .btn.warn { border-color: var(--warn); color: var(--warn); background: transparent; }
-    .btn.warn:hover { background: var(--warn); color: #451a03; }
+        /* FILTER BUTTONS DI REKAP */
+        .filter-btn {
+            flex: 1; border: 1px solid var(--border); background: rgba(0,0,0,0.3); color: var(--text-muted);
+            padding: 8px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600;
+            transition: 0.2s;
+        }
+        .filter-btn:hover { background: rgba(212, 175, 55, 0.1); color: var(--primary); }
+        .filter-btn.active { background: var(--primary); color: #022c22; border-color: var(--primary); font-weight: 800; }
 
-    /* REKAP & FILTERS */
-    #rekapWrap { margin-top: 30px; border-color: var(--warn); box-shadow: 0 0 20px rgba(251, 191, 36, 0.1); }
-    
-    .rekap-header {
-      background: #022c22; padding: 16px;
-      border-bottom: 1px solid var(--warn);
-    }
-    
-    .rekap-title-row {
-        display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;
-    }
-    .rekap-title-row h3 { margin: 0; color: var(--warn); font-size: 1.1rem; }
-    .machine-count { font-size: 0.9rem; color: var(--text-muted); font-weight: normal; }
-    .machine-count b { color: var(--text-main); font-size: 1.1rem; }
+        .input, select { 
+            width: 100%; padding: 12px 16px; 
+            background: var(--bg-input); 
+            border: 1px solid #374151;
+            border-radius: 10px; color: white; font-size: 0.95rem; transition: 0.2s; 
+        }
+        .input:focus, select:focus { 
+            border-color: var(--primary); 
+            box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); 
+        }
 
-    /* FILTER BUTTONS */
-    .filter-bar { display: flex; gap: 8px; }
-    .filter-btn {
-        flex: 1; border: 1px solid var(--border); background: rgba(0,0,0,0.3); color: var(--text-muted);
-        padding: 8px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600;
-        transition: 0.2s;
-    }
-    .filter-btn:hover { background: rgba(212, 175, 55, 0.1); color: var(--gold); }
-    .filter-btn.active { background: var(--gold); color: #022c22; border-color: var(--gold); font-weight: 800; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        .table-container { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
+        
+        thead th { 
+            background: #022c22; color: var(--primary); padding: 14px 16px; text-align: left; 
+            font-weight: 700; text-transform: uppercase; font-size: 0.75rem; 
+            border-bottom: 1px solid var(--border); white-space: nowrap; 
+        }
+        tbody td { padding: 14px 16px; border-bottom: 1px solid #374151; vertical-align: middle; color: var(--text-main); }
+        
+        .right { text-align: right; font-family: 'JetBrains Mono', monospace; }
+        
+        .badge { 
+            font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; 
+            background: rgba(212, 175, 55, 0.2); color: var(--primary); 
+            border: 1px solid var(--primary); 
+        }
 
-    /* TOAST */
-    #updateToast {
-      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-      background: var(--bg-card); border: 1px solid var(--gold); padding: 12px 20px;
-      border-radius: 50px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-      display: none; align-items: center; gap: 12px; z-index: 999; color: var(--gold);
-    }
-    #btnReload { background: var(--gold); border: none; color: #022c22; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: 700; }
+        .stat-box { 
+            background: #022c22; border: 1px solid var(--border); 
+            border-radius: 12px; padding: 16px; text-align: center; 
+        }
+        .stat-value { font-family: 'JetBrains Mono', monospace; font-size: 1.25rem; font-weight: 700; margin-top: 6px; display: block; }
 
-    @media (max-width: 600px) {
-      .wrap { padding: 12px; }
-      .header-card, .grid-card { padding: 0; border-radius: 0; border-left: 0; border-right: 0; }
-      .header-card { padding: 16px; border-radius: 12px; border: 1px solid var(--gold); }
-      .shortcuts { display: none; }
-      th, td { padding: 10px; font-size: 13px; }
-      .rekap-title-row { flex-direction: column; align-items: flex-start; gap: 8px; }
-    }
-  </style>
+        .row { display: flex; gap: 12px; flex-wrap: wrap; }
+        .grid { display: grid; gap: 16px; }
+        
+        .text-ok { color: var(--success); } .text-danger { color: var(--danger); }
+
+        .modal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 100; }
+        .modal.open { display: flex; }
+        .modal .card { width: 100%; max-width: 1100px; max-height: 90vh; overflow-y: auto; border: 2px solid var(--border); animation: modalPop 0.3s; }
+        @keyframes modalPop { from { transform: scale(0.95) translateY(20px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+
+        .loading-overlay { position: fixed; inset: 0; background: var(--bg-body); z-index: 200; display: none; align-items: center; justify-content: center; flex-direction: column; }
+        .spinner { width: 50px; height: 50px; border: 4px solid var(--bg-card); border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* REJECT GRID */
+        .reject-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+        .reject-label { font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+        /* SEARCH DROPDOWN */
+        .search-wrapper { position: relative; width: 100%; }
+        .search-list { 
+            position: absolute; top: 100%; left: 0; width: 100%; max-height: 250px; overflow-y: auto; 
+            background: var(--bg-body); border: 1px solid var(--primary); border-radius: 8px; z-index: 150; 
+            display: none; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5); 
+        }
+        .search-item { padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #374151; font-size: 0.85rem; color: var(--text-main); transition: 0.2s; white-space: normal; line-height: 1.4; }
+        .search-item:hover { background: var(--primary); color: #022c22; }
+        .search-item span { font-weight: 700; color: var(--primary); }
+        .search-item:hover span { color: #022c22; }
+
+        @media (max-width: 768px) { 
+            .wrap { padding: 1rem; } 
+            .grid, .reject-grid { grid-template-columns: repeat(2, 1fr) !important; } 
+            .header-row { flex-direction: column; align-items: flex-start; gap: 16px; } 
+            .row { width: 100%; } .btn { flex: 1; } 
+        }
+    </style>
 </head>
 <body>
 
+<div id="loading" class="loading-overlay">
+    <div class="spinner"></div>
+    <div style="margin-top:16px; font-weight:600; color:var(--primary); letter-spacing:1px;">MENGHUBUNGKAN...</div>
+</div>
+
 <div class="wrap">
-  <div class="bismillah">بسم الله الرحمن الرحيم</div>
-  <div class="slogan">"Insya Allah Memudahkan Pekerjaan & Rezeki Lancar"</div>
+    
+    <div class="bismillah">بسم الله الرحمن الرحيم</div>
+    <div class="slogan">"Insya Allah Memudahkan Pekerjaan & Rezeki Lancar"</div>
 
-  <div class="header-card">
-    <div class="controls">
-      <div class="form-group">
-        <label>Tanggal Produksi</label>
-        <input type="date" id="tgl">
-      </div>
-      <div class="form-group">
-        <label>Shift Kerja</label>
-        <select id="shift">
-          <option value="1">Shift 1 (Pagi)</option>
-          <option value="2">Shift 2 (Siang)</option>
-          <option value="3">Shift 3 (Malam)</option>
-        </select>
-      </div>
-      <div class="form-group" style="flex:1.5">
-        <label>Work Center</label>
-        <div class="tabs">
-          <button class="tab active" data-center="Injection">Injection</button>
-          <button class="tab" data-center="Assembly">Assembly</button>
+    <div class="row header-row" style="justify-content:space-between; align-items:center; margin-bottom:32px;">
+        <div>
+            <h2>Production Dashboard</h2>
+            <div class="row" style="align-items:center; gap:8px; margin-top:8px;">
+                <span class="badge">v0.9.16 (Filter Shift)</span>
+                <span id="statusDb" style="font-size:0.8rem; color:var(--danger)">Disconnected</span>
+            </div>
         </div>
-      </div>
-    </div>
-    
-    <div class="info-bar">
-      <span class="badge" id="keyPreview">Loading...</span>
-      <div class="shortcuts">
-        <span><b>Ctrl+S</b> Simpan</span>
-        <span><b>Ctrl+E</b> Export JSON</span>
-      </div>
-    </div>
-  </div>
-
-  <div class="grid-card">
-    <div class="table-wrap">
-      <table id="grid">
-        <thead>
-          <tr>
-            <th style="width:50px; text-align:center;">#</th>
-            <th>Proses / Bagian</th>
-            <th style="text-align:center; width:100px;">Tetap</th>
-            <th style="text-align:center; width:100px;">Kontrak</th>
-            <th style="text-align:center; width:100px;">Yayasan</th>
-            <th style="text-align:center; width:80px;">Total</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-        <tfoot>
-          <tr>
-            <td></td>
-            <td style="text-align:right;">TOTAL SHIFT INI</td>
-            <td id="totTetap">0</td>
-            <td id="totKontrak">0</td>
-            <td id="totYayasan">0</td>
-            <td id="totAll" style="color:var(--success); font-weight:800;">0</td>
-          </tr>
-        </tfoot>
-      </table>
+        <div class="row">
+            <button id="btnConfig" class="btn">Config</button>
+            <button id="btnRefresh" class="btn">Refresh</button>
+        </div>
     </div>
 
-    <div class="actions">
-      <button class="btn success" id="btnSave">
-        Simpan Data
-      </button>
-      <div style="flex:1"></div>
-      <button class="btn" id="btnExportJSON">JSON</button>
-      <button class="btn" id="btnExportCSV">CSV</button>
-      <button class="btn warn" id="btnRekap">Lihat Rekap Harian</button>
+    <div class="card">
+        <div class="row" style="align-items:center; justify-content:space-between;">
+            <div class="row">
+                <button id="btnAdd" class="btn primary" style="padding:12px 24px;">+ Input Baru</button>
+                <button id="btnMaster" class="btn">Master Produk</button>
+                <button id="btnRekap" class="btn info">Rekap Line</button>
+                <button id="btnExport" class="btn ok">Export CSV</button>
+            </div>
+            <button id="btnClear" class="btn danger" style="margin-left:auto">Reset Data</button>
+        </div>
     </div>
-  </div>
 
-  <div class="grid-card" id="rekapWrap" style="display:none;">
-    <div class="rekap-header">
-      <div class="rekap-title-row">
-          <h3>REKAPITULASI HARIAN</h3>
-          <span class="machine-count" id="machineCount">Total Mesin Aktif: <b>0 Unit</b></span>
-      </div>
-      
-      <div class="filter-bar">
-          <button class="filter-btn active" onclick="filterRekap('all', this)">SEMUA SHIFT</button>
-          <button class="filter-btn" onclick="filterRekap(1, this)">SHIFT 1</button>
-          <button class="filter-btn" onclick="filterRekap(2, this)">SHIFT 2</button>
-          <button class="filter-btn" onclick="filterRekap(3, this)">SHIFT 3</button>
-      </div>
+    <div class="card">
+        <h4 style="margin-bottom:16px; color:var(--primary); text-transform:uppercase; letter-spacing:1px; font-size:0.8rem;">Filter & Search</h4>
+        <div class="row" style="align-items:flex-end;">
+            <div style="flex:1; min-width:140px"><div class="muted">Dari Tanggal</div><input id="fFrom" type="date" class="input"></div>
+            <div style="flex:1; min-width:140px"><div class="muted">Sampai Tanggal</div><input id="fTo" type="date" class="input"></div>
+            <div style="flex:2; min-width:200px"><div class="muted">Cari Produk / Kode</div><input id="fProduk" class="input" placeholder="Ketik disini..." /></div>
+            <div style="flex:1; min-width:100px"><div class="muted">Shift</div><select id="fShift" class="input"><option value="">Semua</option><option>1</option><option>2</option><option>3</option></select></div>
+            <div style="flex:1; min-width:120px"><div class="muted">Line</div><input id="fLine" class="input" placeholder="L-01" /></div>
+            <div style="padding-bottom:1px;"><button id="btnClearFilter" class="btn">Reset</button></div>
+        </div>
     </div>
-    
-    <div class="table-wrap">
-      <table id="rekapTable">
-        <thead>
-          <tr>
-            <th style="width:50px;">#</th>
-            <th>Proses</th>
-            <th style="text-align:center;">Tetap</th>
-            <th style="text-align:center;">Kontrak</th>
-            <th style="text-align:center;">Yayasan</th>
-            <th style="text-align:center;">Total</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-        <tfoot>
-          <tr>
-            <td></td>
-            <td style="text-align:right;">TOTAL (FILTERED)</td>
-            <td id="rTotTetap">0</td>
-            <td id="rTotKontrak">0</td>
-            <td id="rTotYayasan">0</td>
-            <td id="rTotTotal">0</td>
-          </tr>
-        </tfoot>
-      </table>
+
+    <div class="card" style="padding:0; overflow:hidden;">
+        <div style="padding: 20px 24px; border-bottom: 1px solid var(--border); display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.2);">
+            <h3 style="font-size:1rem; color:var(--primary);">Laporan Harian</h3>
+            <span id="rowCount" class="badge">0 data</span>
+        </div>
+        <div class="table-container" style="border:none; border-radius:0;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tanggal</th><th>Shift</th><th>Line</th><th>Produk</th><th>Tipe</th>
+                        <th class="right">Counter</th><th class="right">Cav</th>
+                        <th class="right">Dus</th><th class="right">Box</th>
+                        <th class="right">OK (pcs)</th><th class="right">OK (kg)</th>
+                        <th class="right">Reject</th><th class="right">Sisa Bhn</th>
+                        <th class="right">Yield %</th><th class="right">R. Max</th>
+                        <th style="text-align:center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody"></tbody>
+            </table>
+        </div>
     </div>
-    
-    <div class="actions">
-      <span style="font-size:12px; color:var(--text-muted);" id="rekapTitle"></span>
-      <div style="flex:1"></div>
-      <button class="btn" id="btnRekapCSV">Download Rekap CSV</button>
-      <button class="btn" onclick="document.getElementById('rekapWrap').style.display='none'">Tutup</button>
-    </div>
-  </div>
 </div>
 
-<div id="updateToast">
-  <span>Update baru tersedia!</span>
-  <button id="btnReload">Refresh</button>
-</div>
+<div id="mConfig" class="modal"><div class="card" style="max-width:500px">
+    <h3 style="margin-bottom:8px; color:var(--primary)">Database Setup</h3>
+    <div class="grid">
+        <div><div class="muted">Project URL</div><input id="cfgUrl" class="input" /></div>
+        <div><div class="muted">Anon Public Key</div><textarea id="cfgKey" class="input" rows="4"></textarea></div>
+        <button id="btnSaveConfig" class="btn primary" style="width:100%;">SIMPAN & KONEK</button>
+        <button id="mConfigClose" class="btn" style="width:100%">Batal</button>
+    </div>
+</div></div>
 
-<script type="module">
-  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+<div id="mRekap" class="modal"><div class="card">
+    <div class="row" style="justify-content:space-between; margin-bottom:16px;">
+        <div>
+            <h3 style="color:var(--primary); margin-bottom:4px;">Rekapitulasi Line</h3>
+            <div id="rekapMachineCount" class="muted" style="font-size:0.9rem;">Total Mesin Aktif: <b style="color:var(--text-main)">0 Unit</b></div>
+        </div>
+        <button id="mRekapClose" class="btn sm">Tutup</button>
+    </div>
 
-  window.APP_VERSION = '2025-12-05-FIX';
+    <div style="display:flex; gap:8px; margin-bottom:16px; background:rgba(0,0,0,0.2); padding:8px; border-radius:8px;">
+        <button class="filter-btn active" onclick="filterRekap('all', this)">SEMUA SHIFT</button>
+        <button class="filter-btn" onclick="filterRekap('1', this)">SHIFT 1</button>
+        <button class="filter-btn" onclick="filterRekap('2', this)">SHIFT 2</button>
+        <button class="filter-btn" onclick="filterRekap('3', this)">SHIFT 3</button>
+    </div>
 
-  const SUPABASE_URL  = 'https://xpcmrdkdnbqdohjjqxds.supabase.co';
-  const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhwY21yZGtkbmJxZG9oampxeGRzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5Mzc2ODAsImV4cCI6MjA3ODUxMzY4MH0.ZLEzHKaWjic5vn_zAiD6S2jZgU-s2E-Z8Kbd4M66zE8';
-  const supa = createClient(SUPABASE_URL, SUPABASE_ANON);
+    <div class="table-container">
+        <table>
+            <thead><tr><th>Line / Mesin</th><th>Produk (Kode)</th><th class="right">Total OK (pcs)</th><th class="right">Total Reject</th><th class="right">Total OK (kg)</th><th class="right">Avg Yield</th></tr></thead>
+            <tbody id="tbodyRekap"></tbody>
+        </table>
+    </div>
+</div></div>
 
-  const $tgl   = document.getElementById('tgl');
-  const $shift = document.getElementById('shift');
-  const $tabs  = document.querySelectorAll('.tab');
-  const $key   = document.getElementById('keyPreview');
-  const $gridBody = document.querySelector('#grid tbody');
+<div id="mMaster" class="modal"><div class="card">
+    <div class="row" style="justify-content:space-between; margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:16px;">
+        <h3 style="color:var(--primary)">Master Produk</h3>
+        <div class="row">
+            <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; background:var(--bg-input); padding:8px 12px; border-radius:8px; cursor:pointer; border:1px solid var(--border);">
+                <input type="checkbox" id="chkAllowDup" style="accent-color:var(--primary)" /> Allow Duplicate
+            </label>
+            <button id="btnImportCsv" class="btn ok sm">Import CSV</button>
+            <button id="btnWipeMaster" class="btn danger sm">Hapus Semua</button>
+            <button id="mMasterClose" class="btn sm">Tutup</button>
+            <input type="file" id="fileCsvMaster" accept=".csv" style="display:none;" />
+        </div>
+    </div>
+    <div style="background:rgba(0,0,0,0.2); padding:20px; border-radius:var(--radius); margin-bottom:24px; border:1px solid var(--border);">
+        <h4 style="font-size:0.85rem; margin-bottom:16px; color:var(--primary);">TAMBAH / EDIT MANUAL</h4>
+        <div class="grid" style="grid-template-columns:repeat(12,1fr)">
+            <div style="grid-column:span 2"><div class="muted">Kode</div><input id="mpKode" class="input" placeholder="AUTO..." /></div>
+            <div style="grid-column:span 4"><div class="muted">Nama Produk</div><input id="mpNama" class="input" /></div>
+            <div style="grid-column:span 2"><div class="muted">Tipe</div><select id="mpTipe" class="input"><option value="pcs">pcs</option><option value="kg_sisa">kg</option></select></div>
+            <div style="grid-column:span 2"><div class="muted">Gram</div><input id="mpGram" class="input" type="number" step="0.01" /></div>
+            <div style="grid-column:span 2"><div class="muted">Runner</div><input id="mpRunner" class="input" type="number" step="0.01" /></div>
+            <div style="grid-column:span 2"><div class="muted">Cavity</div><input id="mpCavity" class="input" type="number" /></div>
+            <div style="grid-column:span 2"><div class="muted">Isi Dus</div><input id="mpPerDus" class="input" type="number" /></div>
+            <div style="grid-column:span 2"><div class="muted">Isi Box</div><input id="mpPerBox" class="input" type="number" /></div>
+            <div style="grid-column:span 6"><div class="muted">&nbsp;</div><button id="mpAdd" class="btn primary" style="width:100%">SIMPAN</button></div>
+        </div>
+    </div>
+    <div class="table-container" style="max-height:50vh;">
+        <table id="tblMaster"><thead><tr><th>Kode</th><th>Nama</th><th>Tipe</th><th class="right">Gram</th><th class="right">Runner</th><th class="right">Cav</th><th class="right">Dus</th><th style="text-align:center">Aksi</th></tr></thead><tbody id="mpBody"></tbody></table>
+    </div>
+</div></div>
 
-  let CENTER = 'Injection';
-  let PROC = [];
-  let ROWS = [];
-  
-  // GLOBAL STORAGE UNTUK REKAP FILTER
-  let _allDailyData = []; 
-
-  const params = new URLSearchParams(location.search);
-  const getTodayLocalISO = () => {
-    const d = new Date();
-    const tzOffset = d.getTimezoneOffset() * 60000;
-    return new Date(Date.now() - tzOffset).toISOString().slice(0,10);
-  };
-  const todayISO = getTodayLocalISO();
-  $tgl.value = params.get('today') === '1' ? todayISO : (params.get('date') || todayISO);
-
-  $tabs.forEach(b=>b.addEventListener('click', ()=>{
-    $tabs.forEach(x=>x.classList.remove('active'));
-    b.classList.add('active');
-    CENTER = b.dataset.center;
-    refresh();
-  }));
-  $tgl.addEventListener('change', refresh);
-  $shift.addEventListener('change', refresh);
-
-  document.getElementById('btnSave').onclick        = saveToServer;
-  document.getElementById('btnExportJSON').onclick  = ()=>downloadJSON(currentPayload(),'shift.json');
-  document.getElementById('btnExportCSV').onclick   = ()=>downloadCSV(rowsToCSV(ROWS),'shift.csv');
-  document.getElementById('btnRekap').onclick       = fetchAndShowRekap;
-  document.getElementById('btnRekapCSV').onclick    = ()=>{
-    const csv = rekapToCSV(_lastRekapRendered.rows, _lastRekapRendered.totals);
-    downloadCSV(csv,'rekap_filtered.csv');
-  };
-
-  // HOTKEYS
-  window.addEventListener('keydown', e=>{
-    if(e.ctrlKey && e.key.toLowerCase()==='s'){ e.preventDefault(); saveToServer(); }
-    if(e.ctrlKey && e.key.toLowerCase()==='e'){ e.preventDefault(); downloadJSON(currentPayload(),'shift.json'); }
-  });
-
-  async function fetchProcesses(center){
-    try {
-      const { data, error } = await supa.from('processes').select('id,name,sort').eq('center', center).order('sort', { ascending:true });
-      if(error) throw error; return data;
-    } catch(e) {
-      console.error(e);
-      $key.textContent = "Error koneksi";
-      return [];
-    }
-  }
-
-  async function fetchAttendance(dateISO, shift, center){
-    try {
-      const { data, error } = await supa.from('attendance').select('process_id,tetap,kontrak,yayasan,processes(name,sort)').eq('work_date', dateISO).eq('shift', shift).eq('center', center).order('processes(sort)');
-      if(error) throw error;
-      return data.map(r=>({
-        process_id: r.process_id, name: r.processes.name, tetap: r.tetap, kontrak: r.kontrak, yayasan: r.yayasan,
-        total: (r.tetap||0)+(r.kontrak||0)+(r.yayasan||0)
-      }));
-    } catch(e) { return []; }
-  }
-
-  async function upsertAttendance(dateISO, shift, center, rows){
-    const payload = rows.map(r=>({
-      work_date: dateISO, shift: Number(shift), center, process_id: r.process_id,
-      tetap: Number(r.tetap||0), kontrak: Number(r.kontrak||0), yayasan: Number(r.yayasan||0)
-    }));
-    const { error } = await supa.from('attendance').upsert(payload, { onConflict:'work_date,shift,center,process_id' });
-    if(error) throw error;
-  }
-
-  async function refresh(){
-    $key.textContent = "Loading...";
-    PROC = await fetchProcesses(CENTER);
-    ROWS = PROC.map(p=>({process_id:p.id,name:p.name,tetap:null,kontrak:null,yayasan:null,total:0}));
+<div id="mEntry" class="modal"><div class="card">
+    <div class="row" style="justify-content:space-between; margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--border);">
+        <div style="display:flex; align-items:center; gap:12px;">
+            <h3 style="color:var(--primary)">Input Produksi</h3>
+            <span id="badgeTipe" class="badge"></span>
+        </div>
+        <button id="mEntryClose" class="btn sm">Tutup X</button>
+    </div>
     
-    if(PROC.length > 0) {
-      const serverRows = await fetchAttendance($tgl.value, $shift.value, CENTER);
-      const byPid = Object.fromEntries(serverRows.map(r=>[r.process_id, r]));
-      ROWS = ROWS.map(r => byPid[r.process_id] ? byPid[r.process_id] : r);
-      renderGrid();
-      $key.textContent = `${$tgl.value} • Shift ${$shift.value} • ${CENTER}`;
-    } else {
-       $gridBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">Gagal memuat data / Data kosong</td></tr>';
-    }
-    document.getElementById('rekapWrap').style.display='none';
-  }
-
-  function renderGrid() {
-    $gridBody.innerHTML = '';
-    ROWS.forEach((r, idx) => {
-      const val = k => (r[k] ? r[k] : '');
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td style="text-align:center; color:var(--text-muted);">${idx + 1}</td>
-        <td class="process-name">${escapeHTML(r.name)}</td>
-        <td style="text-align:center;"><input type="number" class="cell" data-i="${idx}" data-k="tetap" value="${val('tetap')}" placeholder="-"></td>
-        <td style="text-align:center;"><input type="number" class="cell" data-i="${idx}" data-k="kontrak" value="${val('kontrak')}" placeholder="-"></td>
-        <td style="text-align:center;"><input type="number" class="cell" data-i="${idx}" data-k="yayasan" value="${val('yayasan')}" placeholder="-"></td>
-        <td class="total-cell" id="t${idx}">${Number(r.tetap||0)+Number(r.kontrak||0)+Number(r.yayasan||0)}</td>
-      `;
-      $gridBody.appendChild(tr);
-    });
+    <input type="hidden" id="eId" />
     
-    $gridBody.querySelectorAll('input.cell').forEach(inp => {
-      inp.addEventListener('input', () => {
-        const i = Number(inp.dataset.i);
-        const k = inp.dataset.k;
-        ROWS[i][k] = inp.value === '' ? null : Number(inp.value);
-        ROWS[i].total = Number(ROWS[i].tetap||0) + Number(ROWS[i].kontrak||0) + Number(ROWS[i].yayasan||0);
-        document.getElementById('t' + i).textContent = ROWS[i].total;
-        updateTotals();
-      });
-    });
-    updateTotals();
-  }
+    <div class="grid" style="grid-template-columns:repeat(12,1fr)">
+        <div style="grid-column:span 2"><div class="muted">Tanggal</div><input id="eTanggal" type="date" class="input" /></div>
+        <div style="grid-column:span 2"><div class="muted">Shift</div><select id="eShift" class="input"><option>1</option><option>2</option><option>3</option></select></div>
+        <div style="grid-column:span 2"><div class="muted">Line</div><input id="eLine" class="input" placeholder="L..." /></div>
+        <div style="grid-column:span 6; position:relative;">
+            <div class="muted">Produk (Ketik Kode / Nama)</div>
+            <input id="eProduk" class="input" placeholder="Cari..." autocomplete="off" style="border-color:var(--primary)" />
+            <div id="produkSuggestions" class="search-list"></div>
+        </div>
 
-  async function saveToServer(){
-    const btn = document.getElementById('btnSave');
-    const oldText = btn.innerHTML;
-    btn.innerHTML = 'Menyimpan...';
-    try{
-      await upsertAttendance($tgl.value, $shift.value, CENTER, ROWS);
-      toast('Alhamdulillah Data Tersimpan! ✅');
-    }catch(e){
-      console.error(e);
-      alert('Gagal menyimpan ke server');
-    }finally{
-      btn.innerHTML = oldText;
+        <div style="grid-column:span 12; height:1px; background:var(--border); margin:8px 0;"></div>
+
+        <div style="grid-column:span 2"><div class="muted">Gram</div><input id="eGram" type="number" class="input" step="0.01" readonly style="background:rgba(0,0,0,0.2); color:var(--text-muted);" /></div>
+        <div style="grid-column:span 2"><div class="muted">Runner</div><input id="eRunner" type="number" class="input" step="0.01" readonly style="background:rgba(0,0,0,0.2); color:var(--text-muted);" /></div>
+        <div style="grid-column:span 2"><div class="muted">Cavity</div><input id="eCavity" type="number" class="input" /></div>
+        <div style="grid-column:span 6"><div class="muted">Counter (Shot)</div><input id="eCounter" type="number" class="input" style="font-weight:bold; font-size:1.1rem; border-color:var(--primary);" /></div>
+
+        <div style="grid-column:span 12; background:rgba(0,0,0,0.2); padding:16px; border-radius:8px; border:1px solid var(--border);">
+            <h4 style="margin:0 0 12px; font-size:0.8rem; color:var(--primary);">MATERIAL USAGE (KG)</h4>
+            <div class="grid" style="grid-template-columns:repeat(8,1fr)">
+                <div style="grid-column:span 2"><div class="muted">Jatah</div><input id="eJatah" type="number" step="0.01" class="input" /></div>
+                <div style="grid-column:span 2"><div class="muted">Stok Awal</div><input id="eStok" type="number" step="0.01" class="input" /></div>
+                <div style="grid-column:span 2"><div class="muted">Balokan</div><input id="eBalokan" type="number" step="0.01" class="input" /></div>
+                <div style="grid-column:span 2"><div class="muted">Sisa (Auto)</div><input id="eSisaBahan" type="number" readonly class="input" style="background:rgba(0,0,0,0.3); font-weight:bold; color:var(--primary);" /></div>
+            </div>
+        </div>
+
+        <div style="grid-column:span 6; border-right:1px solid var(--border); padding-right:16px;">
+            <div class="muted" style="margin-bottom:8px;"><b>Sisa Sebelum</b></div>
+            <div class="grid" style="grid-template-columns:repeat(3,1fr); gap:8px;">
+                <input id="eSblm1" class="input" type="number" step="0.01" placeholder="C1" /> <input id="eSblm2" class="input" type="number" step="0.01" /> <input id="eSblm3" class="input" type="number" step="0.01" />
+                <input id="eSblm4" class="input" type="number" step="0.01" /> <input id="eSblm5" class="input" type="number" step="0.01" /> <input id="eSblm6" class="input" type="number" step="0.01" />
+            </div>
+        </div>
+        <div style="grid-column:span 6; padding-left:16px;">
+            <div class="muted" style="margin-bottom:8px;"><b>Sisa Sesudah</b></div>
+            <div class="grid" style="grid-template-columns:repeat(3,1fr); gap:8px;">
+                <input id="eSsdh1" class="input" type="number" step="0.01" placeholder="C1" /> <input id="eSsdh2" class="input" type="number" step="0.01" /> <input id="eSsdh3" class="input" type="number" step="0.01" />
+                <input id="eSsdh4" class="input" type="number" step="0.01" /> <input id="eSsdh5" class="input" type="number" step="0.01" /> <input id="eSsdh6" class="input" type="number" step="0.01" />
+            </div>
+        </div>
+
+        <div style="grid-column:span 12; height:1px; background:var(--border); margin:8px 0;"></div>
+
+        <div style="grid-column:span 12">
+            <h4 style="margin:0 0 12px; font-size:0.8rem; color:var(--primary);">PACKAGING</h4>
+            <div class="grid" style="grid-template-columns:repeat(12,1fr)">
+                <div style="grid-column:span 2"><div class="muted">Dus</div><input id="eQtyDus" type="number" class="input" /></div>
+                <div style="grid-column:span 2"><div class="muted">Isi/D</div><input id="eIsiDus" type="number" class="input" readonly style="background:rgba(0,0,0,0.2)" /></div>
+                <div style="grid-column:span 2"><div class="muted">Box</div><input id="eQtyBox" type="number" class="input" /></div>
+                <div style="grid-column:span 2"><div class="muted">Isi/B</div><input id="eIsiBox" type="number" class="input" readonly style="background:rgba(0,0,0,0.2)" /></div>
+                <div style="grid-column:span 2"><div class="muted">Dus+</div><input id="eQtyDusPlus" type="number" class="input" /></div>
+                <div style="grid-column:span 2"><div class="muted">Isi+</div><input id="eIsiDusPlus" type="number" class="input" /></div>
+                <div style="grid-column:span 12"><div class="muted">Catatan Tambahan</div><input id="eCatatan" class="input" /></div>
+            </div>
+        </div>
+
+        <div style="grid-column:span 12" class="card" style="background:rgba(239, 68, 68, 0.1); border:1px solid var(--danger); padding:16px;">
+            <h4 style="margin:0 0 12px; color:var(--danger); font-size:0.9rem;">REJECT DETAIL (PCS)</h4>
+            <div class="reject-grid">
+                <div><div class="reject-label">Uneven Color</div><input id="rUneven" type="number" class="input" /></div>
+                <div><div class="reject-label">Mottled</div><input id="rMottled" type="number" class="input" /></div>
+                <div><div class="reject-label">Start Up</div><input id="rStartup" type="number" class="input" /></div>
+                <div><div class="reject-label">Short Shot</div><input id="rShort" type="number" class="input" /></div>
+                <div><div class="reject-label">Flow Mark</div><input id="rFlow" type="number" class="input" /></div>
+                <div><div class="reject-label">Flashing</div><input id="rFlash" type="number" class="input" /></div>
+                <div><div class="reject-label">Crack</div><input id="rCrack" type="number" class="input" /></div>
+                <div><div class="reject-label">Spot</div><input id="rSpot" type="number" class="input" /></div>
+                <div><div class="reject-label">Scratch</div><input id="rScratch" type="number" class="input" /></div>
+                <div><div class="reject-label">Dirty</div><input id="rDirty" type="number" class="input" /></div>
+            </div>
+            <div style="margin-top:12px; border-top:1px dashed var(--danger); padding-top:12px;">
+                <div class="muted" style="color:var(--danger); font-weight:bold;">Total Reject (Auto)</div>
+                <input id="rTotal" type="number" class="input" readonly style="font-weight:bold; font-size:1.1rem; color:var(--danger); background:rgba(0,0,0,0.3);" />
+                <input id="rMax" type="hidden" />
+            </div>
+        </div>
+
+        <div style="grid-column:span 12" class="card" style="background:rgba(16, 185, 129, 0.05); border:1px solid var(--success); padding:20px; margin-bottom:0;">
+            <div class="grid" style="grid-template-columns:repeat(4,1fr); text-align:center;">
+                <div class="stat-box"><div class="muted">Hasil (Pcs)</div><span class="stat-value" id="vHasil" style="color:var(--primary)">0</span></div>
+                <div class="stat-box"><div class="muted">OK (Pcs)</div><span class="stat-value" id="vOkPcs" style="color:var(--success)">0</span></div>
+                <div class="stat-box"><div class="muted">Reject (Pcs)</div><span class="stat-value" id="vRejectPcs" style="color:var(--danger)">0</span></div>
+                <div class="stat-box"><div class="muted">Yield</div><span class="stat-value" id="vYield">0%</span></div>
+                
+                <div style="grid-column:span 4; height:1px; background:var(--border); margin:8px 0"></div>
+                
+                <div class="stat-box"><div class="muted">OK (Kg)</div><span class="stat-value" id="vOkKg">0.00</span></div>
+                <div class="stat-box"><div class="muted">Reject (Kg)</div><span class="stat-value" id="vRejectKg">0.00</span></div>
+                <div class="stat-box"><div class="muted">Runner (Kg)</div><span class="stat-value" id="vRunnerKg">0.00</span></div>
+                <div class="stat-box"><div class="muted">Sisa Bhn (Kg)</div><span class="stat-value" id="vSisaBahanLabel">0.00</span></div>
+            </div>
+            
+            <div id="warnOver" style="color:var(--danger); background:rgba(239, 68, 68, 0.2); padding:10px; border-radius:8px; margin-top:16px; font-weight:600; display:none; text-align:center; border:1px solid var(--danger);">⚠ Packaging melebihi Hasil Produksi!</div>
+            
+            <button id="btnSaveEntry" class="btn primary" style="width:100%; margin-top:24px; padding:16px; font-size:1rem; letter-spacing:1px;">SIMPAN DATA</button>
+        </div>
+    </div>
+</div></div>
+
+<script>
+    // --- HELPER FUNCTIONS ---
+    const $ = id => document.getElementById(id);
+    const toNum = v => isNaN(+v) ? 0 : +v;
+    const uid = () => Math.random().toString(36).slice(2);
+    const todayISO = () => new Date().toISOString().slice(0, 10);
+
+    let client = null;
+    let logs = [];
+    let master = [];
+    
+    // VARIABEL GLOBAL BUAT FILTER REKAP
+    let _allLogsForRekap = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+        $('btnConfig').onclick = () => $('mConfig').classList.add('open');
+        $('mConfigClose').onclick = () => $('mConfig').classList.remove('open');
+        $('btnSaveConfig').onclick = saveConfig;
+        $('btnRefresh').onclick = refreshData;
+        $('btnClearFilter').onclick = () => { $('fFrom').value=''; $('fTo').value=''; renderTable(); };
+        $('fFrom').onchange = renderTable; $('fTo').onchange = renderTable;
+        $('btnAdd').onclick = () => { $('mEntry').classList.add('open'); resetEntryForm(); };
+        $('mEntryClose').onclick = () => { $('mEntry').classList.remove('open'); };
+        $('btnMaster').onclick = () => { $('mMaster').classList.add('open'); };
+        $('mMasterClose').onclick = () => { $('mMaster').classList.remove('open'); };
+        $('btnExport').onclick = exportCSV;
+        $('btnSaveEntry').onclick = saveEntry;
+        $('mpAdd').onclick = saveMaster;
+        $('btnImportCsv').onclick = () => $('fileCsvMaster').click();
+        $('fileCsvMaster').onchange = importCSV;
+        $('btnClear').onclick = wipeLogs;
+        $('btnWipeMaster').onclick = wipeMaster;
+        $('btnRekap').onclick = fetchAndShowRekap; // PANGGIL FUNGSI REKAP BARU
+        $('mRekapClose').onclick = () => $('mRekap').classList.remove('open');
+
+        // === SETUP SEARCH & AUTO-RECALL ===
+        setupCustomSearch();
+        $('eLine').onchange = autoFillProductByLine;
+
+        // CALC TRIGGERS
+        const rejectInputs = ['rUneven', 'rMottled', 'rStartup', 'rShort', 'rFlow', 'rFlash', 'rCrack', 'rSpot', 'rScratch', 'rDirty'];
+        const calcInputs = ['eCavity', 'eCounter', 'eRunner', 'eJatah', 'eStok', 'eBalokan', 
+                            'eQtyDus', 'eQtyBox', 'eQtyDusPlus', 'eIsiDusPlus', 
+                            'eSblm1','eSblm2', 'eSblm3', 'eSblm4', 'eSblm5', 'eSblm6',
+                            'eSsdh1', 'eSsdh2', 'eSsdh3', 'eSsdh4', 'eSsdh5', 'eSsdh6',
+                            ...rejectInputs];
+        
+        calcInputs.forEach(id => { const el = $(id); if(el) el.oninput = () => { recalc(); }; });
+
+        // INIT DATE
+        const d = new Date();
+        $('eTanggal').value = todayISO();
+        $('eShift').value = '1';
+        $('fFrom').value = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0,10);
+        $('fTo').value = new Date(d.getFullYear(), d.getMonth()+1, 0).toISOString().slice(0,10);
+
+        // CHECK DB CONFIG
+        const savedUrl = localStorage.getItem('prod_sb_url');
+        const savedKey = localStorage.getItem('prod_sb_key');
+        if(savedUrl && savedKey) { initSupabase(savedUrl, savedKey); }
+        else { $('mConfig').classList.add('open'); }
+    });
+
+    // === LOGIC AUTO RECALL LINE (v0.9.14 Logic) ===
+    function autoFillProductByLine() {
+        const lineVal = $('eLine').value.trim();
+        if(!lineVal || logs.length === 0) return;
+        
+        // Cari log terakhir dari line ini (Sort descending date)
+        const sortedLogs = [...logs].sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal) || b.id.localeCompare(a.id));
+        const lastLog = sortedLogs.find(r => r.line == lineVal);
+        
+        if(lastLog) {
+            const val = lastLog.kode + " - " + lastLog.nama;
+            $('eProduk').value = val;
+            hydrateProduk();
+        }
     }
-  }
 
-  function updateTotals() {
-    let tTetap=0, tKon=0, tYay=0, tAll=0;
-    ROWS.forEach(r => {
-      tTetap += Number(r.tetap||0); tKon += Number(r.kontrak||0);
-      tYay += Number(r.yayasan||0); tAll += Number(r.total||0);
-    });
-    document.getElementById('totTetap').textContent = tTetap;
-    document.getElementById('totKontrak').textContent = tKon;
-    document.getElementById('totYayasan').textContent = tYay;
-    document.getElementById('totAll').textContent = tAll;
-  }
+    // === CUSTOM SEARCH DROPDOWN ===
+    function setupCustomSearch() {
+        const input = $('eProduk');
+        const list = $('produkSuggestions');
+        
+        input.addEventListener('input', function() {
+            const val = this.value.toLowerCase();
+            if(!val) { list.style.display = 'none'; return; }
+            
+            const matches = master.filter(p => p.kode.toLowerCase().includes(val) || p.nama.toLowerCase().includes(val));
+            if(matches.length > 0) {
+                list.innerHTML = matches.map(p => {
+                    return `<div class="search-item" onclick="selectProduk('${p.kode} - ${p.nama}')">
+                                <span>${p.kode}</span> - ${p.nama}
+                            </div>`;
+                }).join('');
+                list.style.display = 'block';
+            } else {
+                list.style.display = 'none';
+            }
+        });
 
-  // --- REKAPITULASI LOGIC BARU (FILTERABLE) ---
-  
-  async function fetchAndShowRekap() {
-      const date = $tgl.value;
-      const center = CENTER;
-      
-      // Ambil data mentah (SEMUA SHIFT) dari attendance table langsung
-      // Biar bisa difilter di sisi client (browser)
-      const { data, error } = await supa
-          .from('attendance')
-          .select('shift, tetap, kontrak, yayasan, processes(name, sort)')
-          .eq('work_date', date)
-          .eq('center', center)
-          .order('processes(sort)', {ascending: true});
-          
-      if(error) return alert("Gagal ambil data rekap: " + error.message);
-      
-      // Simpan di global var buat filtering
-      _allDailyData = data || [];
-      
-      // Reset Tombol Filter jadi 'ALL'
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      document.querySelector('.filter-btn').classList.add('active'); // Tombol pertama (ALL)
-      
-      // Render Default (Semua)
-      renderRekapTable('all');
-      
-      document.getElementById('rekapTitle').textContent = `Data: ${date} • ${center}`;
-      document.getElementById('rekapWrap').style.display='block';
-      document.getElementById('rekapWrap').scrollIntoView({behavior:'smooth'});
-  }
+        document.addEventListener('click', function(e) {
+            if (e.target !== input && e.target !== list) {
+                list.style.display = 'none';
+            }
+        });
+    }
 
-  // Fungsi Global agar bisa dipanggil onclick
-  window.filterRekap = function(mode, btn) {
-      // Highlight tombol
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      
-      renderRekapTable(mode);
-  }
+    window.selectProduk = (val) => {
+        $('eProduk').value = val;
+        $('produkSuggestions').style.display = 'none';
+        hydrateProduk(); 
+    };
 
-  let _lastRekapRendered = null;
+    // === DATABASE & LOGIC ===
+    function saveConfig() {
+        const url = $('cfgUrl').value.trim();
+        const key = $('cfgKey').value.trim();
+        if(!url || !key) return alert("Isi lengkap bro!");
+        localStorage.setItem('prod_sb_url', url);
+        localStorage.setItem('prod_sb_key', key);
+        initSupabase(url, key);
+        $('mConfig').classList.remove('open');
+    }
 
-  function renderRekapTable(mode) {
-      // 1. FILTERING DATA
-      let filteredData = [];
-      if(mode === 'all') {
-          filteredData = _allDailyData;
-      } else {
-          filteredData = _allDailyData.filter(r => r.shift == mode);
-      }
-      
-      // 2. GROUPING & SUMMING (By Process Name)
-      // Karena data raw, satu proses bisa muncul 3 kali (shift 1,2,3). Harus digabung.
-      let grouped = {};
-      
-      filteredData.forEach(r => {
-          const pName = r.processes?.name || 'Unknown';
-          if(!grouped[pName]) {
-              grouped[pName] = { name: pName, tetap:0, kontrak:0, yayasan:0, total:0, count:0 };
-          }
-          const t = (r.tetap||0);
-          const k = (r.kontrak||0);
-          const y = (r.yayasan||0);
-          
-          grouped[pName].tetap += t;
-          grouped[pName].kontrak += k;
-          grouped[pName].yayasan += y;
-          grouped[pName].total += (t + k + y);
-          grouped[pName].count += 1; // Menandakan mesin ini aktif di shift tsb
-      });
-      
-      // Convert to Array & Sort (Sebenernya udah urut dari DB, tapi amanin aja)
-      // Kita pakai urutan kemunculan pertama dari _allDailyData biar sort-nya bener
-      // (Simplified: Kita percaya urutan DB aja, Object.values biasanya ngacak tapi ok lah)
-      let rows = Object.values(grouped);
-      
-      // 3. RENDER TABLE
-      const tbody = document.querySelector('#rekapTable tbody');
-      tbody.innerHTML = '';
-      
-      let gtTet=0, gtKon=0, gtYay=0, gtAll=0;
-      let activeMachines = 0;
-      
-      rows.forEach((r, i) => {
-          // Hitung Grand Total Bawah
-          gtTet += r.tetap;
-          gtKon += r.kontrak;
-          gtYay += r.yayasan;
-          gtAll += r.total;
-          
-          // Hitung Mesin Aktif (Kalau ada isinya > 0, dianggap aktif)
-          if(r.total > 0) activeMachines++;
-          
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td style="text-align:center;">${i+1}</td>
-            <td>${escapeHTML(r.name)}</td>
-            <td style="text-align:center;">${r.tetap}</td>
-            <td style="text-align:center;">${r.kontrak}</td>
-            <td style="text-align:center;">${r.yayasan}</td>
-            <td style="text-align:center; font-weight:700;">${r.total}</td>`;
-          tbody.appendChild(tr);
-      });
-      
-      // Update Footer
-      document.getElementById('rTotTetap').textContent = gtTet;
-      document.getElementById('rTotKontrak').textContent = gtKon;
-      document.getElementById('rTotYayasan').textContent = gtYay;
-      document.getElementById('rTotTotal').textContent = gtAll;
-      
-      // Update Total Mesin di Header
-      document.querySelector('#machineCount b').innerText = activeMachines + " Unit";
-      
-      // Simpan buat export CSV
-      _lastRekapRendered = { rows, totals: { tetap:gtTet, kontrak:gtKon, yayasan:gtYay, total:gtAll } };
-  }
+    function initSupabase(url, key) {
+        try {
+            if(typeof supabase === 'undefined') throw new Error("Library Supabase Error.");
+            client = supabase.createClient(url, key);
+            $('statusDb').innerText = "ONLINE";
+            $('statusDb').style.color = "var(--success)";
+            refreshData();
+        } catch(e) {
+            alert("Gagal konek: " + e.message);
+            $('statusDb').innerText = "ERROR";
+            $('mConfig').classList.add('open');
+        }
+    }
 
-  function currentPayload(){
-    return { work_date:$tgl.value, shift:$shift.value, center:CENTER, rows: ROWS.map(({process_id,name,tetap,kontrak,yayasan,total})=>({process_id,name,tetap,kontrak,yayasan,total})) };
-  }
-  function rowsToCSV(rows){
-    const lines = [['No','Proses','Tetap','Kontrak','Yayasan','Total'].join(',')];
-    rows.forEach((r,i)=>lines.push([i+1, csv(r.name), Number(r.tetap||0), Number(r.kontrak||0), Number(r.yayasan||0), Number(r.total||0)].join(',')));
-    return lines.join('\n');
-  }
-  function rekapToCSV(rows,tot){
-    const lines = [['No','Proses','Tetap','Kontrak','Yayasan','Total'].join(',')];
-    rows.forEach((r,i)=>lines.push([i+1, csv(r.name), r.tetap, r.kontrak, r.yayasan, r.total].join(',')));
-    lines.push([ '', 'TOTAL', tot.tetap, tot.kontrak, tot.yayasan, tot.total ].join(','));
-    return lines.join('\n');
-  }
-  function downloadCSV(csv, name){
-    const a = Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([csv], {type:'text/csv'})),download:name});
-    a.click();
-  }
-  function downloadJSON(obj,name){
-    const a = Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([JSON.stringify(obj,null,2)], {type:'application/json'})),download:name});
-    a.click();
-  }
-  
-  const escmap = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;','/':'&#47;'};
-  const escapeHTML = s => String(s).replace(/[&<>"'/]/g,m=>escmap[m]);
-  const csv = s => `"${String(s).replace(/"/g,'""')}"`;
-  
-  function toast(msg){
-    const div = document.createElement('div');
-    Object.assign(div.style,{ position:'fixed',bottom:'30px',left:'50%',transform:'translateX(-50%)', background:'#10b981', padding:'10px 20px', borderRadius:'30px', color:'#064e3b', fontWeight:'600', zIndex:9999, boxShadow:'0 5px 15px rgba(0,0,0,0.3)' });
-    div.textContent = msg; document.body.appendChild(div);
-    setTimeout(()=>div.remove(),2000);
-  }
+    async function refreshData() {
+        if(!client) return;
+        $('loading').style.display = 'flex';
+        
+        const { data: mData, error: mErr } = await client.from('master').select('*');
+        if(mErr) { $('loading').style.display='none'; return alert('Gagal Master: ' + mErr.message); }
+        master = mData || [];
+        master.sort((a,b) => (a.kode || '').localeCompare(b.kode || ''));
 
-  refresh();
+        const { data: lData, error: lErr } = await client.from('logs').select('*');
+        if(lErr) { $('loading').style.display='none'; return alert('Gagal Logs: ' + lErr.message); }
+        logs = lData || [];
+        
+        renderTable(); 
+        renderMaster();
+        $('loading').style.display = 'none';
+    }
+
+    function resetEntryForm() {
+        const fields = ['eLine', 'eProduk', 'eGram', 'eRunner', 'eCavity', 'eCounter', 'eJatah', 'eStok', 'eBalokan', 'eSisaBahan', 'eSblm1', 'eSblm2', 'eSblm3', 'eSblm4', 'eSblm5', 'eSblm6', 'eSsdh1', 'eSsdh2', 'eSsdh3', 'eSsdh4', 'eSsdh5', 'eSsdh6', 'eQtyDus', 'eIsiDus', 'eQtyBox', 'eIsiBox', 'eQtyDusPlus', 'eIsiDusPlus', 'eCatatan', 'rUneven', 'rMottled', 'rStartup', 'rShort', 'rFlow', 'rFlash', 'rCrack', 'rSpot', 'rScratch', 'rDirty', 'rTotal', 'rMax'];
+        fields.forEach(id => { if($(id)) $(id).value = ''; });
+        $('eId').value = '';
+        ['vHasil', 'vOkPcs', 'vRejectPcs', 'vYield', 'vOkKg', 'vRejectKg', 'vRunnerKg', 'vSisaBahanLabel'].forEach(id => $(id).innerText='0');
+        $('badgeTipe').innerText=''; $('warnOver').style.display='none';
+    }
+
+    function hydrateProduk(){
+        const val = $('eProduk').value;
+        const p = master.find(x => (x.kode + " - " + x.nama) === val);
+        if(p) {
+            $('eGram').value = p.gram; $('eRunner').value = p.runner; $('eCavity').value = p.cavity;
+            $('eIsiDus').value = p.per_dus; $('eIsiBox').value = p.per_box;
+            $('badgeTipe').innerText = (p.tipe === 'kg_sisa') ? 'Mode KG' : 'Mode PCS';
+            recalc();
+        }
+    }
+
+    function recalc(){
+        const p = compute();
+        $('vHasil').innerText = p.hasil.toFixed(0); $('vOkPcs').innerText = p.okpcs.toFixed(0);
+        $('vRejectPcs').innerText = p.rejectpcs.toFixed(0); $('eSisaBahan').value = p.sisaBahan.toFixed(2);
+        $('vYield').innerText = p.yieldpct.toFixed(2) + "%"; $('vOkKg').innerText = p.okkg.toFixed(2);
+        $('vRejectKg').innerText = p.rejectkg.toFixed(2); $('vRunnerKg').innerText = p.runnerkg.toFixed(2);
+        $('vSisaBahanLabel').innerText = p.sisaBahan.toFixed(2);
+        $('rTotal').value = p.rtotal;
+        $('warnOver').style.display = p.overpack ? 'block' : 'none';
+    }
+
+    function sum(ids){ return ids.map(id => toNum($(id).value)).reduce((a,b)=>a+b,0); }
+
+    function compute(){
+        const prodNameFull = $('eProduk').value;
+        const prod = master.find(p => (p.kode + " - " + p.nama) === prodNameFull);
+        const gram = toNum($('eGram').value); 
+        const tipe = $('badgeTipe').innerText.includes('KG') ? 'kg_sisa' : 'pcs';
+        
+        const cav = Math.max(1, toNum($('eCavity').value)); 
+        const counter = toNum($('eCounter').value);
+        
+        let sblm_disp = sum(['eSblm1','eSblm2','eSblm3','eSblm4','eSblm5','eSblm6']);
+        let ssdh_disp = sum(['eSsdh1','eSsdh2','eSsdh3','eSsdh4','eSsdh5','eSsdh6']);
+        
+        let sblm_pcs = sblm_disp, ssdh_pcs = ssdh_disp;
+        if(tipe === 'kg_sisa'){ 
+            const conv = gram > 0 ? (1000/gram) : 0; 
+            sblm_pcs = sblm_disp * conv; ssdh_pcs = ssdh_disp * conv; 
+        }
+
+        const qtyDus = toNum($('eQtyDus').value), isiDus = toNum($('eIsiDus').value);
+        const qtyBox = toNum($('eQtyBox').value), isiBox = toNum($('eIsiBox').value);
+        const qtyDusPlus = toNum($('eQtyDusPlus').value), isiDusPlus = toNum($('eIsiDusPlus').value);
+        
+        const packpcs = (qtyDus*isiDus) + (qtyBox*isiBox) + (qtyDusPlus*isiDusPlus);
+        const okpcs = packpcs - sblm_pcs + ssdh_pcs;
+        const produksi = counter * cav; 
+        const hasil = produksi + sblm_pcs - ssdh_pcs;
+        const rejectpcs = produksi - okpcs;
+        
+        const okkg = (okpcs * gram)/1000; 
+        const rejectkg = (rejectpcs * gram)/1000;
+        const runnerkg = (counter * toNum($('eRunner').value)) / 1000;
+        
+        const jatah = toNum($('eJatah').value); 
+        const stok = toNum($('eStok').value);
+        const balok = toNum($('eBalokan').value);
+        
+        const sisaBahan = (jatah + stok) - (runnerkg + rejectkg + okkg + balok);
+        const yieldpct = hasil > 0 ? (okpcs / hasil) * 100 : 0;
+        const overpack = packpcs > hasil;
+
+        let rIds = ['rUneven', 'rMottled', 'rStartup', 'rShort', 'rFlow', 'rFlash', 'rCrack', 'rSpot', 'rScratch', 'rDirty'];
+        let rTotalInput = sum(rIds);
+        let rMax = Math.max(...rIds.map(id => toNum($(id).value)));
+
+        return { prod, tipe, gram, cav, counter, sblm_pcs, ssdh_pcs, hasil, okpcs, okkg, rejectpcs, rejectkg, runnerkg, yieldpct, sisaBahan, overpack, packpcs, rtotal: rTotalInput, rmax: rMax };
+    }
+
+    async function saveEntry() {
+        if(!client) return alert("Database Belum Konek!");
+        const p = compute(); 
+        if(!p.prod) return alert("Pilih produk valid");
+        
+        $('loading').style.display='flex';
+        const existingId = $('eId').value;
+        const targetId = existingId || uid();
+        
+        const { error } = await client.from('logs').upsert({
+            id: targetId,
+            tanggal: $('eTanggal').value, shift: $('eShift').value, line: $('eLine').value,
+            kode: p.prod.kode, nama: p.prod.nama, tipe: p.tipe,
+            gram: p.gram, runner: toNum($('eRunner').value), cavity: p.cav, counter: p.counter,
+            sisa_sblm: p.sblm_pcs, sisa_ssdh: p.ssdh_pcs,
+            hasil: p.hasil, okpcs: p.okpcs, okkg: p.okkg,
+            reject: p.rejectpcs, rejectkg: p.rejectkg, runnerkg: p.runnerkg,
+            sisa_bahan: p.sisaBahan, yieldpct: p.yieldpct,
+            qty_dus: toNum($('eQtyDus').value), isi_dus: toNum($('eIsiDus').value),
+            qty_box: toNum($('eQtyBox').value), isi_box: toNum($('eIsiBox').value),
+            qty_dus_plus: toNum($('eQtyDusPlus').value), isi_dus_plus: toNum($('eIsiDusPlus').value),
+            catatan: $('eCatatan').value,
+            reject_uneven: toNum($('rUneven').value), reject_mottled: toNum($('rMottled').value),
+            reject_startup: toNum($('rStartup').value), reject_short: toNum($('rShort').value),
+            reject_flow: toNum($('rFlow').value), reject_flashing: toNum($('rFlash').value),
+            reject_crack: toNum($('rCrack').value), reject_spot: toNum($('rSpot').value),
+            reject_scratch: toNum($('rScratch').value), reject_dirty: toNum($('rDirty').value),
+            reject_total_kecil: toNum($('rTotal').value), reject_max: toNum($('rMax').value)
+        });
+        
+        $('loading').style.display='none';
+        if(error) alert('Error Save: ' + error.message); 
+        else { alert('Alhamdulillah Tersimpan!'); resetEntryForm(); refreshData(); }
+    }
+
+    async function saveMaster() {
+        if(!client) return alert("Database Belum Konek!");
+        const kode = $('mpKode').value.trim(); const nama = $('mpNama').value.trim();
+        if(!kode) return alert("Isi Kode");
+        
+        const allow = $('chkAllowDup').checked;
+        if(!allow) {
+            const exist = master.find(m => m.kode.toLowerCase() === kode.toLowerCase() && m.nama.toLowerCase() === nama.toLowerCase());
+            if(exist && !confirm("Produk sudah ada. Update?")) return;
+        }
+
+        $('loading').style.display='flex';
+        let targetID = uid();
+        const exist = master.find(m => m.kode.toLowerCase() === kode.toLowerCase() && m.nama.toLowerCase() === nama.toLowerCase());
+        if(exist) targetID = exist.id;
+
+        const { error } = await client.from('master').upsert({
+            id: targetID, kode: kode, nama: nama, tipe: $('mpTipe').value,
+            gram: toNum($('mpGram').value), runner: toNum($('mpRunner').value),
+            cavity: toNum($('mpCavity').value), per_dus: toNum($('mpPerDus').value), per_box: toNum($('mpPerBox').value)
+        });
+
+        $('loading').style.display='none';
+        if(error) alert(error.message); else { refreshData(); ['mpKode','mpNama','mpGram','mpRunner','mpCavity','mpPerDus','mpPerBox'].forEach(id => $(id).value=''); }
+    }
+
+    window.deleteLog = async (id) => { if(!confirm("Hapus?")) return; $('loading').style.display='flex'; const { error } = await client.from('logs').delete().eq('id', id); $('loading').style.display='none'; if(!error) refreshData(); };
+    window.deleteMaster = async (id) => { if(!confirm("Hapus Master?")) return; $('loading').style.display='flex'; const { error } = await client.from('master').delete().eq('id', id); $('loading').style.display='none'; if(!error) refreshData(); };
+    
+    window.editLog = (id) => {
+        const r = logs.find(x => x.id === id); if(!r) return;
+        $('eId').value = r.id; $('eTanggal').value = r.tanggal; $('eShift').value = r.shift; $('eLine').value = r.line;
+        $('eProduk').value = r.kode + " - " + r.nama; hydrateProduk();
+        $('eCounter').value = r.counter; $('eCavity').value = r.cavity;
+        $('eQtyDus').value = r.qty_dus||''; $('eIsiDus').value = r.isi_dus||'';
+        $('eQtyBox').value = r.qty_box||''; $('eIsiBox').value = r.isi_box||'';
+        $('eQtyDusPlus').value = r.qty_dus_plus||''; $('eIsiDusPlus').value = r.isi_dus_plus||'';
+        $('eCatatan').value = r.catatan||'';
+        $('rUneven').value = r.reject_uneven||''; $('rMottled').value = r.reject_mottled||'';
+        $('rStartup').value = r.reject_startup||''; $('rShort').value = r.reject_short||'';
+        $('rFlow').value = r.reject_flow||''; $('rFlash').value = r.reject_flashing||'';
+        $('rCrack').value = r.reject_crack||''; $('rSpot').value = r.reject_spot||'';
+        $('rScratch').value = r.reject_scratch||''; $('rDirty').value = r.reject_dirty||'';
+        recalc(); $('mEntry').classList.add('open');
+    };
+
+    window.editMaster = (idx) => {
+        const p = master[idx]; $('mpKode').value = p.kode; $('mpNama').value = p.nama; $('mpTipe').value = p.tipe;
+        $('mpGram').value = p.gram; $('mpRunner').value = p.runner; $('mpCavity').value = p.cavity; $('mpPerDus').value = p.per_dus; $('mpPerBox').value = p.per_box;
+    };
+
+    async function wipeLogs() { if(!confirm('HAPUS SEMUA DATA LAPORAN?')) return; $('loading').style.display='flex'; const { error } = await client.from('logs').delete().neq('id','0'); $('loading').style.display='none'; refreshData(); }
+    async function wipeMaster() { if(!confirm('YAKIN HAPUS SEMUA MASTER?')) return; $('loading').style.display='flex'; const { error } = await client.from('master').delete().neq('id','0'); $('loading').style.display='none'; refreshData(); }
+
+    function importCSV(e) {
+        if(!client) return alert("Database Belum Konek!");
+        const file = e.target.files[0]; if(!file) return;
+        const reader = new FileReader();
+        reader.onload = async (evt) => {
+            const lines = evt.target.result.split(/\r\n/).filter(l => l.trim() !== '');
+            if(lines.length < 2) return alert('CSV Salah');
+            const delim = lines[0].split(';').length > lines[0].split(',').length ? ';' : ',';
+            const headers = lines[0].toLowerCase().split(delim).map(h => h.trim().replace(/"/g, ''));
+            
+            const idx = {
+                kode: headers.findIndex(h => h.includes('kode')),
+                nama: headers.findIndex(h => h.includes('nama') || h.includes('product')),
+                gram: headers.findIndex(h => h.includes('gram') || h.includes('berat satuan')),
+                runner: headers.findIndex(h => h.includes('runner')),
+                cavity: headers.findIndex(h => h.includes('cav')),
+                dus: headers.findIndex(h => h.includes('dus') || h.includes('doos')),
+                box: headers.findIndex(h => h.includes('box')),
+                tipe: headers.findIndex(h => h.includes('tipe'))
+            };
+            if(idx.nama < 0) return alert('Header Nama tidak ketemu');
+            const autoSplitKode = (idx.kode < 0);
+
+            $('loading').style.display='flex';
+            let rows = [];
+            for(let i=1; i<lines.length; i++){
+                const cols = lines[i].split(delim).map(c => c.trim().replace(/"/g, ''));
+                if(cols.length < 2) continue;
+                let kodeVal = '', namaVal = '';
+                if(autoSplitKode) {
+                    const rawName = cols[idx.nama];
+                    const firstSpace = rawName.indexOf(' ');
+                    if(firstSpace > 0) { kodeVal = rawName.substring(0, firstSpace).trim(); namaVal = rawName.substring(firstSpace+1).trim(); }
+                    else { kodeVal = rawName; namaVal = rawName; }
+                } else { kodeVal = cols[idx.kode]; namaVal = cols[idx.nama] || kodeVal; }
+
+                const cleanNum = (val) => { if(!val || val==='-') return 0; return toNum(val.replace(',','.')); };
+                let targetID = uid();
+                const exist = master.find(m => m.kode.toLowerCase() === kodeVal.toLowerCase() && m.nama.toLowerCase() === namaVal.toLowerCase());
+                if(exist) targetID = exist.id;
+
+                rows.push({
+                    id: targetID, kode: kodeVal, nama: namaVal, 
+                    tipe: (idx.tipe >= 0 ? cols[idx.tipe] : 'pcs'),
+                    gram: (idx.gram >= 0 ? cleanNum(cols[idx.gram]) : 0),
+                    runner: (idx.runner >= 0 ? cleanNum(cols[idx.runner]) : 0),
+                    cavity: (idx.cavity >= 0 ? cleanNum(cols[idx.cavity]) : 1),
+                    per_dus: (idx.dus >= 0 ? cleanNum(cols[idx.dus]) : 0),
+                    per_box: (idx.box >= 0 ? cleanNum(cols[idx.box]) : 0)
+                });
+            }
+            const { error } = await client.from('master').upsert(rows);
+            $('loading').style.display='none';
+            if(error) alert('Error Import: '+error.message); else { alert('Import Sukses!'); refreshData(); }
+            $('fileCsvMaster').value='';
+        };
+        reader.readAsText(file);
+    }
+
+    function renderMaster() { 
+        const t = $('mpBody'); t.innerHTML = ''; 
+        master.forEach((p, idx) => { 
+            const tr = document.createElement('tr'); 
+            tr.innerHTML = `<td>${p.kode}</td><td>${p.nama}</td><td>${p.tipe}</td><td class="right">${p.gram}</td><td class="right">${p.runner}</td><td class="right">${p.cavity}</td><td class="right">${p.per_dus}</td><td style="text-align:center"><button class="btn sm" onclick="editMaster(${idx})">✎</button> <button class="btn sm danger" onclick="deleteMaster('${p.id}')">🗑</button></td>`; 
+            t.appendChild(tr); 
+        }); 
+    }
+
+    function renderTable() {
+        const t = $('tbody'); t.innerHTML = '';
+        const qFrom = $('fFrom').value, qTo = $('fTo').value;
+        const from = qFrom ? new Date(qFrom) : null; const to = qTo ? new Date(qTo) : null;
+        const qProd = $('fProduk').value.toLowerCase();
+        
+        const filtered = logs.filter(r => {
+            const d = new Date(r.tanggal);
+            return (from ? d >= from : true) && (to ? d <= to : true) && (qProd ? r.nama.toLowerCase().includes(qProd) : true);
+        });
+        $('rowCount').textContent = filtered.length + " data";
+        
+        filtered.forEach(r => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${r.tanggal}</td><td>${r.shift}</td><td>${r.line}</td><td><b>${r.nama}</b><br><small>${r.kode}</small></td><td>${r.tipe}</td><td class="right">${r.counter}</td><td class="right">${r.cavity}</td><td class="right">${r.qty_dus}</td><td class="right">${r.qty_box}</td><td class="right text-ok"><b>${(+r.okpcs).toLocaleString()}</b></td><td class="right">${(+r.okkg).toFixed(2)}</td><td class="right text-danger">${(+r.reject).toLocaleString()}</td><td class="right">${(+r.sisa_bahan).toFixed(2)}</td><td class="right"><b>${(+r.yieldpct).toFixed(2)}%</b></td><td class="right">${r.reject_max}</td><td style="text-align:center; white-space:nowrap;"><button class="btn sm info" onclick="editLog('${r.id}')" style="margin-right:4px;">Edit</button><button class="btn sm danger" onclick="deleteLog('${r.id}')">Hapus</button></td>`;
+            t.appendChild(tr);
+        });
+    }
+
+    // --- REKAP BARU DENGAN FILTER SHIFT ---
+    
+    // Global variable buat simpan data mentah rekap biar bisa difilter di client
+    let _rekapLogs = []; 
+
+    function fetchAndShowRekap() {
+        const qFrom = $('fFrom').value, qTo = $('fTo').value;
+        const from = qFrom ? new Date(qFrom) : null; const to = qTo ? new Date(qTo) : null;
+        
+        // Ambil data sesuai filter tanggal yg aktif
+        const filtered = logs.filter(r => { 
+            const d = new Date(r.tanggal); 
+            return (from ? d >= from : true) && (to ? d <= to : true); 
+        });
+        
+        if(filtered.length === 0) return alert("Data kosong di rentang ini.");
+        
+        // Simpan ke global
+        _rekapLogs = filtered;
+        
+        // Default: Tampilkan Semua Shift
+        renderRekapTable('all');
+        $('mRekap').classList.add('open');
+    }
+
+    // Fungsi ini dipanggil tombol filter
+    window.filterRekap = function(mode, btn) {
+        // Highlight Tombol
+        const buttons = document.querySelectorAll('.filter-btn');
+        buttons.forEach(b => b.classList.remove('active'));
+        if(btn) btn.classList.add('active');
+        
+        renderRekapTable(mode);
+    }
+
+    function renderRekapTable(mode) {
+        let dataToProcess = [];
+        
+        if(mode === 'all') {
+            dataToProcess = _rekapLogs;
+        } else {
+            // Filter berdasarkan shift (pastikan tipe data sama, biasanya string '1', '2', '3')
+            dataToProcess = _rekapLogs.filter(r => r.shift == mode);
+        }
+
+        const groups = {};
+        dataToProcess.forEach(r => {
+            const key = r.line + "|||" + r.kode + "|||" + r.nama;
+            if(!groups[key]) groups[key] = { line: r.line, kode: r.kode, nama: r.nama, okpcs: 0, reject: 0, okkg: 0, yieldTotal: 0, count: 0 };
+            groups[key].okpcs += (+r.okpcs || 0);
+            groups[key].reject += (+r.reject || 0);
+            groups[key].okkg += (+r.okkg || 0);
+            groups[key].yieldTotal += (+r.yieldpct || 0);
+            groups[key].count++;
+        });
+
+        // Update Total Mesin di Header
+        const activeMachines = Object.keys(groups).length;
+        $('rekapMachineCount').innerHTML = `Total Mesin Aktif: <b style="color:var(--text-main)">${activeMachines} Unit</b>`;
+
+        const tbody = $('tbodyRekap'); tbody.innerHTML = '';
+        const sortedKeys = Object.keys(groups).sort((a, b) => groups[a].line.localeCompare(groups[b].line, undefined, {numeric: true, sensitivity: 'base'}));
+        
+        if(sortedKeys.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">Tidak ada data untuk shift ini</td></tr>';
+            return;
+        }
+
+        sortedKeys.forEach(key => {
+            const g = groups[key];
+            const avgYield = g.count > 0 ? (g.yieldTotal/g.count) : 0;
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${g.line}</td><td style="line-height:1.2"><span style="color:var(--primary); font-weight:700; font-size:0.85rem">${g.kode}</span><br><span style="font-weight:600; color:var(--text-main)">${g.nama}</span></td><td class="right text-ok"><b>${g.okpcs.toLocaleString()}</b></td><td class="right text-danger">${g.reject.toLocaleString()}</td><td class="right">${g.okkg.toFixed(2)}</td><td class="right"><b>${avgYield.toFixed(2)}%</b></td>`;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function exportCSV() {
+        const qFrom = $('fFrom').value; const qTo = $('fTo').value;
+        const from = qFrom ? new Date(qFrom) : null; const to = qTo ? new Date(qTo) : null;
+        const filtered = logs.filter(r => { const d = new Date(r.tanggal); return (from ? d >= from : true) && (to ? d <= to : true); });
+        
+        if(filtered.length === 0) return alert("Data kosong");
+        const header = Object.keys(filtered[0]).join(",");
+        const csv = [header].concat(filtered.map(row => Object.values(row).map(v => `"${v}"`).join(","))).join("\n");
+        
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'Laporan_Produksi.csv'; a.click();
+    }
 </script>
-
-<script type="module" src="sw-register.js"></script>
 </body>
 </html>
