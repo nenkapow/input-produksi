@@ -3,30 +3,33 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
-    <title>Production Dashboard v0.9.16 (Filter Shift)</title>
+    <title>Production Dashboard v0.9.16 (Titanium Edition)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        /* --- ISLAMIC THEME VARIABLES (EMERALD & GOLD) --- */
+        /* --- TITANIUM LUXURY THEME (DARK GREY & GOLD) --- */
         :root {
-            --bg-body: #022c22;       /* Hijau Gelap */
-            --bg-card: #064e3b;       /* Hijau Emerald */
-            --bg-input: #065f46;      /* Hijau Input */
-            --text-main: #ecfdf5;     /* Putih Kehijauan */
-            --text-muted: #a7f3d0;    /* Hijau Muda Pucat */
-            --border: #d4af37;        /* EMAS (Gold) */
+            --bg-body: #121212;       /* Hitam/Abu Gelap Pekat */
+            --bg-card: #1e1e1e;       /* Abu-abu 'Arang' */
+            --bg-input: #2d2d2d;      /* Abu-abu Input */
             
-            --primary: #d4af37;       /* Gold Utama */
+            --text-main: #e5e5e5;     /* Putih Gading */
+            --text-muted: #a3a3a3;    /* Abu-abu soft */
+            
+            --border: #404040;        /* Border Halus */
+            --gold: #d4af37;          /* EMAS (Primary) */
+            
+            --primary: #d4af37;       
             --primary-hover: #b4942b;
             
             --success: #10b981; 
             --danger: #ef4444; 
             --info: #38bdf8;
             
-            --radius: 16px; 
-            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            --radius: 12px; 
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.7);
         }
 
         * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
@@ -34,7 +37,8 @@
         body { 
             margin: 0; 
             background-color: var(--bg-body); 
-            background-image: radial-gradient(circle at 2px 2px, rgba(212, 175, 55, 0.1) 1px, transparent 0);
+            /* Pattern Titanium */
+            background-image: radial-gradient(var(--border) 1px, transparent 1px);
             background-size: 30px 30px;
             color: var(--text-main); 
             font-family: 'Plus Jakarta Sans', sans-serif; 
@@ -47,10 +51,10 @@
         .bismillah {
             font-family: 'Amiri', serif;
             font-size: 2rem;
-            color: var(--primary);
+            color: var(--gold);
             text-align: center;
             margin-bottom: 0.5rem;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            text-shadow: 0 2px 10px rgba(212, 175, 55, 0.2);
         }
         
         .slogan {
@@ -61,9 +65,11 @@
             margin-bottom: 2rem;
         }
 
+        /* CARD STYLE */
         .card { 
             background: var(--bg-card); 
-            border: 1px solid var(--border); 
+            border: 1px solid var(--border);
+            border-top: 1px solid var(--gold); /* Signature Titanium */
             border-radius: var(--radius); 
             padding: 24px; 
             margin-bottom: 20px; 
@@ -71,80 +77,84 @@
             position: relative;
         }
 
-        .card::after {
-            content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-            width: 30%; height: 2px; background: linear-gradient(90deg, transparent, var(--primary), transparent);
-        }
-
         h2 { font-size: 1.75rem; font-weight: 700; margin:0; color: var(--text-main); }
         h3, h4 { margin: 0; }
         
         .muted { color: var(--text-muted); font-size: 0.85rem; }
 
+        /* BUTTONS */
         .btn {
             display: inline-flex; align-items: center; justify-content: center; gap: 8px;
             padding: 10px 20px; font-size: 0.9rem; font-weight: 600; 
             border-radius: 50px; 
-            border: 1px solid var(--border);
-            background: #022c22; color: var(--primary); 
+            border: 1px solid var(--gold);
+            background: transparent; color: var(--gold); 
             cursor: pointer; transition: all 0.2s ease;
         }
-        .btn:hover { background: var(--primary); color: #022c22; transform: translateY(-2px); }
+        .btn:hover { background: var(--gold); color: #121212; transform: translateY(-2px); }
         
         .btn.primary { 
             background: linear-gradient(to bottom, #d4af37, #b4942b); 
-            border: none; color: #022c22; 
-            box-shadow: 0 4px 10px rgba(212, 175, 55, 0.3);
+            border: none; color: #121212; 
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
         }
+        .btn.primary:hover { filter: brightness(1.1); }
+
         .btn.ok { border-color: var(--success); color: var(--success); }
-        .btn.ok:hover { background: var(--success); color: white; }
+        .btn.ok:hover { background: var(--success); color: #121212; }
         
         .btn.danger { border-color: var(--danger); color: var(--danger); }
         .btn.danger:hover { background: var(--danger); color: white; }
         
         .btn.info { border-color: var(--info); color: var(--info); }
+        .btn.info:hover { background: var(--info); color: #121212; }
+
         .btn.sm { padding: 6px 12px; font-size: 0.8rem; }
 
         /* FILTER BUTTONS DI REKAP */
         .filter-btn {
-            flex: 1; border: 1px solid var(--border); background: rgba(0,0,0,0.3); color: var(--text-muted);
+            flex: 1; border: 1px solid var(--border); background: #252525; color: var(--text-muted);
             padding: 8px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600;
             transition: 0.2s;
         }
-        .filter-btn:hover { background: rgba(212, 175, 55, 0.1); color: var(--primary); }
-        .filter-btn.active { background: var(--primary); color: #022c22; border-color: var(--primary); font-weight: 800; }
+        .filter-btn:hover { background: rgba(212, 175, 55, 0.1); color: var(--primary); border-color: var(--gold); }
+        .filter-btn.active { background: var(--primary); color: #121212; border-color: var(--primary); font-weight: 800; }
 
+        /* INPUTS */
         .input, select { 
             width: 100%; padding: 12px 16px; 
             background: var(--bg-input); 
-            border: 1px solid #374151;
-            border-radius: 10px; color: white; font-size: 0.95rem; transition: 0.2s; 
+            border: 1px solid var(--border);
+            border-radius: 10px; color: var(--text-main); font-size: 0.95rem; transition: 0.2s; 
         }
         .input:focus, select:focus { 
-            border-color: var(--primary); 
-            box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); 
+            border-color: var(--gold); 
+            background: #333;
+            box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.1); 
         }
 
+        /* TABLES */
         table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
         .table-container { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
         
         thead th { 
-            background: #022c22; color: var(--primary); padding: 14px 16px; text-align: left; 
+            background: #252525; color: var(--gold); padding: 14px 16px; text-align: left; 
             font-weight: 700; text-transform: uppercase; font-size: 0.75rem; 
             border-bottom: 1px solid var(--border); white-space: nowrap; 
         }
-        tbody td { padding: 14px 16px; border-bottom: 1px solid #374151; vertical-align: middle; color: var(--text-main); }
+        tbody td { padding: 14px 16px; border-bottom: 1px solid #333; vertical-align: middle; color: var(--text-main); }
+        tbody tr:hover { background: #2a2a2a; }
         
         .right { text-align: right; font-family: 'JetBrains Mono', monospace; }
         
         .badge { 
             font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; 
-            background: rgba(212, 175, 55, 0.2); color: var(--primary); 
-            border: 1px solid var(--primary); 
+            background: rgba(212, 175, 55, 0.1); color: var(--gold); 
+            border: 1px solid var(--gold); 
         }
 
         .stat-box { 
-            background: #022c22; border: 1px solid var(--border); 
+            background: #252525; border: 1px solid var(--border); 
             border-radius: 12px; padding: 16px; text-align: center; 
         }
         .stat-value { font-family: 'JetBrains Mono', monospace; font-size: 1.25rem; font-weight: 700; margin-top: 6px; display: block; }
@@ -154,13 +164,14 @@
         
         .text-ok { color: var(--success); } .text-danger { color: var(--danger); }
 
-        .modal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 100; }
+        /* MODALS */
+        .modal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 100; }
         .modal.open { display: flex; }
-        .modal .card { width: 100%; max-width: 1100px; max-height: 90vh; overflow-y: auto; border: 2px solid var(--border); animation: modalPop 0.3s; }
+        .modal .card { width: 100%; max-width: 1100px; max-height: 90vh; overflow-y: auto; border: 1px solid var(--gold); animation: modalPop 0.3s; background: #1a1a1a; }
         @keyframes modalPop { from { transform: scale(0.95) translateY(20px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
 
         .loading-overlay { position: fixed; inset: 0; background: var(--bg-body); z-index: 200; display: none; align-items: center; justify-content: center; flex-direction: column; }
-        .spinner { width: 50px; height: 50px; border: 4px solid var(--bg-card); border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+        .spinner { width: 50px; height: 50px; border: 4px solid var(--bg-card); border-top: 4px solid var(--gold); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
         /* REJECT GRID */
@@ -171,13 +182,13 @@
         .search-wrapper { position: relative; width: 100%; }
         .search-list { 
             position: absolute; top: 100%; left: 0; width: 100%; max-height: 250px; overflow-y: auto; 
-            background: var(--bg-body); border: 1px solid var(--primary); border-radius: 8px; z-index: 150; 
-            display: none; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5); 
+            background: #252525; border: 1px solid var(--gold); border-radius: 8px; z-index: 150; 
+            display: none; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.7); 
         }
-        .search-item { padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #374151; font-size: 0.85rem; color: var(--text-main); transition: 0.2s; white-space: normal; line-height: 1.4; }
-        .search-item:hover { background: var(--primary); color: #022c22; }
-        .search-item span { font-weight: 700; color: var(--primary); }
-        .search-item:hover span { color: #022c22; }
+        .search-item { padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #444; font-size: 0.85rem; color: var(--text-main); transition: 0.2s; white-space: normal; line-height: 1.4; }
+        .search-item:hover { background: var(--gold); color: #121212; }
+        .search-item span { font-weight: 700; color: var(--gold); }
+        .search-item:hover span { color: #121212; }
 
         @media (max-width: 768px) { 
             .wrap { padding: 1rem; } 
@@ -191,7 +202,7 @@
 
 <div id="loading" class="loading-overlay">
     <div class="spinner"></div>
-    <div style="margin-top:16px; font-weight:600; color:var(--primary); letter-spacing:1px;">MENGHUBUNGKAN...</div>
+    <div style="margin-top:16px; font-weight:600; color:var(--gold); letter-spacing:1px;">MENGHUBUNGKAN...</div>
 </div>
 
 <div class="wrap">
@@ -226,7 +237,7 @@
     </div>
 
     <div class="card">
-        <h4 style="margin-bottom:16px; color:var(--primary); text-transform:uppercase; letter-spacing:1px; font-size:0.8rem;">Filter & Search</h4>
+        <h4 style="margin-bottom:16px; color:var(--gold); text-transform:uppercase; letter-spacing:1px; font-size:0.8rem;">Filter & Search</h4>
         <div class="row" style="align-items:flex-end;">
             <div style="flex:1; min-width:140px"><div class="muted">Dari Tanggal</div><input id="fFrom" type="date" class="input"></div>
             <div style="flex:1; min-width:140px"><div class="muted">Sampai Tanggal</div><input id="fTo" type="date" class="input"></div>
@@ -238,8 +249,8 @@
     </div>
 
     <div class="card" style="padding:0; overflow:hidden;">
-        <div style="padding: 20px 24px; border-bottom: 1px solid var(--border); display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.2);">
-            <h3 style="font-size:1rem; color:var(--primary);">Laporan Harian</h3>
+        <div style="padding: 20px 24px; border-bottom: 1px solid var(--border); display:flex; justify-content:space-between; align-items:center; background:#252525;">
+            <h3 style="font-size:1rem; color:var(--gold);">Laporan Harian</h3>
             <span id="rowCount" class="badge">0 data</span>
         </div>
         <div class="table-container" style="border:none; border-radius:0;">
@@ -262,7 +273,7 @@
 </div>
 
 <div id="mConfig" class="modal"><div class="card" style="max-width:500px">
-    <h3 style="margin-bottom:8px; color:var(--primary)">Database Setup</h3>
+    <h3 style="margin-bottom:8px; color:var(--gold)">Database Setup</h3>
     <div class="grid">
         <div><div class="muted">Project URL</div><input id="cfgUrl" class="input" /></div>
         <div><div class="muted">Anon Public Key</div><textarea id="cfgKey" class="input" rows="4"></textarea></div>
@@ -274,13 +285,13 @@
 <div id="mRekap" class="modal"><div class="card">
     <div class="row" style="justify-content:space-between; margin-bottom:16px;">
         <div>
-            <h3 style="color:var(--primary); margin-bottom:4px;">Rekapitulasi Line</h3>
+            <h3 style="color:var(--gold); margin-bottom:4px;">Rekapitulasi Line</h3>
             <div id="rekapMachineCount" class="muted" style="font-size:0.9rem;">Total Mesin Aktif: <b style="color:var(--text-main)">0 Unit</b></div>
         </div>
         <button id="mRekapClose" class="btn sm">Tutup</button>
     </div>
 
-    <div style="display:flex; gap:8px; margin-bottom:16px; background:rgba(0,0,0,0.2); padding:8px; border-radius:8px;">
+    <div style="display:flex; gap:8px; margin-bottom:16px; background:#151515; padding:8px; border-radius:8px; border:1px solid var(--border);">
         <button class="filter-btn active" onclick="filterRekap('all', this)">SEMUA SHIFT</button>
         <button class="filter-btn" onclick="filterRekap('1', this)">SHIFT 1</button>
         <button class="filter-btn" onclick="filterRekap('2', this)">SHIFT 2</button>
@@ -297,10 +308,10 @@
 
 <div id="mMaster" class="modal"><div class="card">
     <div class="row" style="justify-content:space-between; margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:16px;">
-        <h3 style="color:var(--primary)">Master Produk</h3>
+        <h3 style="color:var(--gold)">Master Produk</h3>
         <div class="row">
             <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; background:var(--bg-input); padding:8px 12px; border-radius:8px; cursor:pointer; border:1px solid var(--border);">
-                <input type="checkbox" id="chkAllowDup" style="accent-color:var(--primary)" /> Allow Duplicate
+                <input type="checkbox" id="chkAllowDup" style="accent-color:var(--gold)" /> Allow Duplicate
             </label>
             <button id="btnImportCsv" class="btn ok sm">Import CSV</button>
             <button id="btnWipeMaster" class="btn danger sm">Hapus Semua</button>
@@ -308,8 +319,8 @@
             <input type="file" id="fileCsvMaster" accept=".csv" style="display:none;" />
         </div>
     </div>
-    <div style="background:rgba(0,0,0,0.2); padding:20px; border-radius:var(--radius); margin-bottom:24px; border:1px solid var(--border);">
-        <h4 style="font-size:0.85rem; margin-bottom:16px; color:var(--primary);">TAMBAH / EDIT MANUAL</h4>
+    <div style="background:#151515; padding:20px; border-radius:var(--radius); margin-bottom:24px; border:1px solid var(--border);">
+        <h4 style="font-size:0.85rem; margin-bottom:16px; color:var(--gold);">TAMBAH / EDIT MANUAL</h4>
         <div class="grid" style="grid-template-columns:repeat(12,1fr)">
             <div style="grid-column:span 2"><div class="muted">Kode</div><input id="mpKode" class="input" placeholder="AUTO..." /></div>
             <div style="grid-column:span 4"><div class="muted">Nama Produk</div><input id="mpNama" class="input" /></div>
@@ -330,7 +341,7 @@
 <div id="mEntry" class="modal"><div class="card">
     <div class="row" style="justify-content:space-between; margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--border);">
         <div style="display:flex; align-items:center; gap:12px;">
-            <h3 style="color:var(--primary)">Input Produksi</h3>
+            <h3 style="color:var(--gold)">Input Produksi</h3>
             <span id="badgeTipe" class="badge"></span>
         </div>
         <button id="mEntryClose" class="btn sm">Tutup X</button>
@@ -344,24 +355,24 @@
         <div style="grid-column:span 2"><div class="muted">Line</div><input id="eLine" class="input" placeholder="L..." /></div>
         <div style="grid-column:span 6; position:relative;">
             <div class="muted">Produk (Ketik Kode / Nama)</div>
-            <input id="eProduk" class="input" placeholder="Cari..." autocomplete="off" style="border-color:var(--primary)" />
+            <input id="eProduk" class="input" placeholder="Cari..." autocomplete="off" style="border-color:var(--gold)" />
             <div id="produkSuggestions" class="search-list"></div>
         </div>
 
         <div style="grid-column:span 12; height:1px; background:var(--border); margin:8px 0;"></div>
 
-        <div style="grid-column:span 2"><div class="muted">Gram</div><input id="eGram" type="number" class="input" step="0.01" readonly style="background:rgba(0,0,0,0.2); color:var(--text-muted);" /></div>
-        <div style="grid-column:span 2"><div class="muted">Runner</div><input id="eRunner" type="number" class="input" step="0.01" readonly style="background:rgba(0,0,0,0.2); color:var(--text-muted);" /></div>
+        <div style="grid-column:span 2"><div class="muted">Gram</div><input id="eGram" type="number" class="input" step="0.01" readonly style="background:#151515; color:var(--text-muted);" /></div>
+        <div style="grid-column:span 2"><div class="muted">Runner</div><input id="eRunner" type="number" class="input" step="0.01" readonly style="background:#151515; color:var(--text-muted);" /></div>
         <div style="grid-column:span 2"><div class="muted">Cavity</div><input id="eCavity" type="number" class="input" /></div>
-        <div style="grid-column:span 6"><div class="muted">Counter (Shot)</div><input id="eCounter" type="number" class="input" style="font-weight:bold; font-size:1.1rem; border-color:var(--primary);" /></div>
+        <div style="grid-column:span 6"><div class="muted">Counter (Shot)</div><input id="eCounter" type="number" class="input" style="font-weight:bold; font-size:1.1rem; border-color:var(--gold);" /></div>
 
-        <div style="grid-column:span 12; background:rgba(0,0,0,0.2); padding:16px; border-radius:8px; border:1px solid var(--border);">
-            <h4 style="margin:0 0 12px; font-size:0.8rem; color:var(--primary);">MATERIAL USAGE (KG)</h4>
+        <div style="grid-column:span 12; background:#151515; padding:16px; border-radius:8px; border:1px solid var(--border);">
+            <h4 style="margin:0 0 12px; font-size:0.8rem; color:var(--gold);">MATERIAL USAGE (KG)</h4>
             <div class="grid" style="grid-template-columns:repeat(8,1fr)">
                 <div style="grid-column:span 2"><div class="muted">Jatah</div><input id="eJatah" type="number" step="0.01" class="input" /></div>
                 <div style="grid-column:span 2"><div class="muted">Stok Awal</div><input id="eStok" type="number" step="0.01" class="input" /></div>
                 <div style="grid-column:span 2"><div class="muted">Balokan</div><input id="eBalokan" type="number" step="0.01" class="input" /></div>
-                <div style="grid-column:span 2"><div class="muted">Sisa (Auto)</div><input id="eSisaBahan" type="number" readonly class="input" style="background:rgba(0,0,0,0.3); font-weight:bold; color:var(--primary);" /></div>
+                <div style="grid-column:span 2"><div class="muted">Sisa (Auto)</div><input id="eSisaBahan" type="number" readonly class="input" style="background:#1a1a1a; font-weight:bold; color:var(--gold);" /></div>
             </div>
         </div>
 
@@ -383,19 +394,19 @@
         <div style="grid-column:span 12; height:1px; background:var(--border); margin:8px 0;"></div>
 
         <div style="grid-column:span 12">
-            <h4 style="margin:0 0 12px; font-size:0.8rem; color:var(--primary);">PACKAGING</h4>
+            <h4 style="margin:0 0 12px; font-size:0.8rem; color:var(--gold);">PACKAGING</h4>
             <div class="grid" style="grid-template-columns:repeat(12,1fr)">
                 <div style="grid-column:span 2"><div class="muted">Dus</div><input id="eQtyDus" type="number" class="input" /></div>
-                <div style="grid-column:span 2"><div class="muted">Isi/D</div><input id="eIsiDus" type="number" class="input" readonly style="background:rgba(0,0,0,0.2)" /></div>
+                <div style="grid-column:span 2"><div class="muted">Isi/D</div><input id="eIsiDus" type="number" class="input" readonly style="background:#151515" /></div>
                 <div style="grid-column:span 2"><div class="muted">Box</div><input id="eQtyBox" type="number" class="input" /></div>
-                <div style="grid-column:span 2"><div class="muted">Isi/B</div><input id="eIsiBox" type="number" class="input" readonly style="background:rgba(0,0,0,0.2)" /></div>
+                <div style="grid-column:span 2"><div class="muted">Isi/B</div><input id="eIsiBox" type="number" class="input" readonly style="background:#151515" /></div>
                 <div style="grid-column:span 2"><div class="muted">Dus+</div><input id="eQtyDusPlus" type="number" class="input" /></div>
                 <div style="grid-column:span 2"><div class="muted">Isi+</div><input id="eIsiDusPlus" type="number" class="input" /></div>
                 <div style="grid-column:span 12"><div class="muted">Catatan Tambahan</div><input id="eCatatan" class="input" /></div>
             </div>
         </div>
 
-        <div style="grid-column:span 12" class="card" style="background:rgba(239, 68, 68, 0.1); border:1px solid var(--danger); padding:16px;">
+        <div style="grid-column:span 12" class="card" style="background:rgba(239, 68, 68, 0.05); border:1px solid var(--danger); padding:16px;">
             <h4 style="margin:0 0 12px; color:var(--danger); font-size:0.9rem;">REJECT DETAIL (PCS)</h4>
             <div class="reject-grid">
                 <div><div class="reject-label">Uneven Color</div><input id="rUneven" type="number" class="input" /></div>
@@ -411,14 +422,14 @@
             </div>
             <div style="margin-top:12px; border-top:1px dashed var(--danger); padding-top:12px;">
                 <div class="muted" style="color:var(--danger); font-weight:bold;">Total Reject (Auto)</div>
-                <input id="rTotal" type="number" class="input" readonly style="font-weight:bold; font-size:1.1rem; color:var(--danger); background:rgba(0,0,0,0.3);" />
+                <input id="rTotal" type="number" class="input" readonly style="font-weight:bold; font-size:1.1rem; color:var(--danger); background:#1a1a1a;" />
                 <input id="rMax" type="hidden" />
             </div>
         </div>
 
         <div style="grid-column:span 12" class="card" style="background:rgba(16, 185, 129, 0.05); border:1px solid var(--success); padding:20px; margin-bottom:0;">
             <div class="grid" style="grid-template-columns:repeat(4,1fr); text-align:center;">
-                <div class="stat-box"><div class="muted">Hasil (Pcs)</div><span class="stat-value" id="vHasil" style="color:var(--primary)">0</span></div>
+                <div class="stat-box"><div class="muted">Hasil (Pcs)</div><span class="stat-value" id="vHasil" style="color:var(--gold)">0</span></div>
                 <div class="stat-box"><div class="muted">OK (Pcs)</div><span class="stat-value" id="vOkPcs" style="color:var(--success)">0</span></div>
                 <div class="stat-box"><div class="muted">Reject (Pcs)</div><span class="stat-value" id="vRejectPcs" style="color:var(--danger)">0</span></div>
                 <div class="stat-box"><div class="muted">Yield</div><span class="stat-value" id="vYield">0%</span></div>
@@ -922,7 +933,7 @@
             const g = groups[key];
             const avgYield = g.count > 0 ? (g.yieldTotal/g.count) : 0;
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${g.line}</td><td style="line-height:1.2"><span style="color:var(--primary); font-weight:700; font-size:0.85rem">${g.kode}</span><br><span style="font-weight:600; color:var(--text-main)">${g.nama}</span></td><td class="right text-ok"><b>${g.okpcs.toLocaleString()}</b></td><td class="right text-danger">${g.reject.toLocaleString()}</td><td class="right">${g.okkg.toFixed(2)}</td><td class="right"><b>${avgYield.toFixed(2)}%</b></td>`;
+            tr.innerHTML = `<td>${g.line}</td><td style="line-height:1.2"><span style="color:var(--gold); font-weight:700; font-size:0.85rem">${g.kode}</span><br><span style="font-weight:600; color:var(--text-main)">${g.nama}</span></td><td class="right text-ok"><b>${g.okpcs.toLocaleString()}</b></td><td class="right text-danger">${g.reject.toLocaleString()}</td><td class="right">${g.okkg.toFixed(2)}</td><td class="right"><b>${avgYield.toFixed(2)}%</b></td>`;
             tbody.appendChild(tr);
         });
     }
