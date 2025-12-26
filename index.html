@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
-    <title>Production Dashboard v0.9.16 (Titanium Edition)</title>
+    <title>Production Dashboard v0.9.17 (Detail Fix)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -214,7 +214,7 @@
         <div>
             <h2>Production Dashboard</h2>
             <div class="row" style="align-items:center; gap:8px; margin-top:8px;">
-                <span class="badge">v0.9.16 (Filter Shift)</span>
+                <span class="badge">v0.9.17 (Detail Fix)</span>
                 <span id="statusDb" style="font-size:0.8rem; color:var(--danger)">Disconnected</span>
             </div>
         </div>
@@ -682,7 +682,13 @@
         let rTotalInput = sum(rIds);
         let rMax = Math.max(...rIds.map(id => toNum($(id).value)));
 
-        return { prod, tipe, gram, cav, counter, sblm_pcs, ssdh_pcs, hasil, okpcs, okkg, rejectpcs, rejectkg, runnerkg, yieldpct, sisaBahan, overpack, packpcs, rtotal: rTotalInput, rmax: rMax };
+        // --- NEW: COLLECT DETAILS SISA ---
+        const details = {
+            sblm: [1,2,3,4,5,6].map(i => toNum($('eSblm'+i).value)),
+            ssdh: [1,2,3,4,5,6].map(i => toNum($('eSsdh'+i).value))
+        };
+
+        return { prod, tipe, gram, cav, counter, sblm_pcs, ssdh_pcs, hasil, okpcs, okkg, rejectpcs, rejectkg, runnerkg, yieldpct, sisaBahan, overpack, packpcs, rtotal: rTotalInput, rmax: rMax, details: details };
     }
 
     async function saveEntry() {
@@ -712,7 +718,10 @@
             reject_flow: toNum($('rFlow').value), reject_flashing: toNum($('rFlash').value),
             reject_crack: toNum($('rCrack').value), reject_spot: toNum($('rSpot').value),
             reject_scratch: toNum($('rScratch').value), reject_dirty: toNum($('rDirty').value),
-            reject_total_kecil: toNum($('rTotal').value), reject_max: toNum($('rMax').value)
+            reject_total_kecil: toNum($('rTotal').value), reject_max: toNum($('rMax').value),
+            
+            // --- NEW: SIMPAN DETAIL SISA KE KOLOM JSON ---
+            detail_sisa: p.details 
         });
         
         $('loading').style.display='none';
@@ -763,6 +772,24 @@
         $('rFlow').value = r.reject_flow||''; $('rFlash').value = r.reject_flashing||'';
         $('rCrack').value = r.reject_crack||''; $('rSpot').value = r.reject_spot||'';
         $('rScratch').value = r.reject_scratch||''; $('rDirty').value = r.reject_dirty||'';
+        
+        // --- NEW: LOAD DETAIL SISA JIKA ADA ---
+        if(r.detail_sisa) {
+            // Cek apakah Supabase balikin object atau string (kadang beda versi beda behavior)
+            const d = (typeof r.detail_sisa === 'string') ? JSON.parse(r.detail_sisa) : r.detail_sisa;
+            
+            if(d.sblm) {
+                d.sblm.forEach((val, idx) => {
+                    if($('eSblm'+(idx+1))) $('eSblm'+(idx+1)).value = val === 0 ? '' : val;
+                });
+            }
+            if(d.ssdh) {
+                d.ssdh.forEach((val, idx) => {
+                    if($('eSsdh'+(idx+1))) $('eSsdh'+(idx+1)).value = val === 0 ? '' : val;
+                });
+            }
+        }
+
         recalc(); $('mEntry').classList.add('open');
     };
 
