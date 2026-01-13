@@ -10,13 +10,18 @@ let logs = [];
 let master = [];
 let _rekapLogs = [];
 
+// 🔥 SETUP PIN ADMIN DISINI 🔥
+const ADMIN_PIN = "1234"; // Ganti angka ini sesuai keinginan lo
+
 document.addEventListener('DOMContentLoaded', () => {
-    // --- ACTIONS ---
+    // --- ACTIONS (MENU UTAMA) ---
     $('btnAdd').onclick = () => { $('mEntry').classList.add('open'); resetEntryForm(); };
-    $('btnConfig').onclick = () => $('mConfig').classList.add('open');
-    $('btnMaster').onclick = () => $('mMaster').classList.add('open');
     $('btnRekap').onclick = fetchAndShowRekap;
     $('btnOpenLog').onclick = () => { $('vLaporan').classList.add('open'); renderTable(); };
+
+    // --- PROTECTED MENUS (BUTUH PIN) ---
+    $('btnConfig').onclick = () => checkAdmin(() => $('mConfig').classList.add('open'));
+    $('btnMaster').onclick = () => checkAdmin(() => $('mMaster').classList.add('open'));
 
     // --- CLOSERS ---
     $('vLaporanClose').onclick = () => $('vLaporan').classList.remove('open');
@@ -39,8 +44,10 @@ document.addEventListener('DOMContentLoaded', () => {
     
     $('btnRefreshRekap').onclick = processRekapFilter;
 
-    $('btnClear').onclick = wipeLogs;
-    $('btnWipeMaster').onclick = wipeMaster;
+    // Tombol Berbahaya (Reset) juga perlu diprotect
+    $('btnClear').onclick = () => checkAdmin(wipeLogs);
+    $('btnWipeMaster').onclick = () => checkAdmin(wipeMaster);
+    
     $('btnImportCsv').onclick = () => $('fileCsvMaster').click();
     $('fileCsvMaster').onchange = importCSV;
 
@@ -54,12 +61,10 @@ document.addEventListener('DOMContentLoaded', () => {
     $('eTanggal').value = todayISO();
     $('eShift').value = '1';
     
-    // Default Filter: HARI INI (Sesuai request)
+    // Default Filter
     const today = todayISO();
     $('fFrom').value = today;
     $('fTo').value = today;
-    
-    // Default Rekap: HARI INI juga
     $('rDateFrom').value = today;
     $('rDateTo').value = today;
 
@@ -67,6 +72,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const sKey = localStorage.getItem('prod_sb_key');
     if(sUrl && sKey) initSupabase(sUrl, sKey); else $('mConfig').classList.add('open');
 });
+
+// --- 🔥 FUNGSI CEK PIN 🔥 ---
+function checkAdmin(callback) {
+    const input = prompt("🔒 RESTRICTED AREA\nMasukkan PIN Admin:");
+    if (input === ADMIN_PIN) {
+        callback(); // PIN Benar -> Jalankan perintah
+    } else if (input !== null) {
+        alert("⛔ AKSES DITOLAK! PIN SALAH.");
+    }
+}
 
 // === DATABASE ===
 function initSupabase(url, key) {
@@ -148,8 +163,10 @@ async function saveMaster() {
 }
 window.deleteLog=async(id)=>{if(confirm("Hapus?")){await client.from('logs').delete().eq('id',id); refreshData();}};
 window.deleteMaster=async(id)=>{if(confirm("Hapus?")){await client.from('master').delete().eq('id',id); refreshData();}};
-async function wipeLogs(){if(confirm('HAPUS SEMUA?')){await client.from('logs').delete().neq('id','0'); refreshData();}}
-async function wipeMaster(){if(confirm('HAPUS SEMUA MASTER?')){await client.from('master').delete().neq('id','0'); refreshData();}}
+// 🔥 PROTECT DELETE ALL JUGA 🔥
+async function wipeLogs(){if(confirm('BAHAYA: HAPUS SEMUA DATA HARIAN?')){await client.from('logs').delete().neq('id','0'); refreshData();}}
+async function wipeMaster(){if(confirm('BAHAYA: HAPUS SEMUA MASTER PRODUK?')){await client.from('master').delete().neq('id','0'); refreshData();}}
+
 window.editLog=(id)=>{
     const r=logs.find(x=>x.id===id); if(!r) return;
     $('eId').value=r.id; $('eTanggal').value=r.tanggal; $('eShift').value=r.shift; $('eLine').value=r.line; $('eProduk').value=r.kode+" - "+r.nama; hydrateProduk();
@@ -172,7 +189,7 @@ function renderTable() {
 }
 function renderMaster(){$('mpBody').innerHTML=master.map((p,i)=>`<tr><td>${p.kode}</td><td>${p.nama}</td><td>${p.tipe}</td><td class="right">${p.gram}</td><td class="right">${p.runner}</td><td class="right">${p.cavity}</td><td class="right">${p.per_dus}</td><td style="text-align:center"><button class="btn sm" onclick="editMaster(${i})">✎</button> <button class="btn sm danger" onclick="deleteMaster('${p.id}')">🗑</button></td></tr>`).join('');}
 
-// --- NEW REKAP LOGIC ---
+// --- REKAP LOGIC ---
 function fetchAndShowRekap(){ processRekapFilter(); $('mRekap').classList.add('open'); }
 function processRekapFilter() {
     const rf = new Date($('rDateFrom').value);
