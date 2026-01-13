@@ -3,200 +3,13 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
-    <title>Production Dashboard v0.9.17 (Detail Fix)</title>
+    <title>Production System v2.2</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-    <style>
-        /* --- TITANIUM LUXURY THEME (DARK GREY & GOLD) --- */
-        :root {
-            --bg-body: #121212;       /* Hitam/Abu Gelap Pekat */
-            --bg-card: #1e1e1e;       /* Abu-abu 'Arang' */
-            --bg-input: #2d2d2d;      /* Abu-abu Input */
-            
-            --text-main: #e5e5e5;     /* Putih Gading */
-            --text-muted: #a3a3a3;    /* Abu-abu soft */
-            
-            --border: #404040;        /* Border Halus */
-            --gold: #d4af37;          /* EMAS (Primary) */
-            
-            --primary: #d4af37;       
-            --primary-hover: #b4942b;
-            
-            --success: #10b981; 
-            --danger: #ef4444; 
-            --info: #38bdf8;
-            
-            --radius: 12px; 
-            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.7);
-        }
-
-        * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
-        
-        body { 
-            margin: 0; 
-            background-color: var(--bg-body); 
-            /* Pattern Titanium */
-            background-image: radial-gradient(var(--border) 1px, transparent 1px);
-            background-size: 30px 30px;
-            color: var(--text-main); 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            min-height: 100vh;
-        }
-
-        .wrap { max-width: 1400px; margin: 0 auto; padding: 2rem; }
-
-        /* HEADER BISMILLAH */
-        .bismillah {
-            font-family: 'Amiri', serif;
-            font-size: 2rem;
-            color: var(--gold);
-            text-align: center;
-            margin-bottom: 0.5rem;
-            text-shadow: 0 2px 10px rgba(212, 175, 55, 0.2);
-        }
-        
-        .slogan {
-            text-align: center;
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            font-style: italic;
-            margin-bottom: 2rem;
-        }
-
-        /* CARD STYLE */
-        .card { 
-            background: var(--bg-card); 
-            border: 1px solid var(--border);
-            border-top: 1px solid var(--gold); /* Signature Titanium */
-            border-radius: var(--radius); 
-            padding: 24px; 
-            margin-bottom: 20px; 
-            box-shadow: var(--shadow);
-            position: relative;
-        }
-
-        h2 { font-size: 1.75rem; font-weight: 700; margin:0; color: var(--text-main); }
-        h3, h4 { margin: 0; }
-        
-        .muted { color: var(--text-muted); font-size: 0.85rem; }
-
-        /* BUTTONS */
-        .btn {
-            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-            padding: 10px 20px; font-size: 0.9rem; font-weight: 600; 
-            border-radius: 50px; 
-            border: 1px solid var(--gold);
-            background: transparent; color: var(--gold); 
-            cursor: pointer; transition: all 0.2s ease;
-        }
-        .btn:hover { background: var(--gold); color: #121212; transform: translateY(-2px); }
-        
-        .btn.primary { 
-            background: linear-gradient(to bottom, #d4af37, #b4942b); 
-            border: none; color: #121212; 
-            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
-        }
-        .btn.primary:hover { filter: brightness(1.1); }
-
-        .btn.ok { border-color: var(--success); color: var(--success); }
-        .btn.ok:hover { background: var(--success); color: #121212; }
-        
-        .btn.danger { border-color: var(--danger); color: var(--danger); }
-        .btn.danger:hover { background: var(--danger); color: white; }
-        
-        .btn.info { border-color: var(--info); color: var(--info); }
-        .btn.info:hover { background: var(--info); color: #121212; }
-
-        .btn.sm { padding: 6px 12px; font-size: 0.8rem; }
-
-        /* FILTER BUTTONS DI REKAP */
-        .filter-btn {
-            flex: 1; border: 1px solid var(--border); background: #252525; color: var(--text-muted);
-            padding: 8px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600;
-            transition: 0.2s;
-        }
-        .filter-btn:hover { background: rgba(212, 175, 55, 0.1); color: var(--primary); border-color: var(--gold); }
-        .filter-btn.active { background: var(--primary); color: #121212; border-color: var(--primary); font-weight: 800; }
-
-        /* INPUTS */
-        .input, select { 
-            width: 100%; padding: 12px 16px; 
-            background: var(--bg-input); 
-            border: 1px solid var(--border);
-            border-radius: 10px; color: var(--text-main); font-size: 0.95rem; transition: 0.2s; 
-        }
-        .input:focus, select:focus { 
-            border-color: var(--gold); 
-            background: #333;
-            box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.1); 
-        }
-
-        /* TABLES */
-        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-        .table-container { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
-        
-        thead th { 
-            background: #252525; color: var(--gold); padding: 14px 16px; text-align: left; 
-            font-weight: 700; text-transform: uppercase; font-size: 0.75rem; 
-            border-bottom: 1px solid var(--border); white-space: nowrap; 
-        }
-        tbody td { padding: 14px 16px; border-bottom: 1px solid #333; vertical-align: middle; color: var(--text-main); }
-        tbody tr:hover { background: #2a2a2a; }
-        
-        .right { text-align: right; font-family: 'JetBrains Mono', monospace; }
-        
-        .badge { 
-            font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; 
-            background: rgba(212, 175, 55, 0.1); color: var(--gold); 
-            border: 1px solid var(--gold); 
-        }
-
-        .stat-box { 
-            background: #252525; border: 1px solid var(--border); 
-            border-radius: 12px; padding: 16px; text-align: center; 
-        }
-        .stat-value { font-family: 'JetBrains Mono', monospace; font-size: 1.25rem; font-weight: 700; margin-top: 6px; display: block; }
-
-        .row { display: flex; gap: 12px; flex-wrap: wrap; }
-        .grid { display: grid; gap: 16px; }
-        
-        .text-ok { color: var(--success); } .text-danger { color: var(--danger); }
-
-        /* MODALS */
-        .modal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 100; }
-        .modal.open { display: flex; }
-        .modal .card { width: 100%; max-width: 1100px; max-height: 90vh; overflow-y: auto; border: 1px solid var(--gold); animation: modalPop 0.3s; background: #1a1a1a; }
-        @keyframes modalPop { from { transform: scale(0.95) translateY(20px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
-
-        .loading-overlay { position: fixed; inset: 0; background: var(--bg-body); z-index: 200; display: none; align-items: center; justify-content: center; flex-direction: column; }
-        .spinner { width: 50px; height: 50px; border: 4px solid var(--bg-card); border-top: 4px solid var(--gold); border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-
-        /* REJECT GRID */
-        .reject-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
-        .reject-label { font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-
-        /* SEARCH DROPDOWN */
-        .search-wrapper { position: relative; width: 100%; }
-        .search-list { 
-            position: absolute; top: 100%; left: 0; width: 100%; max-height: 250px; overflow-y: auto; 
-            background: #252525; border: 1px solid var(--gold); border-radius: 8px; z-index: 150; 
-            display: none; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.7); 
-        }
-        .search-item { padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #444; font-size: 0.85rem; color: var(--text-main); transition: 0.2s; white-space: normal; line-height: 1.4; }
-        .search-item:hover { background: var(--gold); color: #121212; }
-        .search-item span { font-weight: 700; color: var(--gold); }
-        .search-item:hover span { color: #121212; }
-
-        @media (max-width: 768px) { 
-            .wrap { padding: 1rem; } 
-            .grid, .reject-grid { grid-template-columns: repeat(2, 1fr) !important; } 
-            .header-row { flex-direction: column; align-items: flex-start; gap: 16px; } 
-            .row { width: 100%; } .btn { flex: 1; } 
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -206,89 +19,108 @@
 </div>
 
 <div class="wrap">
-    
     <div class="bismillah">بسم الله الرحمن الرحيم</div>
-    <div class="slogan">"Insya Allah Memudahkan Pekerjaan & Rezeki Lancar"</div>
+    <div class="slogan">"Dashboard Production - Clean & Professional"</div>
 
-    <div class="row header-row" style="justify-content:space-between; align-items:center; margin-bottom:32px;">
+    <div class="row header-row" style="justify-content:space-between; align-items:center; margin-bottom:40px;">
         <div>
-            <h2>Production Dashboard</h2>
+            <h2>Main Menu</h2>
             <div class="row" style="align-items:center; gap:8px; margin-top:8px;">
-                <span class="badge">v0.9.17 (Detail Fix)</span>
+                <span class="badge">v2.2 (Button Fixed)</span>
                 <span id="statusDb" style="font-size:0.8rem; color:var(--danger)">Disconnected</span>
             </div>
         </div>
-        <div class="row">
-            <button id="btnConfig" class="btn">Config</button>
-            <button id="btnRefresh" class="btn">Refresh</button>
-        </div>
+        <div><button id="btnRefresh" class="btn">⟳ Sync Data</button></div>
     </div>
 
-    <div class="card">
-        <div class="row" style="align-items:center; justify-content:space-between;">
+    <div class="menu-grid">
+        <div id="btnAdd" class="menu-card primary">
+            <div class="icon">📝</div><h3>Input Produksi</h3><p>Form Laporan Shift</p>
+        </div>
+        <div id="btnDashboard" class="menu-card primary">
+            <div class="icon">📊</div><h3>Monitoring Room</h3><p>Analisa Chart & Pareto</p>
+        </div>
+        <div id="btnOpenLog" class="menu-card">
+            <div class="icon">📁</div><h3>Data Harian</h3><p>Lihat Tabel & History</p>
+        </div>
+        <div id="btnRekap" class="menu-card">
+            <div class="icon">🏭</div><h3>Rekap Line</h3><p>Total Output per Mesin</p>
+        </div>
+        <div id="btnMaster" class="menu-card">
+            <div class="icon">📦</div><h3>Master Produk</h3><p>Database Item</p>
+        </div>
+        <div id="btnConfig" class="menu-card">
+            <div class="icon">⚙️</div><h3>Konfigurasi</h3><p>Koneksi Database</p>
+        </div>
+    </div>
+    
+    <div style="text-align:center; margin-top:40px; color:var(--text-muted); font-size:0.8rem;">&copy; 2025 Production System</div>
+</div>
+
+<!-- ================= MODALS ================= -->
+
+<!-- MODAL 1: DATA LOG HARIAN (FULL SCREEN) -->
+<div id="vLaporan" class="modal full">
+    <div class="wrap">
+        <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:24px; border-bottom:1px solid var(--border); padding-bottom:16px;">
+            <h2 style="color:var(--gold);">📁 Data Laporan Harian</h2>
             <div class="row">
-                <button id="btnAdd" class="btn primary" style="padding:12px 24px;">+ Input Baru</button>
-                <button id="btnMaster" class="btn">Master Produk</button>
-                <button id="btnRekap" class="btn info">Rekap Line</button>
-                <button id="btnExport" class="btn ok">Export CSV</button>
+                <button id="btnExport" class="btn ok sm">Export CSV</button>
+                <button id="btnClear" class="btn danger sm">Reset Data</button>
+                <button id="vLaporanClose" class="btn">KEMBALI</button>
             </div>
-            <button id="btnClear" class="btn danger" style="margin-left:auto">Reset Data</button>
         </div>
-    </div>
 
-    <div class="card">
-        <h4 style="margin-bottom:16px; color:var(--gold); text-transform:uppercase; letter-spacing:1px; font-size:0.8rem;">Filter & Search</h4>
-        <div class="row" style="align-items:flex-end;">
-            <div style="flex:1; min-width:140px"><div class="muted">Dari Tanggal</div><input id="fFrom" type="date" class="input"></div>
-            <div style="flex:1; min-width:140px"><div class="muted">Sampai Tanggal</div><input id="fTo" type="date" class="input"></div>
-            <div style="flex:2; min-width:200px"><div class="muted">Cari Produk / Kode</div><input id="fProduk" class="input" placeholder="Ketik disini..." /></div>
-            <div style="flex:1; min-width:100px"><div class="muted">Shift</div><select id="fShift" class="input"><option value="">Semua</option><option>1</option><option>2</option><option>3</option></select></div>
-            <div style="flex:1; min-width:120px"><div class="muted">Line</div><input id="fLine" class="input" placeholder="L-01" /></div>
-            <div style="padding-bottom:1px;"><button id="btnClearFilter" class="btn">Reset</button></div>
+        <!-- Filter Bar -->
+        <div class="card" style="position:sticky; top:0; z-index:10; border:1px solid var(--gold);">
+            <div class="row" style="align-items:flex-end;">
+                <div style="flex:1; min-width:140px"><div class="muted">Dari</div><input id="fFrom" type="date" class="input"></div>
+                <div style="flex:1; min-width:140px"><div class="muted">Sampai</div><input id="fTo" type="date" class="input"></div>
+                <div style="flex:2; min-width:200px"><div class="muted">Cari Produk</div><input id="fProduk" class="input" placeholder="Ketik..." /></div>
+                <div style="flex:1; min-width:100px"><div class="muted">Shift</div><select id="fShift" class="input"><option value="">All</option><option>1</option><option>2</option><option>3</option></select></div>
+                <div style="flex:1; min-width:120px"><div class="muted">Line</div><input id="fLine" class="input" placeholder="L-01" /></div>
+                <div><button id="btnClearFilter" class="btn">Reset</button></div>
+            </div>
         </div>
-    </div>
 
-    <div class="card" style="padding:0; overflow:hidden;">
-        <div style="padding: 20px 24px; border-bottom: 1px solid var(--border); display:flex; justify-content:space-between; align-items:center; background:#252525;">
-            <h3 style="font-size:1rem; color:var(--gold);">Laporan Harian</h3>
-            <span id="rowCount" class="badge">0 data</span>
-        </div>
-        <div class="table-container" style="border:none; border-radius:0;">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Tanggal</th><th>Shift</th><th>Line</th><th>Produk</th><th>Tipe</th>
-                        <th class="right">Counter</th><th class="right">Cav</th>
-                        <th class="right">Dus</th><th class="right">Box</th>
-                        <th class="right">OK (pcs)</th><th class="right">OK (kg)</th>
-                        <th class="right">Reject</th><th class="right">Sisa Bhn</th>
-                        <th class="right">Yield %</th><th class="right">R. Max</th>
-                        <th style="text-align:center">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody id="tbody"></tbody>
-            </table>
+        <!-- Table -->
+        <div class="card" style="padding:0; overflow:hidden;">
+            <div style="padding: 16px 24px; background:#252525; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border);">
+                <div class="muted">Menampilkan Data</div><span id="rowCount" class="badge">0 baris</span>
+            </div>
+            <div class="table-container" style="border:none; border-radius:0;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tanggal</th><th>Shift</th><th>Line</th><th>Produk</th><th>Tipe</th>
+                            <th class="right">Counter</th><th class="right">Cav</th>
+                            <th class="right">Dus</th>
+                            <th class="right">Box</th> <!-- KOLOM BOX SUDAH DITAMBAHKAN -->
+                            <th class="right">OK (pcs)</th><th class="right">OK (kg)</th>
+                            <th class="right">Reject</th><th class="right">Sisa Bhn</th>
+                            <th class="right">Yield %</th><th class="right">R. Max</th>
+                            <th style="text-align:center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
 
-<div id="mConfig" class="modal"><div class="card" style="max-width:500px">
-    <h3 style="margin-bottom:8px; color:var(--gold)">Database Setup</h3>
-    <div class="grid">
-        <div><div class="muted">Project URL</div><input id="cfgUrl" class="input" /></div>
-        <div><div class="muted">Anon Public Key</div><textarea id="cfgKey" class="input" rows="4"></textarea></div>
-        <button id="btnSaveConfig" class="btn primary" style="width:100%;">SIMPAN & KONEK</button>
-        <button id="mConfigClose" class="btn" style="width:100%">Batal</button>
-    </div>
-</div></div>
-
+<!-- MODAL 2: REKAP LINE -->
 <div id="mRekap" class="modal"><div class="card">
     <div class="row" style="justify-content:space-between; margin-bottom:16px;">
-        <div>
-            <h3 style="color:var(--gold); margin-bottom:4px;">Rekapitulasi Line</h3>
-            <div id="rekapMachineCount" class="muted" style="font-size:0.9rem;">Total Mesin Aktif: <b style="color:var(--text-main)">0 Unit</b></div>
-        </div>
+        <h3 style="color:var(--gold); margin-bottom:4px;">Rekapitulasi Line</h3>
         <button id="mRekapClose" class="btn sm">Tutup</button>
+    </div>
+    
+    <!-- Filter Tanggal Khusus Rekap -->
+    <div class="row" style="margin-bottom:16px; align-items:flex-end; background:#151515; padding:12px; border-radius:8px; border:1px solid var(--border);">
+        <div style="flex:1;"><div class="muted">Dari Tanggal</div><input id="rDateFrom" type="date" class="input"></div>
+        <div style="flex:1;"><div class="muted">Sampai Tanggal</div><input id="rDateTo" type="date" class="input"></div>
+        <button id="btnRefreshRekap" class="btn primary">Proses Data</button>
     </div>
 
     <div style="display:flex; gap:8px; margin-bottom:16px; background:#151515; padding:8px; border-radius:8px; border:1px solid var(--border);">
@@ -297,6 +129,8 @@
         <button class="filter-btn" onclick="filterRekap('2', this)">SHIFT 2</button>
         <button class="filter-btn" onclick="filterRekap('3', this)">SHIFT 3</button>
     </div>
+    
+    <div style="margin-bottom:12px;" id="rekapMachineCount" class="muted">Total Mesin: 0</div>
 
     <div class="table-container">
         <table>
@@ -306,66 +140,26 @@
     </div>
 </div></div>
 
-<div id="mMaster" class="modal"><div class="card">
-    <div class="row" style="justify-content:space-between; margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:16px;">
-        <h3 style="color:var(--gold)">Master Produk</h3>
-        <div class="row">
-            <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; background:var(--bg-input); padding:8px 12px; border-radius:8px; cursor:pointer; border:1px solid var(--border);">
-                <input type="checkbox" id="chkAllowDup" style="accent-color:var(--gold)" /> Allow Duplicate
-            </label>
-            <button id="btnImportCsv" class="btn ok sm">Import CSV</button>
-            <button id="btnWipeMaster" class="btn danger sm">Hapus Semua</button>
-            <button id="mMasterClose" class="btn sm">Tutup</button>
-            <input type="file" id="fileCsvMaster" accept=".csv" style="display:none;" />
-        </div>
-    </div>
-    <div style="background:#151515; padding:20px; border-radius:var(--radius); margin-bottom:24px; border:1px solid var(--border);">
-        <h4 style="font-size:0.85rem; margin-bottom:16px; color:var(--gold);">TAMBAH / EDIT MANUAL</h4>
-        <div class="grid" style="grid-template-columns:repeat(12,1fr)">
-            <div style="grid-column:span 2"><div class="muted">Kode</div><input id="mpKode" class="input" placeholder="AUTO..." /></div>
-            <div style="grid-column:span 4"><div class="muted">Nama Produk</div><input id="mpNama" class="input" /></div>
-            <div style="grid-column:span 2"><div class="muted">Tipe</div><select id="mpTipe" class="input"><option value="pcs">pcs</option><option value="kg_sisa">kg</option></select></div>
-            <div style="grid-column:span 2"><div class="muted">Gram</div><input id="mpGram" class="input" type="number" step="0.01" /></div>
-            <div style="grid-column:span 2"><div class="muted">Runner</div><input id="mpRunner" class="input" type="number" step="0.01" /></div>
-            <div style="grid-column:span 2"><div class="muted">Cavity</div><input id="mpCavity" class="input" type="number" /></div>
-            <div style="grid-column:span 2"><div class="muted">Isi Dus</div><input id="mpPerDus" class="input" type="number" /></div>
-            <div style="grid-column:span 2"><div class="muted">Isi Box</div><input id="mpPerBox" class="input" type="number" /></div>
-            <div style="grid-column:span 6"><div class="muted">&nbsp;</div><button id="mpAdd" class="btn primary" style="width:100%">SIMPAN</button></div>
-        </div>
-    </div>
-    <div class="table-container" style="max-height:50vh;">
-        <table id="tblMaster"><thead><tr><th>Kode</th><th>Nama</th><th>Tipe</th><th class="right">Gram</th><th class="right">Runner</th><th class="right">Cav</th><th class="right">Dus</th><th style="text-align:center">Aksi</th></tr></thead><tbody id="mpBody"></tbody></table>
-    </div>
-</div></div>
-
+<!-- MODAL 3: INPUT ENTRY -->
 <div id="mEntry" class="modal"><div class="card">
     <div class="row" style="justify-content:space-between; margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--border);">
-        <div style="display:flex; align-items:center; gap:12px;">
-            <h3 style="color:var(--gold)">Input Produksi</h3>
-            <span id="badgeTipe" class="badge"></span>
-        </div>
+        <div style="display:flex; align-items:center; gap:12px;"><h3 style="color:var(--gold)">Input Produksi</h3><span id="badgeTipe" class="badge"></span></div>
         <button id="mEntryClose" class="btn sm">Tutup X</button>
     </div>
-    
     <input type="hidden" id="eId" />
-    
     <div class="grid" style="grid-template-columns:repeat(12,1fr)">
         <div style="grid-column:span 2"><div class="muted">Tanggal</div><input id="eTanggal" type="date" class="input" /></div>
         <div style="grid-column:span 2"><div class="muted">Shift</div><select id="eShift" class="input"><option>1</option><option>2</option><option>3</option></select></div>
         <div style="grid-column:span 2"><div class="muted">Line</div><input id="eLine" class="input" placeholder="L..." /></div>
         <div style="grid-column:span 6; position:relative;">
-            <div class="muted">Produk (Ketik Kode / Nama)</div>
-            <input id="eProduk" class="input" placeholder="Cari..." autocomplete="off" style="border-color:var(--gold)" />
-            <div id="produkSuggestions" class="search-list"></div>
+            <div class="muted">Produk (Ketik Kode / Nama)</div><input id="eProduk" class="input" placeholder="Cari..." autocomplete="off" style="border-color:var(--gold)" /><div id="produkSuggestions" class="search-list"></div>
         </div>
-
         <div style="grid-column:span 12; height:1px; background:var(--border); margin:8px 0;"></div>
-
         <div style="grid-column:span 2"><div class="muted">Gram</div><input id="eGram" type="number" class="input" step="0.01" readonly style="background:#151515; color:var(--text-muted);" /></div>
         <div style="grid-column:span 2"><div class="muted">Runner</div><input id="eRunner" type="number" class="input" step="0.01" readonly style="background:#151515; color:var(--text-muted);" /></div>
         <div style="grid-column:span 2"><div class="muted">Cavity</div><input id="eCavity" type="number" class="input" /></div>
         <div style="grid-column:span 6"><div class="muted">Counter (Shot)</div><input id="eCounter" type="number" class="input" style="font-weight:bold; font-size:1.1rem; border-color:var(--gold);" /></div>
-
+        
         <div style="grid-column:span 12; background:#151515; padding:16px; border-radius:8px; border:1px solid var(--border);">
             <h4 style="margin:0 0 12px; font-size:0.8rem; color:var(--gold);">MATERIAL USAGE (KG)</h4>
             <div class="grid" style="grid-template-columns:repeat(8,1fr)">
@@ -375,7 +169,7 @@
                 <div style="grid-column:span 2"><div class="muted">Sisa (Auto)</div><input id="eSisaBahan" type="number" readonly class="input" style="background:#1a1a1a; font-weight:bold; color:var(--gold);" /></div>
             </div>
         </div>
-
+        
         <div style="grid-column:span 6; border-right:1px solid var(--border); padding-right:16px;">
             <div class="muted" style="margin-bottom:8px;"><b>Sisa Sebelum</b></div>
             <div class="grid" style="grid-template-columns:repeat(3,1fr); gap:8px;">
@@ -390,9 +184,8 @@
                 <input id="eSsdh4" class="input" type="number" step="0.01" /> <input id="eSsdh5" class="input" type="number" step="0.01" /> <input id="eSsdh6" class="input" type="number" step="0.01" />
             </div>
         </div>
-
+        
         <div style="grid-column:span 12; height:1px; background:var(--border); margin:8px 0;"></div>
-
         <div style="grid-column:span 12">
             <h4 style="margin:0 0 12px; font-size:0.8rem; color:var(--gold);">PACKAGING</h4>
             <div class="grid" style="grid-template-columns:repeat(12,1fr)">
@@ -405,7 +198,7 @@
                 <div style="grid-column:span 12"><div class="muted">Catatan Tambahan</div><input id="eCatatan" class="input" /></div>
             </div>
         </div>
-
+        
         <div style="grid-column:span 12" class="card" style="background:rgba(239, 68, 68, 0.05); border:1px solid var(--danger); padding:16px;">
             <h4 style="margin:0 0 12px; color:var(--danger); font-size:0.9rem;">REJECT DETAIL (PCS)</h4>
             <div class="reject-grid">
@@ -433,551 +226,89 @@
                 <div class="stat-box"><div class="muted">OK (Pcs)</div><span class="stat-value" id="vOkPcs" style="color:var(--success)">0</span></div>
                 <div class="stat-box"><div class="muted">Reject (Pcs)</div><span class="stat-value" id="vRejectPcs" style="color:var(--danger)">0</span></div>
                 <div class="stat-box"><div class="muted">Yield</div><span class="stat-value" id="vYield">0%</span></div>
-                
                 <div style="grid-column:span 4; height:1px; background:var(--border); margin:8px 0"></div>
-                
                 <div class="stat-box"><div class="muted">OK (Kg)</div><span class="stat-value" id="vOkKg">0.00</span></div>
                 <div class="stat-box"><div class="muted">Reject (Kg)</div><span class="stat-value" id="vRejectKg">0.00</span></div>
                 <div class="stat-box"><div class="muted">Runner (Kg)</div><span class="stat-value" id="vRunnerKg">0.00</span></div>
                 <div class="stat-box"><div class="muted">Sisa Bhn (Kg)</div><span class="stat-value" id="vSisaBahanLabel">0.00</span></div>
             </div>
-            
             <div id="warnOver" style="color:var(--danger); background:rgba(239, 68, 68, 0.2); padding:10px; border-radius:8px; margin-top:16px; font-weight:600; display:none; text-align:center; border:1px solid var(--danger);">⚠ Packaging melebihi Hasil Produksi!</div>
-            
             <button id="btnSaveEntry" class="btn primary" style="width:100%; margin-top:24px; padding:16px; font-size:1rem; letter-spacing:1px;">SIMPAN DATA</button>
         </div>
     </div>
 </div></div>
 
-<script>
-    // --- HELPER FUNCTIONS ---
-    const $ = id => document.getElementById(id);
-    const toNum = v => isNaN(+v) ? 0 : +v;
-    const uid = () => Math.random().toString(36).slice(2);
-    const todayISO = () => new Date().toISOString().slice(0, 10);
+<!-- MODAL 4: DATABASE CONFIG -->
+<div id="mConfig" class="modal"><div class="card" style="max-width:500px">
+    <h3 style="margin-bottom:8px; color:var(--gold)">Database Setup</h3>
+    <div class="grid">
+        <div><div class="muted">Project URL</div><input id="cfgUrl" class="input" /></div>
+        <div><div class="muted">Anon Public Key</div><textarea id="cfgKey" class="input" rows="4"></textarea></div>
+        <button id="btnSaveConfig" class="btn primary" style="width:100%;">SIMPAN & KONEK</button>
+        <button id="mConfigClose" class="btn" style="width:100%">Batal</button>
+    </div>
+</div></div>
 
-    let client = null;
-    let logs = [];
-    let master = [];
-    
-    // VARIABEL GLOBAL BUAT FILTER REKAP
-    let _allLogsForRekap = [];
+<!-- MODAL 5: MASTER PRODUK -->
+<div id="mMaster" class="modal"><div class="card">
+    <div class="row" style="justify-content:space-between; margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:16px;">
+        <h3 style="color:var(--gold)">Master Produk</h3>
+        <div class="row">
+            <button id="btnImportCsv" class="btn ok sm">Import CSV</button>
+            <button id="btnWipeMaster" class="btn danger sm">Hapus Semua</button>
+            <button id="mMasterClose" class="btn sm">Tutup</button>
+            <input type="file" id="fileCsvMaster" accept=".csv" style="display:none;" />
+        </div>
+    </div>
+    <div style="background:#151515; padding:20px; border-radius:var(--radius); margin-bottom:24px; border:1px solid var(--border);">
+        <h4 style="font-size:0.85rem; margin-bottom:16px; color:var(--gold);">TAMBAH / EDIT MANUAL</h4>
+        <div class="grid" style="grid-template-columns:repeat(12,1fr)">
+            <div style="grid-column:span 2"><div class="muted">Kode</div><input id="mpKode" class="input" placeholder="AUTO..." /></div>
+            <div style="grid-column:span 4"><div class="muted">Nama Produk</div><input id="mpNama" class="input" /></div>
+            <div style="grid-column:span 2"><div class="muted">Tipe</div><select id="mpTipe" class="input"><option value="pcs">pcs</option><option value="kg_sisa">kg</option></select></div>
+            <div style="grid-column:span 2"><div class="muted">Gram</div><input id="mpGram" class="input" type="number" step="0.01" /></div>
+            <div style="grid-column:span 2"><div class="muted">Runner</div><input id="mpRunner" class="input" type="number" step="0.01" /></div>
+            <div style="grid-column:span 2"><div class="muted">Cavity</div><input id="mpCavity" class="input" type="number" /></div>
+            <div style="grid-column:span 2"><div class="muted">Isi Dus</div><input id="mpPerDus" class="input" type="number" /></div>
+            <div style="grid-column:span 2"><div class="muted">Isi Box</div><input id="mpPerBox" class="input" type="number" /></div>
+            <div style="grid-column:span 6"><div class="muted">&nbsp;</div><button id="mpAdd" class="btn primary" style="width:100%">SIMPAN</button></div>
+        </div>
+    </div>
+    <div class="table-container" style="max-height:50vh;">
+        <table id="tblMaster"><thead><tr><th>Kode</th><th>Nama</th><th>Tipe</th><th class="right">Gram</th><th class="right">Runner</th><th class="right">Cav</th><th class="right">Dus</th><th style="text-align:center">Aksi</th></tr></thead><tbody id="mpBody"></tbody></table>
+    </div>
+</div></div>
 
-    document.addEventListener('DOMContentLoaded', () => {
-        $('btnConfig').onclick = () => $('mConfig').classList.add('open');
-        $('mConfigClose').onclick = () => $('mConfig').classList.remove('open');
-        $('btnSaveConfig').onclick = saveConfig;
-        $('btnRefresh').onclick = refreshData;
-        $('btnClearFilter').onclick = () => { $('fFrom').value=''; $('fTo').value=''; renderTable(); };
-        $('fFrom').onchange = renderTable; $('fTo').onchange = renderTable;
-        $('btnAdd').onclick = () => { $('mEntry').classList.add('open'); resetEntryForm(); };
-        $('mEntryClose').onclick = () => { $('mEntry').classList.remove('open'); };
-        $('btnMaster').onclick = () => { $('mMaster').classList.add('open'); };
-        $('mMasterClose').onclick = () => { $('mMaster').classList.remove('open'); };
-        $('btnExport').onclick = exportCSV;
-        $('btnSaveEntry').onclick = saveEntry;
-        $('mpAdd').onclick = saveMaster;
-        $('btnImportCsv').onclick = () => $('fileCsvMaster').click();
-        $('fileCsvMaster').onchange = importCSV;
-        $('btnClear').onclick = wipeLogs;
-        $('btnWipeMaster').onclick = wipeMaster;
-        $('btnRekap').onclick = fetchAndShowRekap; // PANGGIL FUNGSI REKAP BARU
-        $('mRekapClose').onclick = () => $('mRekap').classList.remove('open');
+<!-- MODAL 6: MONITORING DASHBOARD (FULL SCREEN) -->
+<div id="pDashboard" class="modal full">
+    <div class="wrap">
+        <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:24px; border-bottom:1px solid var(--border); padding-bottom:16px;">
+            <h2 style="color:var(--gold); display:flex; align-items:center; gap:10px;">📊 Monitoring Room <span class="badge">Live</span></h2>
+            <button id="pDashboardClose" class="btn danger">KEMBALI</button>
+        </div>
+        <div class="card" style="background:#1a1a1a; position:sticky; top:0; z-index:10; border:1px solid var(--gold);">
+            <div class="row" style="align-items:flex-end;">
+                <div style="flex:1"><div class="muted">Awal</div><input id="dFrom" type="date" class="input"></div>
+                <div style="flex:1"><div class="muted">Akhir</div><input id="dTo" type="date" class="input"></div>
+                <div style="flex:1"><div class="muted">Filter Line</div><input id="dLine" class="input" placeholder="Semua Line"></div>
+                <button id="btnLoadDash" class="btn primary">ANALISA</button>
+            </div>
+        </div>
+        <div class="grid" style="grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px;">
+            <div class="stat-box" style="background:#111; border-color:var(--gold);"><div class="muted">Total Produksi</div><span id="kpiHasil" class="stat-value" style="color:var(--text-main); font-size:1.5rem;">0</span></div>
+            <div class="stat-box" style="background:#111; border-color:var(--success);"><div class="muted">Total OK</div><span id="kpiOk" class="stat-value" style="color:var(--success); font-size:1.5rem;">0</span></div>
+            <div class="stat-box" style="background:#111; border-color:var(--danger);"><div class="muted">Total Reject</div><span id="kpiReject" class="stat-value" style="color:var(--danger); font-size:1.5rem;">0</span></div>
+            <div class="stat-box" style="background:#111;"><div class="muted">Avg Yield</div><span id="kpiYield" class="stat-value" style="color:var(--gold); font-size:1.5rem;">0%</span></div>
+        </div>
+        <div class="row" style="align-items:stretch;">
+            <div class="card" style="flex:2; min-width:300px;"><h3 style="margin-bottom:16px; font-size:1rem;">📈 Trend Produksi</h3><div style="height:300px;"><canvas id="chartTrend"></canvas></div></div>
+            <div class="card" style="flex:1; min-width:300px;"><h3 style="margin-bottom:16px; font-size:1rem; color:var(--danger);">⚠ Pareto Reject</h3><div style="height:300px;"><canvas id="chartPareto"></canvas></div></div>
+        </div>
+        <div class="card"><h3 style="margin-bottom:12px; font-size:1rem;">🏆 Top 5 Produk (Berdasarkan Qty OK)</h3><div class="table-container"><table id="tblTopProd"><thead><tr><th>Produk</th><th class="right">Total OK</th><th class="right">Total Reject</th><th class="right">Yield</th></tr></thead><tbody></tbody></table></div></div>
+    </div>
+</div>
 
-        // === SETUP SEARCH & AUTO-RECALL ===
-        setupCustomSearch();
-        $('eLine').onchange = autoFillProductByLine;
-
-        // CALC TRIGGERS
-        const rejectInputs = ['rUneven', 'rMottled', 'rStartup', 'rShort', 'rFlow', 'rFlash', 'rCrack', 'rSpot', 'rScratch', 'rDirty'];
-        const calcInputs = ['eCavity', 'eCounter', 'eRunner', 'eJatah', 'eStok', 'eBalokan', 
-                            'eQtyDus', 'eQtyBox', 'eQtyDusPlus', 'eIsiDusPlus', 
-                            'eSblm1','eSblm2', 'eSblm3', 'eSblm4', 'eSblm5', 'eSblm6',
-                            'eSsdh1', 'eSsdh2', 'eSsdh3', 'eSsdh4', 'eSsdh5', 'eSsdh6',
-                            ...rejectInputs];
-        
-        calcInputs.forEach(id => { const el = $(id); if(el) el.oninput = () => { recalc(); }; });
-
-        // INIT DATE
-        const d = new Date();
-        $('eTanggal').value = todayISO();
-        $('eShift').value = '1';
-        $('fFrom').value = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0,10);
-        $('fTo').value = new Date(d.getFullYear(), d.getMonth()+1, 0).toISOString().slice(0,10);
-
-        // CHECK DB CONFIG
-        const savedUrl = localStorage.getItem('prod_sb_url');
-        const savedKey = localStorage.getItem('prod_sb_key');
-        if(savedUrl && savedKey) { initSupabase(savedUrl, savedKey); }
-        else { $('mConfig').classList.add('open'); }
-    });
-
-    // === LOGIC AUTO RECALL LINE (v0.9.14 Logic) ===
-    function autoFillProductByLine() {
-        const lineVal = $('eLine').value.trim();
-        if(!lineVal || logs.length === 0) return;
-        
-        // Cari log terakhir dari line ini (Sort descending date)
-        const sortedLogs = [...logs].sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal) || b.id.localeCompare(a.id));
-        const lastLog = sortedLogs.find(r => r.line == lineVal);
-        
-        if(lastLog) {
-            const val = lastLog.kode + " - " + lastLog.nama;
-            $('eProduk').value = val;
-            hydrateProduk();
-        }
-    }
-
-    // === CUSTOM SEARCH DROPDOWN ===
-    function setupCustomSearch() {
-        const input = $('eProduk');
-        const list = $('produkSuggestions');
-        
-        input.addEventListener('input', function() {
-            const val = this.value.toLowerCase();
-            if(!val) { list.style.display = 'none'; return; }
-            
-            const matches = master.filter(p => p.kode.toLowerCase().includes(val) || p.nama.toLowerCase().includes(val));
-            if(matches.length > 0) {
-                list.innerHTML = matches.map(p => {
-                    return `<div class="search-item" onclick="selectProduk('${p.kode} - ${p.nama}')">
-                                <span>${p.kode}</span> - ${p.nama}
-                            </div>`;
-                }).join('');
-                list.style.display = 'block';
-            } else {
-                list.style.display = 'none';
-            }
-        });
-
-        document.addEventListener('click', function(e) {
-            if (e.target !== input && e.target !== list) {
-                list.style.display = 'none';
-            }
-        });
-    }
-
-    window.selectProduk = (val) => {
-        $('eProduk').value = val;
-        $('produkSuggestions').style.display = 'none';
-        hydrateProduk(); 
-    };
-
-    // === DATABASE & LOGIC ===
-    function saveConfig() {
-        const url = $('cfgUrl').value.trim();
-        const key = $('cfgKey').value.trim();
-        if(!url || !key) return alert("Isi lengkap bro!");
-        localStorage.setItem('prod_sb_url', url);
-        localStorage.setItem('prod_sb_key', key);
-        initSupabase(url, key);
-        $('mConfig').classList.remove('open');
-    }
-
-    function initSupabase(url, key) {
-        try {
-            if(typeof supabase === 'undefined') throw new Error("Library Supabase Error.");
-            client = supabase.createClient(url, key);
-            $('statusDb').innerText = "ONLINE";
-            $('statusDb').style.color = "var(--success)";
-            refreshData();
-        } catch(e) {
-            alert("Gagal konek: " + e.message);
-            $('statusDb').innerText = "ERROR";
-            $('mConfig').classList.add('open');
-        }
-    }
-
-    async function refreshData() {
-        if(!client) return;
-        $('loading').style.display = 'flex';
-        
-        const { data: mData, error: mErr } = await client.from('master').select('*');
-        if(mErr) { $('loading').style.display='none'; return alert('Gagal Master: ' + mErr.message); }
-        master = mData || [];
-        master.sort((a,b) => (a.kode || '').localeCompare(b.kode || ''));
-
-        const { data: lData, error: lErr } = await client.from('logs').select('*');
-        if(lErr) { $('loading').style.display='none'; return alert('Gagal Logs: ' + lErr.message); }
-        logs = lData || [];
-        
-        renderTable(); 
-        renderMaster();
-        $('loading').style.display = 'none';
-    }
-
-    function resetEntryForm() {
-        const fields = ['eLine', 'eProduk', 'eGram', 'eRunner', 'eCavity', 'eCounter', 'eJatah', 'eStok', 'eBalokan', 'eSisaBahan', 'eSblm1', 'eSblm2', 'eSblm3', 'eSblm4', 'eSblm5', 'eSblm6', 'eSsdh1', 'eSsdh2', 'eSsdh3', 'eSsdh4', 'eSsdh5', 'eSsdh6', 'eQtyDus', 'eIsiDus', 'eQtyBox', 'eIsiBox', 'eQtyDusPlus', 'eIsiDusPlus', 'eCatatan', 'rUneven', 'rMottled', 'rStartup', 'rShort', 'rFlow', 'rFlash', 'rCrack', 'rSpot', 'rScratch', 'rDirty', 'rTotal', 'rMax'];
-        fields.forEach(id => { if($(id)) $(id).value = ''; });
-        $('eId').value = '';
-        ['vHasil', 'vOkPcs', 'vRejectPcs', 'vYield', 'vOkKg', 'vRejectKg', 'vRunnerKg', 'vSisaBahanLabel'].forEach(id => $(id).innerText='0');
-        $('badgeTipe').innerText=''; $('warnOver').style.display='none';
-    }
-
-    function hydrateProduk(){
-        const val = $('eProduk').value;
-        const p = master.find(x => (x.kode + " - " + x.nama) === val);
-        if(p) {
-            $('eGram').value = p.gram; $('eRunner').value = p.runner; $('eCavity').value = p.cavity;
-            $('eIsiDus').value = p.per_dus; $('eIsiBox').value = p.per_box;
-            $('badgeTipe').innerText = (p.tipe === 'kg_sisa') ? 'Mode KG' : 'Mode PCS';
-            recalc();
-        }
-    }
-
-    function recalc(){
-        const p = compute();
-        $('vHasil').innerText = p.hasil.toFixed(0); $('vOkPcs').innerText = p.okpcs.toFixed(0);
-        $('vRejectPcs').innerText = p.rejectpcs.toFixed(0); $('eSisaBahan').value = p.sisaBahan.toFixed(2);
-        $('vYield').innerText = p.yieldpct.toFixed(2) + "%"; $('vOkKg').innerText = p.okkg.toFixed(2);
-        $('vRejectKg').innerText = p.rejectkg.toFixed(2); $('vRunnerKg').innerText = p.runnerkg.toFixed(2);
-        $('vSisaBahanLabel').innerText = p.sisaBahan.toFixed(2);
-        $('rTotal').value = p.rtotal;
-        $('warnOver').style.display = p.overpack ? 'block' : 'none';
-    }
-
-    function sum(ids){ return ids.map(id => toNum($(id).value)).reduce((a,b)=>a+b,0); }
-
-    function compute(){
-        const prodNameFull = $('eProduk').value;
-        const prod = master.find(p => (p.kode + " - " + p.nama) === prodNameFull);
-        const gram = toNum($('eGram').value); 
-        const tipe = $('badgeTipe').innerText.includes('KG') ? 'kg_sisa' : 'pcs';
-        
-        const cav = Math.max(1, toNum($('eCavity').value)); 
-        const counter = toNum($('eCounter').value);
-        
-        let sblm_disp = sum(['eSblm1','eSblm2','eSblm3','eSblm4','eSblm5','eSblm6']);
-        let ssdh_disp = sum(['eSsdh1','eSsdh2','eSsdh3','eSsdh4','eSsdh5','eSsdh6']);
-        
-        let sblm_pcs = sblm_disp, ssdh_pcs = ssdh_disp;
-        if(tipe === 'kg_sisa'){ 
-            const conv = gram > 0 ? (1000/gram) : 0; 
-            sblm_pcs = sblm_disp * conv; ssdh_pcs = ssdh_disp * conv; 
-        }
-
-        const qtyDus = toNum($('eQtyDus').value), isiDus = toNum($('eIsiDus').value);
-        const qtyBox = toNum($('eQtyBox').value), isiBox = toNum($('eIsiBox').value);
-        const qtyDusPlus = toNum($('eQtyDusPlus').value), isiDusPlus = toNum($('eIsiDusPlus').value);
-        
-        const packpcs = (qtyDus*isiDus) + (qtyBox*isiBox) + (qtyDusPlus*isiDusPlus);
-        const okpcs = packpcs - sblm_pcs + ssdh_pcs;
-        const produksi = counter * cav; 
-        const hasil = produksi + sblm_pcs - ssdh_pcs;
-        const rejectpcs = produksi - okpcs;
-        
-        const okkg = (okpcs * gram)/1000; 
-        const rejectkg = (rejectpcs * gram)/1000;
-        const runnerkg = (counter * toNum($('eRunner').value)) / 1000;
-        
-        const jatah = toNum($('eJatah').value); 
-        const stok = toNum($('eStok').value);
-        const balok = toNum($('eBalokan').value);
-        
-        const sisaBahan = (jatah + stok) - (runnerkg + rejectkg + okkg + balok);
-        const yieldpct = hasil > 0 ? (okpcs / hasil) * 100 : 0;
-        const overpack = packpcs > hasil;
-
-        let rIds = ['rUneven', 'rMottled', 'rStartup', 'rShort', 'rFlow', 'rFlash', 'rCrack', 'rSpot', 'rScratch', 'rDirty'];
-        let rTotalInput = sum(rIds);
-        let rMax = Math.max(...rIds.map(id => toNum($(id).value)));
-
-        // --- NEW: COLLECT DETAILS SISA ---
-        const details = {
-            sblm: [1,2,3,4,5,6].map(i => toNum($('eSblm'+i).value)),
-            ssdh: [1,2,3,4,5,6].map(i => toNum($('eSsdh'+i).value))
-        };
-
-        return { prod, tipe, gram, cav, counter, sblm_pcs, ssdh_pcs, hasil, okpcs, okkg, rejectpcs, rejectkg, runnerkg, yieldpct, sisaBahan, overpack, packpcs, rtotal: rTotalInput, rmax: rMax, details: details };
-    }
-
-    async function saveEntry() {
-        if(!client) return alert("Database Belum Konek!");
-        const p = compute(); 
-        if(!p.prod) return alert("Pilih produk valid");
-        
-        $('loading').style.display='flex';
-        const existingId = $('eId').value;
-        const targetId = existingId || uid();
-        
-        const { error } = await client.from('logs').upsert({
-            id: targetId,
-            tanggal: $('eTanggal').value, shift: $('eShift').value, line: $('eLine').value,
-            kode: p.prod.kode, nama: p.prod.nama, tipe: p.tipe,
-            gram: p.gram, runner: toNum($('eRunner').value), cavity: p.cav, counter: p.counter,
-            sisa_sblm: p.sblm_pcs, sisa_ssdh: p.ssdh_pcs,
-            hasil: p.hasil, okpcs: p.okpcs, okkg: p.okkg,
-            reject: p.rejectpcs, rejectkg: p.rejectkg, runnerkg: p.runnerkg,
-            sisa_bahan: p.sisaBahan, yieldpct: p.yieldpct,
-            qty_dus: toNum($('eQtyDus').value), isi_dus: toNum($('eIsiDus').value),
-            qty_box: toNum($('eQtyBox').value), isi_box: toNum($('eIsiBox').value),
-            qty_dus_plus: toNum($('eQtyDusPlus').value), isi_dus_plus: toNum($('eIsiDusPlus').value),
-            catatan: $('eCatatan').value,
-            reject_uneven: toNum($('rUneven').value), reject_mottled: toNum($('rMottled').value),
-            reject_startup: toNum($('rStartup').value), reject_short: toNum($('rShort').value),
-            reject_flow: toNum($('rFlow').value), reject_flashing: toNum($('rFlash').value),
-            reject_crack: toNum($('rCrack').value), reject_spot: toNum($('rSpot').value),
-            reject_scratch: toNum($('rScratch').value), reject_dirty: toNum($('rDirty').value),
-            reject_total_kecil: toNum($('rTotal').value), reject_max: toNum($('rMax').value),
-            
-            // --- NEW: SIMPAN DETAIL SISA KE KOLOM JSON ---
-            detail_sisa: p.details 
-        });
-        
-        $('loading').style.display='none';
-        if(error) alert('Error Save: ' + error.message); 
-        else { alert('Alhamdulillah Tersimpan!'); resetEntryForm(); refreshData(); }
-    }
-
-    async function saveMaster() {
-        if(!client) return alert("Database Belum Konek!");
-        const kode = $('mpKode').value.trim(); const nama = $('mpNama').value.trim();
-        if(!kode) return alert("Isi Kode");
-        
-        const allow = $('chkAllowDup').checked;
-        if(!allow) {
-            const exist = master.find(m => m.kode.toLowerCase() === kode.toLowerCase() && m.nama.toLowerCase() === nama.toLowerCase());
-            if(exist && !confirm("Produk sudah ada. Update?")) return;
-        }
-
-        $('loading').style.display='flex';
-        let targetID = uid();
-        const exist = master.find(m => m.kode.toLowerCase() === kode.toLowerCase() && m.nama.toLowerCase() === nama.toLowerCase());
-        if(exist) targetID = exist.id;
-
-        const { error } = await client.from('master').upsert({
-            id: targetID, kode: kode, nama: nama, tipe: $('mpTipe').value,
-            gram: toNum($('mpGram').value), runner: toNum($('mpRunner').value),
-            cavity: toNum($('mpCavity').value), per_dus: toNum($('mpPerDus').value), per_box: toNum($('mpPerBox').value)
-        });
-
-        $('loading').style.display='none';
-        if(error) alert(error.message); else { refreshData(); ['mpKode','mpNama','mpGram','mpRunner','mpCavity','mpPerDus','mpPerBox'].forEach(id => $(id).value=''); }
-    }
-
-    window.deleteLog = async (id) => { if(!confirm("Hapus?")) return; $('loading').style.display='flex'; const { error } = await client.from('logs').delete().eq('id', id); $('loading').style.display='none'; if(!error) refreshData(); };
-    window.deleteMaster = async (id) => { if(!confirm("Hapus Master?")) return; $('loading').style.display='flex'; const { error } = await client.from('master').delete().eq('id', id); $('loading').style.display='none'; if(!error) refreshData(); };
-    
-    window.editLog = (id) => {
-        const r = logs.find(x => x.id === id); if(!r) return;
-        $('eId').value = r.id; $('eTanggal').value = r.tanggal; $('eShift').value = r.shift; $('eLine').value = r.line;
-        $('eProduk').value = r.kode + " - " + r.nama; hydrateProduk();
-        $('eCounter').value = r.counter; $('eCavity').value = r.cavity;
-        $('eQtyDus').value = r.qty_dus||''; $('eIsiDus').value = r.isi_dus||'';
-        $('eQtyBox').value = r.qty_box||''; $('eIsiBox').value = r.isi_box||'';
-        $('eQtyDusPlus').value = r.qty_dus_plus||''; $('eIsiDusPlus').value = r.isi_dus_plus||'';
-        $('eCatatan').value = r.catatan||'';
-        $('rUneven').value = r.reject_uneven||''; $('rMottled').value = r.reject_mottled||'';
-        $('rStartup').value = r.reject_startup||''; $('rShort').value = r.reject_short||'';
-        $('rFlow').value = r.reject_flow||''; $('rFlash').value = r.reject_flashing||'';
-        $('rCrack').value = r.reject_crack||''; $('rSpot').value = r.reject_spot||'';
-        $('rScratch').value = r.reject_scratch||''; $('rDirty').value = r.reject_dirty||'';
-        
-        // --- NEW: LOAD DETAIL SISA JIKA ADA ---
-        if(r.detail_sisa) {
-            // Cek apakah Supabase balikin object atau string (kadang beda versi beda behavior)
-            const d = (typeof r.detail_sisa === 'string') ? JSON.parse(r.detail_sisa) : r.detail_sisa;
-            
-            if(d.sblm) {
-                d.sblm.forEach((val, idx) => {
-                    if($('eSblm'+(idx+1))) $('eSblm'+(idx+1)).value = val === 0 ? '' : val;
-                });
-            }
-            if(d.ssdh) {
-                d.ssdh.forEach((val, idx) => {
-                    if($('eSsdh'+(idx+1))) $('eSsdh'+(idx+1)).value = val === 0 ? '' : val;
-                });
-            }
-        }
-
-        recalc(); $('mEntry').classList.add('open');
-    };
-
-    window.editMaster = (idx) => {
-        const p = master[idx]; $('mpKode').value = p.kode; $('mpNama').value = p.nama; $('mpTipe').value = p.tipe;
-        $('mpGram').value = p.gram; $('mpRunner').value = p.runner; $('mpCavity').value = p.cavity; $('mpPerDus').value = p.per_dus; $('mpPerBox').value = p.per_box;
-    };
-
-    async function wipeLogs() { if(!confirm('HAPUS SEMUA DATA LAPORAN?')) return; $('loading').style.display='flex'; const { error } = await client.from('logs').delete().neq('id','0'); $('loading').style.display='none'; refreshData(); }
-    async function wipeMaster() { if(!confirm('YAKIN HAPUS SEMUA MASTER?')) return; $('loading').style.display='flex'; const { error } = await client.from('master').delete().neq('id','0'); $('loading').style.display='none'; refreshData(); }
-
-    function importCSV(e) {
-        if(!client) return alert("Database Belum Konek!");
-        const file = e.target.files[0]; if(!file) return;
-        const reader = new FileReader();
-        reader.onload = async (evt) => {
-            const lines = evt.target.result.split(/\r\n/).filter(l => l.trim() !== '');
-            if(lines.length < 2) return alert('CSV Salah');
-            const delim = lines[0].split(';').length > lines[0].split(',').length ? ';' : ',';
-            const headers = lines[0].toLowerCase().split(delim).map(h => h.trim().replace(/"/g, ''));
-            
-            const idx = {
-                kode: headers.findIndex(h => h.includes('kode')),
-                nama: headers.findIndex(h => h.includes('nama') || h.includes('product')),
-                gram: headers.findIndex(h => h.includes('gram') || h.includes('berat satuan')),
-                runner: headers.findIndex(h => h.includes('runner')),
-                cavity: headers.findIndex(h => h.includes('cav')),
-                dus: headers.findIndex(h => h.includes('dus') || h.includes('doos')),
-                box: headers.findIndex(h => h.includes('box')),
-                tipe: headers.findIndex(h => h.includes('tipe'))
-            };
-            if(idx.nama < 0) return alert('Header Nama tidak ketemu');
-            const autoSplitKode = (idx.kode < 0);
-
-            $('loading').style.display='flex';
-            let rows = [];
-            for(let i=1; i<lines.length; i++){
-                const cols = lines[i].split(delim).map(c => c.trim().replace(/"/g, ''));
-                if(cols.length < 2) continue;
-                let kodeVal = '', namaVal = '';
-                if(autoSplitKode) {
-                    const rawName = cols[idx.nama];
-                    const firstSpace = rawName.indexOf(' ');
-                    if(firstSpace > 0) { kodeVal = rawName.substring(0, firstSpace).trim(); namaVal = rawName.substring(firstSpace+1).trim(); }
-                    else { kodeVal = rawName; namaVal = rawName; }
-                } else { kodeVal = cols[idx.kode]; namaVal = cols[idx.nama] || kodeVal; }
-
-                const cleanNum = (val) => { if(!val || val==='-') return 0; return toNum(val.replace(',','.')); };
-                let targetID = uid();
-                const exist = master.find(m => m.kode.toLowerCase() === kodeVal.toLowerCase() && m.nama.toLowerCase() === namaVal.toLowerCase());
-                if(exist) targetID = exist.id;
-
-                rows.push({
-                    id: targetID, kode: kodeVal, nama: namaVal, 
-                    tipe: (idx.tipe >= 0 ? cols[idx.tipe] : 'pcs'),
-                    gram: (idx.gram >= 0 ? cleanNum(cols[idx.gram]) : 0),
-                    runner: (idx.runner >= 0 ? cleanNum(cols[idx.runner]) : 0),
-                    cavity: (idx.cavity >= 0 ? cleanNum(cols[idx.cavity]) : 1),
-                    per_dus: (idx.dus >= 0 ? cleanNum(cols[idx.dus]) : 0),
-                    per_box: (idx.box >= 0 ? cleanNum(cols[idx.box]) : 0)
-                });
-            }
-            const { error } = await client.from('master').upsert(rows);
-            $('loading').style.display='none';
-            if(error) alert('Error Import: '+error.message); else { alert('Import Sukses!'); refreshData(); }
-            $('fileCsvMaster').value='';
-        };
-        reader.readAsText(file);
-    }
-
-    function renderMaster() { 
-        const t = $('mpBody'); t.innerHTML = ''; 
-        master.forEach((p, idx) => { 
-            const tr = document.createElement('tr'); 
-            tr.innerHTML = `<td>${p.kode}</td><td>${p.nama}</td><td>${p.tipe}</td><td class="right">${p.gram}</td><td class="right">${p.runner}</td><td class="right">${p.cavity}</td><td class="right">${p.per_dus}</td><td style="text-align:center"><button class="btn sm" onclick="editMaster(${idx})">✎</button> <button class="btn sm danger" onclick="deleteMaster('${p.id}')">🗑</button></td>`; 
-            t.appendChild(tr); 
-        }); 
-    }
-
-    function renderTable() {
-        const t = $('tbody'); t.innerHTML = '';
-        const qFrom = $('fFrom').value, qTo = $('fTo').value;
-        const from = qFrom ? new Date(qFrom) : null; const to = qTo ? new Date(qTo) : null;
-        const qProd = $('fProduk').value.toLowerCase();
-        
-        const filtered = logs.filter(r => {
-            const d = new Date(r.tanggal);
-            return (from ? d >= from : true) && (to ? d <= to : true) && (qProd ? r.nama.toLowerCase().includes(qProd) : true);
-        });
-        $('rowCount').textContent = filtered.length + " data";
-        
-        filtered.forEach(r => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${r.tanggal}</td><td>${r.shift}</td><td>${r.line}</td><td><b>${r.nama}</b><br><small>${r.kode}</small></td><td>${r.tipe}</td><td class="right">${r.counter}</td><td class="right">${r.cavity}</td><td class="right">${r.qty_dus}</td><td class="right">${r.qty_box}</td><td class="right text-ok"><b>${(+r.okpcs).toLocaleString()}</b></td><td class="right">${(+r.okkg).toFixed(2)}</td><td class="right text-danger">${(+r.reject).toLocaleString()}</td><td class="right">${(+r.sisa_bahan).toFixed(2)}</td><td class="right"><b>${(+r.yieldpct).toFixed(2)}%</b></td><td class="right">${r.reject_max}</td><td style="text-align:center; white-space:nowrap;"><button class="btn sm info" onclick="editLog('${r.id}')" style="margin-right:4px;">Edit</button><button class="btn sm danger" onclick="deleteLog('${r.id}')">Hapus</button></td>`;
-            t.appendChild(tr);
-        });
-    }
-
-    // --- REKAP BARU DENGAN FILTER SHIFT ---
-    
-    // Global variable buat simpan data mentah rekap biar bisa difilter di client
-    let _rekapLogs = []; 
-
-    function fetchAndShowRekap() {
-        const qFrom = $('fFrom').value, qTo = $('fTo').value;
-        const from = qFrom ? new Date(qFrom) : null; const to = qTo ? new Date(qTo) : null;
-        
-        // Ambil data sesuai filter tanggal yg aktif
-        const filtered = logs.filter(r => { 
-            const d = new Date(r.tanggal); 
-            return (from ? d >= from : true) && (to ? d <= to : true); 
-        });
-        
-        if(filtered.length === 0) return alert("Data kosong di rentang ini.");
-        
-        // Simpan ke global
-        _rekapLogs = filtered;
-        
-        // Default: Tampilkan Semua Shift
-        renderRekapTable('all');
-        $('mRekap').classList.add('open');
-    }
-
-    // Fungsi ini dipanggil tombol filter
-    window.filterRekap = function(mode, btn) {
-        // Highlight Tombol
-        const buttons = document.querySelectorAll('.filter-btn');
-        buttons.forEach(b => b.classList.remove('active'));
-        if(btn) btn.classList.add('active');
-        
-        renderRekapTable(mode);
-    }
-
-    function renderRekapTable(mode) {
-        let dataToProcess = [];
-        
-        if(mode === 'all') {
-            dataToProcess = _rekapLogs;
-        } else {
-            // Filter berdasarkan shift (pastikan tipe data sama, biasanya string '1', '2', '3')
-            dataToProcess = _rekapLogs.filter(r => r.shift == mode);
-        }
-
-        const groups = {};
-        dataToProcess.forEach(r => {
-            const key = r.line + "|||" + r.kode + "|||" + r.nama;
-            if(!groups[key]) groups[key] = { line: r.line, kode: r.kode, nama: r.nama, okpcs: 0, reject: 0, okkg: 0, yieldTotal: 0, count: 0 };
-            groups[key].okpcs += (+r.okpcs || 0);
-            groups[key].reject += (+r.reject || 0);
-            groups[key].okkg += (+r.okkg || 0);
-            groups[key].yieldTotal += (+r.yieldpct || 0);
-            groups[key].count++;
-        });
-
-        // Update Total Mesin di Header
-        const activeMachines = Object.keys(groups).length;
-        $('rekapMachineCount').innerHTML = `Total Mesin Aktif: <b style="color:var(--text-main)">${activeMachines} Unit</b>`;
-
-        const tbody = $('tbodyRekap'); tbody.innerHTML = '';
-        const sortedKeys = Object.keys(groups).sort((a, b) => groups[a].line.localeCompare(groups[b].line, undefined, {numeric: true, sensitivity: 'base'}));
-        
-        if(sortedKeys.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">Tidak ada data untuk shift ini</td></tr>';
-            return;
-        }
-
-        sortedKeys.forEach(key => {
-            const g = groups[key];
-            const avgYield = g.count > 0 ? (g.yieldTotal/g.count) : 0;
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${g.line}</td><td style="line-height:1.2"><span style="color:var(--gold); font-weight:700; font-size:0.85rem">${g.kode}</span><br><span style="font-weight:600; color:var(--text-main)">${g.nama}</span></td><td class="right text-ok"><b>${g.okpcs.toLocaleString()}</b></td><td class="right text-danger">${g.reject.toLocaleString()}</td><td class="right">${g.okkg.toFixed(2)}</td><td class="right"><b>${avgYield.toFixed(2)}%</b></td>`;
-            tbody.appendChild(tr);
-        });
-    }
-
-    function exportCSV() {
-        const qFrom = $('fFrom').value; const qTo = $('fTo').value;
-        const from = qFrom ? new Date(qFrom) : null; const to = qTo ? new Date(qTo) : null;
-        const filtered = logs.filter(r => { const d = new Date(r.tanggal); return (from ? d >= from : true) && (to ? d <= to : true); });
-        
-        if(filtered.length === 0) return alert("Data kosong");
-        const header = Object.keys(filtered[0]).join(",");
-        const csv = [header].concat(filtered.map(row => Object.values(row).map(v => `"${v}"`).join(","))).join("\n");
-        
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = 'Laporan_Produksi.csv'; a.click();
-    }
-</script>
+<script src="app.js"></script>
+<script src="dashboard.js"></script>
 </body>
 </html>
