@@ -1,0 +1,175 @@
+/* --- TITANIUM LUXURY THEME (DARK GREY & GOLD) --- */
+:root {
+    --bg-body: #121212; --bg-card: #1e1e1e; --bg-input: #2d2d2d;
+    --text-main: #e5e5e5; --text-muted: #a3a3a3;
+    --border: #404040; --gold: #d4af37;
+    --primary: #d4af37; --success: #10b981; --danger: #ef4444; --info: #38bdf8;
+    --radius: 12px; --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.7);
+}
+
+* { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+
+body { 
+    margin: 0; background-color: var(--bg-body); 
+    background-image: radial-gradient(var(--border) 1px, transparent 1px);
+    background-size: 30px 30px;
+    color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif; min-height: 100vh;
+}
+
+/* LAYOUT UTAMA */
+.wrap { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+
+/* HEADER & MENU */
+.bismillah { font-family: 'Amiri', serif; font-size: 2rem; color: var(--gold); text-align: center; margin-bottom: 0.5rem; text-shadow: 0 2px 10px rgba(212, 175, 55, 0.2); }
+.slogan { text-align: center; font-size: 0.9rem; color: var(--text-muted); font-style: italic; margin-bottom: 3rem; }
+
+/* 🔥 UPDATE MENU GRID: 3 KOLOM DI LAPTOP (ENTERPRISE LOOK) 🔥 */
+.menu-grid { 
+    display: grid; 
+    gap: 20px; 
+    margin-bottom: 30px; 
+}
+
+.menu-card {
+    background: #252525; border: 1px solid var(--border); border-radius: 16px;
+    padding: 24px 16px; text-align: center; cursor: pointer; transition: all 0.2s ease;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+}
+.menu-card:hover { transform: translateY(-5px); border-color: var(--gold); background: #2a2a2a; box-shadow: 0 10px 30px -5px rgba(212, 175, 55, 0.15); }
+.menu-card .icon { font-size: 2.2rem; margin-bottom: 4px; }
+.menu-card h3 { font-size: 1rem; color: var(--text-main); font-weight: 700; margin:0; }
+.menu-card p { font-size: 0.75rem; color: var(--text-muted); margin: 0; }
+.menu-card.primary { border: 1px solid var(--gold); background: linear-gradient(145deg, #1e1e1e, #252525); }
+.menu-card.primary .icon { color: var(--gold); }
+
+/* COMPONENTS */
+.card { background: var(--bg-card); border: 1px solid var(--border); border-top: 1px solid var(--gold); border-radius: var(--radius); padding: 24px; margin-bottom: 20px; box-shadow: var(--shadow); position: relative; }
+h2 { font-size: 1.75rem; font-weight: 700; margin:0; color: var(--text-main); }
+h3, h4 { margin: 0; color: var(--text-main); }
+.muted { color: var(--text-muted); font-size: 0.85rem; }
+
+/* BUTTONS */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 20px; font-size: 0.9rem; font-weight: 600; border-radius: 50px; border: 1px solid var(--gold); background: transparent; color: var(--gold); cursor: pointer; transition: all 0.2s ease; }
+.btn:hover { background: var(--gold); color: #121212; transform: translateY(-2px); }
+.btn.primary { background: linear-gradient(to bottom, #d4af37, #b4942b); border: none; color: #121212; box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2); }
+.btn.ok { border-color: var(--success); color: var(--success); } .btn.ok:hover { background: var(--success); color: #121212; }
+.btn.danger { border-color: var(--danger); color: var(--danger); } .btn.danger:hover { background: var(--danger); color: white; }
+.btn.info { border-color: var(--info); color: var(--info); } .btn.info:hover { background: var(--info); color: #121212; }
+.btn.sm { padding: 6px 12px; font-size: 0.8rem; }
+.filter-btn { flex: 1; border: 1px solid var(--border); background: #252525; color: var(--text-muted); padding: 8px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; transition: 0.2s; }
+.filter-btn:hover { background: rgba(212, 175, 55, 0.1); color: var(--primary); border-color: var(--gold); }
+.filter-btn.active { background: var(--primary); color: #121212; border-color: var(--primary); font-weight: 800; }
+
+/* INPUTS */
+.input, select { width: 100%; padding: 12px 16px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.95rem; transition: 0.2s; }
+.input:focus, select:focus { border-color: var(--gold); background: #333; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.1); }
+
+/* --- TABLE STYLES --- */
+.table-container { width: 100%; overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); -webkit-overflow-scrolling: touch; }
+table { width: 100%; min-width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.9rem; }
+thead th { background: #252525; color: var(--gold); padding: 14px 16px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; border-bottom: 1px solid var(--border); white-space: nowrap; }
+tbody td { padding: 14px 16px; border-bottom: 1px solid #333; vertical-align: middle; color: var(--text-main); background: #1e1e1e; }
+tbody tr:hover td { background: #2a2a2a; }
+th:last-child, td:last-child { position: sticky; right: 0; z-index: 3; width: 110px; min-width: 110px; max-width: 110px; border-left: 1px solid var(--border); background: #1e1e1e; box-shadow: -4px 0 12px rgba(0,0,0,0.6); }
+thead th:last-child { z-index: 5; background: #252525; }
+tbody tr:hover td:last-child { background: #2a2a2a; }
+
+.right { text-align: right; font-family: 'JetBrains Mono', monospace; }
+.badge { font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; background: rgba(212, 175, 55, 0.1); color: var(--gold); border: 1px solid var(--gold); }
+.stat-box { background: #252525; border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center; }
+.stat-value { font-family: 'JetBrains Mono', monospace; font-size: 1.25rem; font-weight: 700; margin-top: 6px; display: block; }
+.row { display: flex; gap: 12px; flex-wrap: wrap; }
+
+/* GRID SYSTEM YANG SIMPLE & PASTI JALAN */
+.grid-simple { display: grid; gap: 16px; } 
+.cols-2 { grid-template-columns: repeat(2, 1fr); }
+.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.cols-4 { grid-template-columns: repeat(4, 1fr); }
+.cols-6 { grid-template-columns: repeat(6, 1fr); }
+.cols-reject { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+
+.reject-label { font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.text-ok { color: var(--success); } .text-danger { color: var(--danger); }
+
+/* --- MODAL SYSTEM --- */
+.modal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; padding: 15px; z-index: 100; }
+.modal.open { display: flex; } 
+.modal .card { width: 100%; max-width: 500px; border: 1px solid var(--gold); animation: modalPop 0.3s; background: #1a1a1a; }
+
+/* MODAL FULL SCREEN */
+.modal.full { top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%; background: #121212; padding: 0 !important; display: none; z-index: 200; overflow-y: auto; overflow-x: hidden; }
+.modal.full.open { display: block !important; } 
+
+/* Container Utama Modal Full */
+.modal.full .wrap-full { width: 100%; min-height: 100%; margin: 0; padding: 24px 32px; box-sizing: border-box; display: flex; flex-direction: column; gap: 24px; }
+
+/* SELECTOR NEMBUS KE DALAM (NESTED) */
+.modal.full .card, 
+.modal.full .row, 
+.modal.full .grid-simple,
+.modal.full .grid { 
+    width: 100% !important; 
+    max-width: 100% !important; 
+    margin-left: 0 !important; margin-right: 0 !important; 
+    box-sizing: border-box; 
+}
+
+/* Jaga agar header (ROW) tetap flex/horizontal, jangan jadi block */
+.modal.full .row { display: flex !important; }
+
+/* Grid tetep grid */
+.modal.full .grid, .modal.full .grid-simple { display: grid !important; }
+
+.modal.full .table-container { width: 100%; overflow-x: auto; }
+.modal.full table { width: 100%; }
+
+.sticky-header { position: sticky; top: 0; z-index: 10; border: 1px solid var(--gold); }
+#vLaporanClose, #pDashboardClose, #mEntryClose, #mMasterClose, #mRekapClose { min-width: 120px; }
+
+@keyframes modalPop { from { transform: scale(0.95) translateY(20px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+
+/* UTILS */
+.loading-overlay { position: fixed; inset: 0; background: var(--bg-body); z-index: 200; display: none; align-items: center; justify-content: center; flex-direction: column; }
+.spinner { width: 50px; height: 50px; border: 4px solid var(--bg-card); border-top: 4px solid var(--gold); border-radius: 50%; animation: spin 1s linear infinite; }
+@keyframes spin { 100% { transform: rotate(360deg); } }
+.search-wrapper { position: relative; width: 100%; }
+.search-list { position: absolute; top: 100%; left: 0; width: 100%; max-height: 350px; overflow-y: auto; background: #252525; border: 1px solid var(--gold); border-radius: 8px; z-index: 9999; display: none; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.7); }
+.search-item { padding: 12px 14px; cursor: pointer; border-bottom: 1px solid #444; font-size: 0.9rem; color: var(--text-main); transition: 0.2s; white-space: normal; line-height: 1.4; }
+.search-item:hover { background: var(--gold); color: #121212; }
+.span-2 { grid-column: span 2; }
+
+/* MEDIA QUERIES (RESPONSIVE) */
+@media (min-width: 769px) {
+    /* 🔥 TAMPILAN PC: MENU 3 KOLOM 🔥 */
+    .menu-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+    .menu-card {
+        min-height: 140px; 
+        padding: 30px 20px;
+    }
+}
+
+@media (max-width: 1024px) {
+    .cols-3, .cols-4, .cols-6 { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+@media (max-width: 768px) { 
+    .wrap, .wrap-full { padding: 1rem; } 
+    /* HP: Menu & Form jadi 1 kolom */
+    .menu-grid { grid-template-columns: 1fr !important; }
+    .cols-2, .cols-3, .cols-4, .cols-6, .cols-reject { grid-template-columns: 1fr !important; } 
+    .header-row, .row { flex-direction: column; align-items: stretch; gap: 16px; } 
+    .btn { width: 100%; } 
+    .reject-label { margin-bottom: 0; }
+}
+
+/* 🔥 HILANGKAN SPINNER (PANAH ANGKA) BIAR CLEAN 🔥 */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type=number] {
+  -moz-appearance: textfield;
+}
