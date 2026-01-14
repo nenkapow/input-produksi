@@ -77,13 +77,21 @@ document.addEventListener('DOMContentLoaded', () => {
     if(sUrl && sKey) initSupabase(sUrl, sKey); else $('mConfig').classList.add('open');
 });
 
-// --- 🔥 FUNGSI CEK PIN 🔥 ---
+// --- 🔥 FUNGSI CEK PIN (UPDATED: ANTI SPASI & LEBIH AMAN) 🔥 ---
 function checkAdmin(callback) {
-    const input = prompt("🔒 RESTRICTED AREA\nMasukkan PIN Admin:");
-    if (input === ADMIN_PIN) {
+    let input = prompt("🔒 RESTRICTED AREA\nMasukkan PIN Admin:");
+    
+    // Cek jika user tekan Cancel
+    if (input === null) return;
+
+    // Hapus spasi depan/belakang (Trim) & Ubah ke string
+    input = input.toString().trim();
+
+    // Cek PIN (Pakai ADMIN_PIN yang udah diset di atas "1234")
+    if (input == ADMIN_PIN) {
         callback(); 
-    } else if (input !== null) {
-        alert("⛔ AKSES DITOLAK! PIN SALAH.");
+    } else {
+        alert("⛔ AKSES DITOLAK! PIN SALAH.\n(Input kamu: '" + input + "')");
     }
 }
 
