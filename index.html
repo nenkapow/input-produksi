@@ -3,17 +3,14 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
-    <title>Production System v2.5.2</title>
-    <!-- Library JS -->
+    <title>Production System v2.5.6</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     
-    <!-- 🔥 CSS VERSI BARU v2.5.2 🔥 -->
-    <link rel="stylesheet" href="style.css?v=2.5.2">
+    <link rel="stylesheet" href="style.css?v=2.5.6">
 </head>
 <body>
 
@@ -30,14 +27,13 @@
         <div>
             <h2>Main Menu</h2>
             <div class="row" style="align-items:center; gap:8px; margin-top:8px;">
-                <span class="badge">v2.5.2 (Enterprise Dashboard)</span>
+                <span class="badge">v2.5.6 (Enterprise Dashboard)</span>
                 <span id="statusDb" style="font-size:0.8rem; color:var(--danger)">Disconnected</span>
             </div>
         </div>
         <div><button id="btnRefresh" class="btn">⟳ Sync Data</button></div>
     </div>
 
-    <!-- MENU GRID 3x2 -->
     <div class="menu-grid">
         <div id="btnAdd" class="menu-card primary"><div class="icon">📝</div><h3>Input Produksi</h3><p>Form Laporan Shift</p></div>
         <div id="btnDashboard" class="menu-card primary"><div class="icon">📊</div><h3>Monitoring Room</h3><p>Analisa Chart & Pareto</p></div>
@@ -49,7 +45,6 @@
     <div style="text-align:center; margin-top:40px; color:var(--text-muted); font-size:0.8rem;">&copy; 2025 Production System</div>
 </div>
 
-<!-- 1. MODAL DATA HARIAN (FULL) -->
 <div id="vLaporan" class="modal full">
     <div class="wrap-full"> 
         <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:24px; border-bottom:1px solid var(--border); padding-bottom:16px;">
@@ -84,7 +79,6 @@
     </div>
 </div>
 
-<!-- 2. MODAL DASHBOARD (FULL - UPDATED) -->
 <div id="pDashboard" class="modal full">
     <div class="wrap-full">
         <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:24px; border-bottom:1px solid var(--border); padding-bottom:16px;">
@@ -100,7 +94,6 @@
             </div>
         </div>
         
-        <!-- KPI CARDS -->
         <div class="grid-simple cols-4" style="margin-bottom: 24px;">
             <div class="stat-box" style="background:#111; border-color:var(--gold);"><div class="muted">Total Produksi</div><span id="kpiHasil" class="stat-value" style="color:var(--text-main); font-size:1.5rem;">0</span></div>
             <div class="stat-box" style="background:#111; border-color:var(--success);"><div class="muted">Total OK</div><span id="kpiOk" class="stat-value" style="color:var(--success); font-size:1.5rem;">0</span></div>
@@ -108,17 +101,12 @@
             <div class="stat-box" style="background:#111;"><div class="muted">Avg Yield</div><span id="kpiYield" class="stat-value" style="color:var(--gold); font-size:1.5rem;">0%</span></div>
         </div>
 
-        <!-- CHARTS ROW 1 -->
         <div class="row" style="align-items:stretch;">
             <div class="card" style="flex:2; min-width:300px;"><h3 style="margin-bottom:16px; font-size:1rem;">📈 Trend Produksi</h3><div style="height:300px;"><canvas id="chartTrend"></canvas></div></div>
             <div class="card" style="flex:1; min-width:300px;"><h3 style="margin-bottom:16px; font-size:1rem; color:var(--danger);">⚠ Pareto Reject (Jenis)</h3><div style="height:300px;"><canvas id="chartPareto"></canvas></div></div>
         </div>
 
-        <!-- 🔥 CHARTS ROW 2 (BARU: Top OK & Top Reject) 🔥 -->
         <div class="row" style="align-items:stretch;">
-            
-            <!-- KIRI: Tabel Top OK -->            
-            <div class="row" style="align-items:stretch;">
             
             <div class="card" style="flex:1; min-width:300px;">
                 <h3 style="margin-bottom:12px; font-size:1rem; color:var(--success);">🏆 Top 5 Produk (OK Terbanyak)</h3>
@@ -133,16 +121,14 @@
             <div class="card" style="flex:1; min-width:300px;">
                 <h3 style="margin-bottom:12px; font-size:1rem; color:var(--danger);">💀 Top 5 Produk (Reject Terbanyak)</h3>
                 <div class="table-container">
-                    <table id="tblTopReject"> <thead><tr><th>Produk</th><th class="right">Total Reject</th></tr></thead>
+                    <table id="tblTopReject"> 
+                        <thead><tr><th>Produk</th><th class="right">Total Reject</th></tr></thead>
                         <tbody></tbody>
                     </table>
                 </div>
             </div>
 
-        </div>
-
-<!-- 3. MODAL REKAP LINE (FULL) -->
-<div id="mRekap" class="modal full">
+        </div> </div> </div> <div id="mRekap" class="modal full">
     <div class="wrap-full">
         <div class="card">
             <div class="row" style="justify-content:space-between; margin-bottom:16px; align-items:center;">
@@ -168,7 +154,6 @@
     </div>
 </div>
 
-<!-- 4. MODAL MASTER PRODUK (FULL) -->
 <div id="mMaster" class="modal full">
     <div class="wrap-full">
         <div class="card">
@@ -200,12 +185,10 @@
     </div>
 </div>
 
-<!-- 5. MODAL INPUT PRODUKSI (FULL SCREEN - SIMPLE GRID LAYOUT) -->
 <div id="mEntry" class="modal full">
     <div class="wrap-full">
         <div class="card">
             
-            <!-- HEADER -->
             <div class="row" style="justify-content:space-between; margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--border);">
                 <div style="display:flex; align-items:center; gap:12px;">
                     <h2 style="color:var(--gold)">📝 Input Laporan Shift</h2>
@@ -215,18 +198,14 @@
             </div>
             <input type="hidden" id="eId" />
 
-            <!-- FORM CONTAINER -->
-            <!-- Pake flex column biar numpuk rapi ke bawah, masing-masing row FULL WIDTH -->
             <div style="display:flex; flex-direction:column; gap:24px; width:100%;">
                 
-                <!-- ROW 1: INFO (Grid 3 Kolom) -->
                 <div class="grid-simple cols-3">
                     <div><div class="muted">Tanggal</div><input id="eTanggal" type="date" class="input" /></div>
                     <div><div class="muted">Shift</div><select id="eShift" class="input"><option>1</option><option>2</option><option>3</option></select></div>
                     <div><div class="muted">Line</div><input id="eLine" class="input" placeholder="L..." /></div>
                 </div>
 
-                <!-- ROW 2: PRODUK (Full 1 Kolom) -->
                 <div style="position:relative; width:100%;">
                     <div class="muted">Produk (Ketik Kode / Nama)</div>
                     <input id="eProduk" class="input" placeholder="Cari..." autocomplete="off" style="border-color:var(--gold)" />
@@ -235,7 +214,6 @@
 
                 <div style="height:1px; background:var(--border);"></div>
 
-                <!-- ROW 3: SPEK MESIN (Grid 4 Kolom) -->
                 <div class="grid-simple cols-4">
                     <div><div class="muted">Gram</div><input id="eGram" type="number" class="input" step="0.01" readonly style="background:#151515; color:var(--text-muted);" /></div>
                     <div><div class="muted">Runner</div><input id="eRunner" type="number" class="input" step="0.01" readonly style="background:#151515; color:var(--text-muted);" /></div>
@@ -243,7 +221,6 @@
                     <div><div class="muted">Counter (Shot)</div><input id="eCounter" type="number" class="input" style="font-weight:bold; font-size:1.1rem; border-color:var(--gold);" /></div>
                 </div>
 
-                <!-- ROW 4: MATERIAL USAGE (Box Gelap) -->
                 <div style="background:#151515; padding:20px; border-radius:12px; border:1px solid var(--border); width:100%;">
                     <h4 style="margin:0 0 16px; font-size:0.9rem; color:var(--gold);">MATERIAL USAGE (KG)</h4>
                     <div class="grid-simple cols-4">
@@ -273,7 +250,6 @@
 
                 <div style="height:1px; background:var(--border);"></div>
 
-                <!-- ROW 5: PACKAGING (Grid 6 Kolom) -->
                 <div>
                     <h4 style="margin:0 0 16px; font-size:0.9rem; color:var(--gold);">PACKAGING</h4>
                     <div class="grid-simple cols-6">
@@ -287,10 +263,9 @@
                     <div style="margin-top:10px;"><div class="muted">Catatan Tambahan</div><input id="eCatatan" class="input" /></div>
                 </div>
 
-                <!-- ROW 6: REJECT DETAIL (Card Mandiri - PASTI FULL) -->
                 <div class="card" style="background:rgba(239, 68, 68, 0.05); border:1px solid var(--danger); padding:20px; width:100% !important; margin:0 !important;">
                     <h4 style="margin:0 0 16px; color:var(--danger); font-size:0.9rem;">REJECT DETAIL (PCS)</h4>
-                    <div class="grid-simple cols-reject"> <!-- Disini Grid-nya baru jalan -->
+                    <div class="grid-simple cols-reject">
                         <div><div class="reject-label">Uneven Color</div><input id="rUneven" type="number" class="input" /></div>
                         <div><div class="reject-label">Mottled</div><input id="rMottled" type="number" class="input" /></div>
                         <div><div class="reject-label">Start Up</div><input id="rStartup" type="number" class="input" /></div>
@@ -309,7 +284,6 @@
                     </div>
                 </div>
 
-                <!-- ROW 7: SUMMARY RESULT (Card Mandiri - PASTI FULL) -->
                 <div class="card" style="background:rgba(16, 185, 129, 0.05); border:1px solid var(--success); padding:24px; margin-bottom:0; width:100% !important; margin:0 !important;">
                     <div class="grid-simple cols-4" style="text-align:center;">
                         <div class="stat-box"><div class="muted">Hasil (Pcs)</div><span class="stat-value" id="vHasil" style="color:var(--gold)">0</span></div>
@@ -328,19 +302,17 @@
                     <button id="btnSaveEntry" class="btn primary" style="width:100%; margin-top:30px; padding:18px; font-size:1.1rem; letter-spacing:1px; font-weight:800;">SIMPAN DATA PRODUKSI</button>
                 </div>
 
-            </div> <!-- End Flex Container -->
+            </div>
         </div>
     </div>
 </div>
 
-<!-- MODAL CONFIG -->
 <div id="mConfig" class="modal"><div class="card" style="max-width:500px">
     <h3 style="margin-bottom:8px; color:var(--gold)">Database Setup</h3>
     <div class="grid"><div><div class="muted">Project URL</div><input id="cfgUrl" class="input" /></div><div><div class="muted">Anon Public Key</div><textarea id="cfgKey" class="input" rows="4"></textarea></div><button id="btnSaveConfig" class="btn primary" style="width:100%;">SIMPAN & KONEK</button><button id="mConfigClose" class="btn" style="width:100%">Batal</button></div>
 </div></div>
 
-<!-- Scripts dengan Cache Busting v2.5.2 -->
-<script src="app.js?v=2.5.2"></script>
-<script src="dashboard.js?v=2.5.2"></script>
+<script src="app.js?v=2.5.6"></script>
+<script src="dashboard.js?v=2.5.6"></script>
 </body>
 </html>
