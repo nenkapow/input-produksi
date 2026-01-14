@@ -3,14 +3,14 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
-    <title>Production System v2.5.6</title>
+    <title>Production System v2.6.0</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     
-    <link rel="stylesheet" href="style.css?v=2.5.6">
+    <link rel="stylesheet" href="style.css?v=2.6.0">
 </head>
 <body>
 
@@ -21,17 +21,17 @@
 
 <div class="wrap">
     <div class="bismillah">بسم الله الرحمن الرحيم</div>
-    <div class="slogan">"Dashboard Production - Clean & Professional"</div>
+    <div class="slogan">"Dashboard Production - High Performance"</div>
 
     <div class="row header-row" style="justify-content:space-between; align-items:center; margin-bottom:40px;">
         <div>
             <h2>Main Menu</h2>
             <div class="row" style="align-items:center; gap:8px; margin-top:8px;">
-                <span class="badge">v2.5.6 (Enterprise Dashboard)</span>
+                <span class="badge">v2.6.0 (Fast Load)</span>
                 <span id="statusDb" style="font-size:0.8rem; color:var(--danger)">Disconnected</span>
             </div>
         </div>
-        <div><button id="btnRefresh" class="btn">⟳ Sync Data</button></div>
+        <div><button id="btnRefresh" class="btn">⟳ Sync Data (30 Hari)</button></div>
     </div>
 
     <div class="menu-grid">
@@ -50,6 +50,7 @@
         <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:24px; border-bottom:1px solid var(--border); padding-bottom:16px;">
             <h2 style="color:var(--gold);">📁 Data Laporan Harian</h2>
             <div class="row">
+                <button id="btnLoadFull" class="btn info sm" title="Ambil semua data lama">Load Full</button>
                 <button id="btnExport" class="btn ok sm">Export CSV</button>
                 <button id="btnClear" class="btn danger sm">Reset Data</button>
                 <button id="vLaporanClose" class="btn">KEMBALI</button>
@@ -107,7 +108,6 @@
         </div>
 
         <div class="row" style="align-items:stretch;">
-            
             <div class="card" style="flex:1; min-width:300px;">
                 <h3 style="margin-bottom:12px; font-size:1rem; color:var(--success);">🏆 Top 5 Produk (OK Terbanyak)</h3>
                 <div class="table-container">
@@ -127,8 +127,11 @@
                     </table>
                 </div>
             </div>
+        </div> 
+    </div> 
+</div> 
 
-        </div> </div> </div> <div id="mRekap" class="modal full">
+<div id="mRekap" class="modal full">
     <div class="wrap-full">
         <div class="card">
             <div class="row" style="justify-content:space-between; margin-bottom:16px; align-items:center;">
@@ -312,7 +315,7 @@
     <div class="grid"><div><div class="muted">Project URL</div><input id="cfgUrl" class="input" /></div><div><div class="muted">Anon Public Key</div><textarea id="cfgKey" class="input" rows="4"></textarea></div><button id="btnSaveConfig" class="btn primary" style="width:100%;">SIMPAN & KONEK</button><button id="mConfigClose" class="btn" style="width:100%">Batal</button></div>
 </div></div>
 
-<script src="app.js?v=2.5.6"></script>
-<script src="dashboard.js?v=2.5.6"></script>
+<script src="app.js?v=2.6.0"></script>
+<script src="dashboard.js?v=2.6.0"></script>
 </body>
 </html>
