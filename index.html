@@ -117,7 +117,9 @@
         <!-- 🔥 CHARTS ROW 2 (BARU: Top OK & Top Reject) 🔥 -->
         <div class="row" style="align-items:stretch;">
             
-            <!-- KIRI: Tabel Top OK -->
+            <!-- KIRI: Tabel Top OK -->            
+            <div class="row" style="align-items:stretch;">
+            
             <div class="card" style="flex:1; min-width:300px;">
                 <h3 style="margin-bottom:12px; font-size:1rem; color:var(--success);">🏆 Top 5 Produk (OK Terbanyak)</h3>
                 <div class="table-container">
@@ -128,17 +130,16 @@
                 </div>
             </div>
 
-            <!-- KANAN: Chart Top Reject (Produk) -->
             <div class="card" style="flex:1; min-width:300px;">
                 <h3 style="margin-bottom:12px; font-size:1rem; color:var(--danger);">💀 Top 5 Produk (Reject Terbanyak)</h3>
-                <div style="height:250px;">
-                    <canvas id="chartTopReject"></canvas>
+                <div class="table-container">
+                    <table id="tblTopReject"> <thead><tr><th>Produk</th><th class="right">Total Reject</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
                 </div>
             </div>
 
         </div>
-    </div>
-</div>
 
 <!-- 3. MODAL REKAP LINE (FULL) -->
 <div id="mRekap" class="modal full">
