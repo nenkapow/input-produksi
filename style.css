@@ -23,7 +23,7 @@ body {
 .bismillah { font-family: 'Amiri', serif; font-size: 2rem; color: var(--gold); text-align: center; margin-bottom: 0.5rem; text-shadow: 0 2px 10px rgba(212, 175, 55, 0.2); }
 .slogan { text-align: center; font-size: 0.9rem; color: var(--text-muted); font-style: italic; margin-bottom: 3rem; }
 
-/* 🔥 UPDATE MENU GRID: 3 KOLOM DI LAPTOP (ENTERPRISE LOOK) 🔥 */
+/* MENU GRID: 3 KOLOM DI LAPTOP */
 .menu-grid { 
     display: grid; 
     gap: 20px; 
@@ -80,7 +80,7 @@ tbody tr:hover td:last-child { background: #2a2a2a; }
 .stat-value { font-family: 'JetBrains Mono', monospace; font-size: 1.25rem; font-weight: 700; margin-top: 6px; display: block; }
 .row { display: flex; gap: 12px; flex-wrap: wrap; }
 
-/* GRID SYSTEM YANG SIMPLE & PASTI JALAN */
+/* GRID SYSTEM */
 .grid-simple { display: grid; gap: 16px; } 
 .cols-2 { grid-template-columns: repeat(2, 1fr); }
 .cols-3 { grid-template-columns: repeat(3, 1fr); }
@@ -114,10 +114,7 @@ tbody tr:hover td:last-child { background: #2a2a2a; }
     box-sizing: border-box; 
 }
 
-/* Jaga agar header (ROW) tetap flex/horizontal, jangan jadi block */
 .modal.full .row { display: flex !important; }
-
-/* Grid tetep grid */
 .modal.full .grid, .modal.full .grid-simple { display: grid !important; }
 
 .modal.full .table-container { width: 100%; overflow-x: auto; }
@@ -138,25 +135,16 @@ tbody tr:hover td:last-child { background: #2a2a2a; }
 .search-item:hover { background: var(--gold); color: #121212; }
 .span-2 { grid-column: span 2; }
 
-/* MEDIA QUERIES (RESPONSIVE) */
+/* MEDIA QUERIES */
 @media (min-width: 769px) {
-    /* 🔥 TAMPILAN PC: MENU 3 KOLOM 🔥 */
-    .menu-grid {
-        grid-template-columns: repeat(3, 1fr) !important;
-    }
-    .menu-card {
-        min-height: 140px; 
-        padding: 30px 20px;
-    }
+    .menu-grid { grid-template-columns: repeat(3, 1fr) !important; }
+    .menu-card { min-height: 140px; padding: 30px 20px; }
 }
-
 @media (max-width: 1024px) {
     .cols-3, .cols-4, .cols-6 { grid-template-columns: repeat(2, 1fr) !important; }
 }
-
 @media (max-width: 768px) { 
     .wrap, .wrap-full { padding: 1rem; } 
-    /* HP: Menu & Form jadi 1 kolom */
     .menu-grid { grid-template-columns: 1fr !important; }
     .cols-2, .cols-3, .cols-4, .cols-6, .cols-reject { grid-template-columns: 1fr !important; } 
     .header-row, .row { flex-direction: column; align-items: stretch; gap: 16px; } 
@@ -164,7 +152,7 @@ tbody tr:hover td:last-child { background: #2a2a2a; }
     .reject-label { margin-bottom: 0; }
 }
 
-/* 🔥 HILANGKAN SPINNER (PANAH ANGKA) BIAR CLEAN 🔥 */
+/* HILANGKAN SPINNER ANGKA */
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
   -webkit-appearance: none;
