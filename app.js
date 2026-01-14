@@ -32,7 +32,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- CORE ---
     $('btnSaveConfig').onclick = saveConfig;
-    $('btnRefresh').onclick = refreshData;
+    
+    // 🔥 SYNC MODE CEPAT & FULL 🔥
+    $('btnRefresh').onclick = () => refreshData(false); // Default: Cepat (30 Hari)
+    if($('btnLoadFull')) $('btnLoadFull').onclick = () => refreshData(true); // Full: Lama (Semua)
+
     $('btnSaveEntry').onclick = saveEntry;
     $('btnExport').onclick = exportCSV;
     $('mpAdd').onclick = saveMaster;
@@ -44,6 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     $('btnRefreshRekap').onclick = processRekapFilter;
 
+    // 🔥 RESET DATA (DILINDUNGI PIN) 🔥
     $('btnClear').onclick = () => checkAdmin(wipeLogs);
     $('btnWipeMaster').onclick = () => checkAdmin(wipeMaster);
     
@@ -69,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('rDateFrom').value = today;
     $('rDateTo').value = today;
 
-    // 🔥 AKTIFKAN NAVIGASI EXCEL (Panah Atas/Bawah) 🔥
+    // AKTIFKAN NAVIGASI EXCEL (Panah Atas/Bawah)
     setupExcelNavigation();
 
     const sUrl = localStorage.getItem('prod_sb_url');
@@ -77,21 +82,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if(sUrl && sKey) initSupabase(sUrl, sKey); else $('mConfig').classList.add('open');
 });
 
-// --- 🔥 FUNGSI CEK PIN (UPDATED: ANTI SPASI & LEBIH AMAN) 🔥 ---
+// --- 🔥 FUNGSI CEK PIN (ANTI SPASI) 🔥 ---
 function checkAdmin(callback) {
     let input = prompt("🔒 RESTRICTED AREA\nMasukkan PIN Admin:");
-    
-    // Cek jika user tekan Cancel
     if (input === null) return;
-
-    // Hapus spasi depan/belakang (Trim) & Ubah ke string
     input = input.toString().trim();
-
-    // Cek PIN (Pakai ADMIN_PIN yang udah diset di atas "1234")
     if (input == ADMIN_PIN) {
         callback(); 
     } else {
-        alert("⛔ AKSES DITOLAK! PIN SALAH.\n(Input kamu: '" + input + "')");
+        alert("⛔ AKSES DITOLAK! PIN SALAH.");
     }
 }
 
@@ -101,15 +100,56 @@ function initSupabase(url, key) {
         if(typeof supabase === 'undefined') throw new Error("Library Supabase Error.");
         client = supabase.createClient(url, key);
         $('statusDb').innerText = "ONLINE"; $('statusDb').style.color = "var(--success)";
-        refreshData();
+        refreshData(false); // Init load cepat
     } catch(e) { alert("Gagal konek: " + e.message); $('statusDb').innerText = "ERROR"; $('mConfig').classList.add('open'); }
 }
+
 function saveConfig() { localStorage.setItem('prod_sb_url', $('cfgUrl').value); localStorage.setItem('prod_sb_key', $('cfgKey').value); initSupabase($('cfgUrl').value, $('cfgKey').value); $('mConfig').classList.remove('open'); }
-async function refreshData() {
-    if(!client) return; $('loading').style.display = 'flex';
-    const { data: mData } = await client.from('master').select('*'); master = mData || []; master.sort((a,b)=>(a.kode||'').localeCompare(b.kode||''));
-    const { data: lData } = await client.from('logs').select('*'); logs = lData || [];
-    renderTable(); renderMaster(); $('loading').style.display = 'none';
+
+// --- 🔥 UPDATED: REFRESH DATA (PARALEL & 30 HARI) 🔥 ---
+async function refreshData(isFull = false) {
+    if(!client) return; 
+    $('loading').style.display = 'flex';
+    
+    // Tentukan batas waktu (30 hari lalu) atau ambil semua
+    let dateLimit = null;
+    if (!isFull) {
+        const d = new Date();
+        d.setDate(d.getDate() - 30);
+        dateLimit = d.toISOString().slice(0, 10);
+    }
+
+    try {
+        // 1. Siapkan Request Master
+        const reqMaster = client.from('master').select('*');
+
+        // 2. Siapkan Request Logs
+        let reqLogs = client.from('logs').select('*');
+        if (dateLimit) {
+            reqLogs = reqLogs.gte('tanggal', dateLimit); // Hanya ambil data baru
+        }
+
+        // 3. JALANKAN BARENGAN (Promise.all) -> Bikin Ngebut!
+        const [resMaster, resLogs] = await Promise.all([reqMaster, reqLogs]);
+
+        if (resMaster.error) throw resMaster.error;
+        if (resLogs.error) throw resLogs.error;
+
+        master = resMaster.data || [];
+        master.sort((a,b)=>(a.kode||'').localeCompare(b.kode||''));
+
+        logs = resLogs.data || [];
+        
+        renderTable(); 
+        renderMaster();
+        
+        if(isFull) alert("History lengkap berhasil ditarik (" + logs.length + " data).");
+
+    } catch (e) {
+        alert("Gagal Sync: " + e.message);
+    }
+
+    $('loading').style.display = 'none';
 }
 
 // === ENTRY ===
@@ -163,7 +203,7 @@ async function saveEntry() {
         qty_dus: toNum($('eQtyDus').value), isi_dus: toNum($('eIsiDus').value), qty_box: toNum($('eQtyBox').value), isi_box: toNum($('eIsiBox').value), qty_dus_plus: toNum($('eQtyDusPlus').value), isi_dus_plus: toNum($('eIsiDusPlus').value), catatan: $('eCatatan').value,
         reject_uneven: toNum($('rUneven').value), reject_mottled: toNum($('rMottled').value), reject_startup: toNum($('rStartup').value), reject_short: toNum($('rShort').value), reject_flow: toNum($('rFlow').value), reject_flashing: toNum($('rFlash').value), reject_crack: toNum($('rCrack').value), reject_spot: toNum($('rSpot').value), reject_scratch: toNum($('rScratch').value), reject_dirty: toNum($('rDirty').value), reject_total_kecil: toNum($('rTotal').value), reject_max: toNum($('rMax').value), detail_sisa: p.details 
     });
-    $('loading').style.display='none'; if(error) alert('Error Save: '+error.message); else { alert('Alhamdulillah Tersimpan!'); resetEntryForm(); refreshData(); }
+    $('loading').style.display='none'; if(error) alert('Error Save: '+error.message); else { alert('Alhamdulillah Tersimpan!'); resetEntryForm(); refreshData(false); }
 }
 async function saveMaster() {
     if(!client) return alert("DB Error"); const k=$('mpKode').value.trim(), n=$('mpNama').value.trim(); if(!k) return alert("Kode wajib");
@@ -171,12 +211,12 @@ async function saveMaster() {
     if(ex && !confirm("Update Produk?")) return; if(ex) tID=ex.id;
     $('loading').style.display='flex';
     await client.from('master').upsert({ id: tID, kode: k, nama: n, tipe: $('mpTipe').value, gram: toNum($('mpGram').value), runner: toNum($('mpRunner').value), cavity: toNum($('mpCavity').value), per_dus: toNum($('mpPerDus').value), per_box: toNum($('mpPerBox').value) });
-    $('loading').style.display='none'; refreshData(); ['mpKode','mpNama','mpGram','mpRunner','mpCavity','mpPerDus','mpPerBox'].forEach(i=>$(i).value='');
+    $('loading').style.display='none'; refreshData(false); ['mpKode','mpNama','mpGram','mpRunner','mpCavity','mpPerDus','mpPerBox'].forEach(i=>$(i).value='');
 }
-window.deleteLog=async(id)=>{if(confirm("Hapus?")){await client.from('logs').delete().eq('id',id); refreshData();}};
-window.deleteMaster=async(id)=>{if(confirm("Hapus?")){await client.from('master').delete().eq('id',id); refreshData();}};
-async function wipeLogs(){if(confirm('BAHAYA: HAPUS SEMUA DATA HARIAN?')){await client.from('logs').delete().neq('id','0'); refreshData();}}
-async function wipeMaster(){if(confirm('BAHAYA: HAPUS SEMUA MASTER PRODUK?')){await client.from('master').delete().neq('id','0'); refreshData();}}
+window.deleteLog=async(id)=>{if(confirm("Hapus?")){await client.from('logs').delete().eq('id',id); refreshData(false);}};
+window.deleteMaster=async(id)=>{if(confirm("Hapus?")){await client.from('master').delete().eq('id',id); refreshData(false);}};
+async function wipeLogs(){if(confirm('BAHAYA: HAPUS SEMUA DATA HARIAN? (PERMANEN)')){await client.from('logs').delete().neq('id','0'); refreshData(false);}}
+async function wipeMaster(){if(confirm('BAHAYA: HAPUS SEMUA MASTER PRODUK?')){await client.from('master').delete().neq('id','0'); refreshData(false);}}
 
 window.editLog=(id)=>{
     const r=logs.find(x=>x.id===id); if(!r) return;
@@ -220,36 +260,25 @@ function exportCSV(){
     const h=Object.keys(d[0]).join(","), c=[h].concat(d.map(r=>Object.values(r).map(v=>`"${v}"`).join(","))).join("\n");
     const b=new Blob([c],{type:'text/csv'}), u=URL.createObjectURL(b), a=document.createElement('a'); a.href=u; a.download='Data.csv'; a.click();
 }
-function importCSV(e){ alert("Fitur Import CSV aktif"); refreshData(); }
+function importCSV(e){ alert("Fitur Import CSV aktif"); refreshData(false); }
 window.editMaster=(i)=>{const p=master[i]; $('mpKode').value=p.kode; $('mpNama').value=p.nama; $('mpTipe').value=p.tipe; $('mpGram').value=p.gram; $('mpRunner').value=p.runner; $('mpCavity').value=p.cavity; $('mpPerDus').value=p.per_dus; $('mpPerBox').value=p.per_box;}
 
-// --- 🔥 FUNGSI NAVIGASI EXCEL (User Friendly) 🔥 ---
+// --- FUNGSI NAVIGASI EXCEL (User Friendly) ---
 function setupExcelNavigation() {
-    // Ambil semua input di form Entry (kecuali hidden), termasuk select
     const inputs = document.querySelectorAll('#mEntry input:not([type="hidden"]), #mEntry select, #mEntry textarea');
-    
     inputs.forEach((input, index) => {
         input.addEventListener('keydown', (e) => {
             const key = e.key;
-            // Handle: Panah Bawah, Panah Atas, Enter
             if (key === 'ArrowDown' || key === 'Enter' || key === 'ArrowUp') {
-                e.preventDefault(); // Stop angka berubah sendiri
-
+                e.preventDefault(); 
                 let targetIndex = index;
                 const direction = (key === 'ArrowDown' || key === 'Enter') ? 1 : -1;
-
-                // Cari input selanjutnya yang BISA DIISI (bukan readonly/disabled)
                 while (true) {
                     targetIndex += direction;
-                    // Kalau mentok atas/bawah, stop
                     if (targetIndex < 0 || targetIndex >= inputs.length) break;
-
                     const el = inputs[targetIndex];
-                    // Skip kalau element hidden, disabled, atau readonly
                     if (el.offsetParent !== null && !el.disabled && !el.readOnly) {
-                        el.focus();
-                        if (el.select) el.select(); // Blok teks biar gampang timpa
-                        break;
+                        el.focus(); if (el.select) el.select(); break;
                     }
                 }
             }
