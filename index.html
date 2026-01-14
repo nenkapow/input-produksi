@@ -3,26 +3,25 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
-    <title>Production System v2.5</title>
-    <!-- Library -->
+    <title>Production System v2.5.2</title>
+    <!-- Library JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-    <!-- CSS -->
-    <link rel="stylesheet" href="style.css?v=2.5.1">
+    
+    <!-- 🔥 CSS VERSI BARU v2.5.2 🔥 -->
+    <link rel="stylesheet" href="style.css?v=2.5.2">
 </head>
 <body>
 
-<!-- LOADING -->
 <div id="loading" class="loading-overlay">
     <div class="spinner"></div>
-    <div style="margin-top:16px; font-weight:600; color:var(--gold);">MENGHUBUNGKAN...</div>
+    <div style="margin-top:16px; font-weight:600; color:var(--gold); letter-spacing:1px;">MENGHUBUNGKAN...</div>
 </div>
 
-<!-- MAIN MENU -->
 <div class="wrap">
     <div class="bismillah">بسم الله الرحمن الرحيم</div>
     <div class="slogan">"Dashboard Production - Clean & Professional"</div>
@@ -31,13 +30,14 @@
         <div>
             <h2>Main Menu</h2>
             <div class="row" style="align-items:center; gap:8px; margin-top:8px;">
-                <span class="badge">v2.5 (Full Screen Fixed)</span>
+                <span class="badge">v2.5.2 (Enterprise Dashboard)</span>
                 <span id="statusDb" style="font-size:0.8rem; color:var(--danger)">Disconnected</span>
             </div>
         </div>
         <div><button id="btnRefresh" class="btn">⟳ Sync Data</button></div>
     </div>
 
+    <!-- MENU GRID 3x2 -->
     <div class="menu-grid">
         <div id="btnAdd" class="menu-card primary"><div class="icon">📝</div><h3>Input Produksi</h3><p>Form Laporan Shift</p></div>
         <div id="btnDashboard" class="menu-card primary"><div class="icon">📊</div><h3>Monitoring Room</h3><p>Analisa Chart & Pareto</p></div>
@@ -84,7 +84,7 @@
     </div>
 </div>
 
-<!-- 2. MODAL DASHBOARD (FULL) -->
+<!-- 2. MODAL DASHBOARD (FULL - UPDATED) -->
 <div id="pDashboard" class="modal full">
     <div class="wrap-full">
         <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:24px; border-bottom:1px solid var(--border); padding-bottom:16px;">
@@ -99,17 +99,44 @@
                 <button id="btnLoadDash" class="btn primary">ANALISA</button>
             </div>
         </div>
+        
+        <!-- KPI CARDS -->
         <div class="grid-simple cols-4" style="margin-bottom: 24px;">
             <div class="stat-box" style="background:#111; border-color:var(--gold);"><div class="muted">Total Produksi</div><span id="kpiHasil" class="stat-value" style="color:var(--text-main); font-size:1.5rem;">0</span></div>
             <div class="stat-box" style="background:#111; border-color:var(--success);"><div class="muted">Total OK</div><span id="kpiOk" class="stat-value" style="color:var(--success); font-size:1.5rem;">0</span></div>
             <div class="stat-box" style="background:#111; border-color:var(--danger);"><div class="muted">Total Reject</div><span id="kpiReject" class="stat-value" style="color:var(--danger); font-size:1.5rem;">0</span></div>
             <div class="stat-box" style="background:#111;"><div class="muted">Avg Yield</div><span id="kpiYield" class="stat-value" style="color:var(--gold); font-size:1.5rem;">0%</span></div>
         </div>
+
+        <!-- CHARTS ROW 1 -->
         <div class="row" style="align-items:stretch;">
             <div class="card" style="flex:2; min-width:300px;"><h3 style="margin-bottom:16px; font-size:1rem;">📈 Trend Produksi</h3><div style="height:300px;"><canvas id="chartTrend"></canvas></div></div>
-            <div class="card" style="flex:1; min-width:300px;"><h3 style="margin-bottom:16px; font-size:1rem; color:var(--danger);">⚠ Pareto Reject</h3><div style="height:300px;"><canvas id="chartPareto"></canvas></div></div>
+            <div class="card" style="flex:1; min-width:300px;"><h3 style="margin-bottom:16px; font-size:1rem; color:var(--danger);">⚠ Pareto Reject (Jenis)</h3><div style="height:300px;"><canvas id="chartPareto"></canvas></div></div>
         </div>
-        <div class="card"><h3 style="margin-bottom:12px; font-size:1rem;">🏆 Top 5 Produk (Berdasarkan Qty OK)</h3><div class="table-container"><table id="tblTopProd"><thead><tr><th>Produk</th><th class="right">Total OK</th><th class="right">Total Reject</th><th class="right">Yield</th></tr></thead><tbody></tbody></table></div></div>
+
+        <!-- 🔥 CHARTS ROW 2 (BARU: Top OK & Top Reject) 🔥 -->
+        <div class="row" style="align-items:stretch;">
+            
+            <!-- KIRI: Tabel Top OK -->
+            <div class="card" style="flex:1; min-width:300px;">
+                <h3 style="margin-bottom:12px; font-size:1rem; color:var(--success);">🏆 Top 5 Produk (OK Terbanyak)</h3>
+                <div class="table-container">
+                    <table id="tblTopProd">
+                        <thead><tr><th>Produk</th><th class="right">Total OK</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- KANAN: Chart Top Reject (Produk) -->
+            <div class="card" style="flex:1; min-width:300px;">
+                <h3 style="margin-bottom:12px; font-size:1rem; color:var(--danger);">💀 Top 5 Produk (Reject Terbanyak)</h3>
+                <div style="height:250px;">
+                    <canvas id="chartTopReject"></canvas>
+                </div>
+            </div>
+
+        </div>
     </div>
 </div>
 
@@ -311,8 +338,8 @@
     <div class="grid"><div><div class="muted">Project URL</div><input id="cfgUrl" class="input" /></div><div><div class="muted">Anon Public Key</div><textarea id="cfgKey" class="input" rows="4"></textarea></div><button id="btnSaveConfig" class="btn primary" style="width:100%;">SIMPAN & KONEK</button><button id="mConfigClose" class="btn" style="width:100%">Batal</button></div>
 </div></div>
 
-<script src="app.js?v=2.5.1"></script>
-<script src="dashboard.js?v=2.5.1"></script>
+<!-- Scripts dengan Cache Busting v2.5.2 -->
+<script src="app.js?v=2.5.2"></script>
+<script src="dashboard.js?v=2.5.2"></script>
 </body>
 </html>
-
