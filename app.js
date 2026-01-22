@@ -241,20 +241,84 @@ function renderTable() {
 function renderMaster(){$('mpBody').innerHTML=master.map((p,i)=>`<tr><td>${p.kode}</td><td>${p.nama}</td><td>${p.tipe}</td><td class="right">${p.gram}</td><td class="right">${p.runner}</td><td class="right">${p.cavity}</td><td class="right">${p.per_dus}</td><td style="text-align:center"><button class="btn sm" onclick="editMaster(${i})">✎</button> <button class="btn sm danger" onclick="deleteMaster('${p.id}')">🗑</button></td></tr>`).join('');}
 
 // --- REKAP LOGIC ---
-function fetchAndShowRekap(){ processRekapFilter(); $('mRekap').classList.add('open'); }
+function fetchAndShowRekap(){ 
+    // 🔥 AUTO-SYNC: Ambil tanggal dari Filter Utama agar user tidak bingung
+    if($('fFrom').value) $('rDateFrom').value = $('fFrom').value;
+    if($('fTo').value) $('rDateTo').value = $('fTo').value;
+    
+    processRekapFilter(); 
+    $('mRekap').classList.add('open'); 
+}
+
 function processRekapFilter() {
     const rf = new Date($('rDateFrom').value);
     const rt = new Date($('rDateTo').value);
     _rekapLogs = logs.filter(r => { const d = new Date(r.tanggal); return d >= rf && d <= rt; });
-    filterRekap('all', document.querySelector('#mRekap .filter-btn.active'));
+    
+    // Cari tombol aktif
+    const activeBtn = document.querySelector('#mRekap .filter-btn.active');
+    filterRekap(activeBtn ? (activeBtn.innerText.includes('SEMUA') ? 'all' : activeBtn.innerText.replace('SHIFT ','')) : 'all', activeBtn);
 }
-window.filterRekap=(m,b)=>{if(b){document.querySelectorAll('.filter-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');} renderRekapTable(m);}
+
+window.filterRekap = (m, b) => {
+    if(b){
+        document.querySelectorAll('.filter-btn').forEach(x=>x.classList.remove('active'));
+        b.classList.add('active');
+    }
+    // Jika tombol yang diklik berisi 'SEMUA', set mode ke 'all', jika tidak, ambil angkanya
+    const mode = (b && b.innerText.includes('SEMUA')) ? 'all' : m;
+    renderRekapTable(mode);
+}
+
 function renderRekapTable(m){
-    const d=(m==='all')?_rekapLogs:_rekapLogs.filter(r=>r.shift==m); const g={};
-    d.forEach(r=>{const k=r.line+"|"+r.kode; if(!g[k])g[k]={l:r.line,k:r.kode,n:r.nama,o:0,r:0,w:0,y:0,c:0}; g[k].o+=+r.okpcs; g[k].r+=+r.reject; g[k].w+=+r.okkg; g[k].y+=+r.yieldpct; g[k].c++;});
-    $('rekapMachineCount').innerHTML=`Total Data: <b style="color:#fff">${d.length}</b> | Mesin Aktif: <b style="color:#fff">${Object.keys(g).length} Unit</b>`;
-    $('tbodyRekap').innerHTML=Object.values(g).sort((a,b)=>a.l.localeCompare(b.l,undefined,{numeric:true})).map(x=>`<tr><td>${x.l}</td><td>${x.k}<br>${x.n}</td><td class="right text-ok">${x.o.toLocaleString()}</td><td class="right text-danger">${x.r.toLocaleString()}</td><td class="right">${x.w.toFixed(2)}</td><td class="right"><b>${(x.c?x.y/x.c:0).toFixed(2)}%</b></td></tr>`).join('');
+    // Filter berdasarkan shift jika bukan 'all'
+    const d = (m === 'all') ? _rekapLogs : _rekapLogs.filter(r => r.shift == m);
+    
+    const g = {};
+    d.forEach(r => {
+        // 🔥 NORMALISASI: Trim spasi dan uppercase agar 'Line 21' dan 'Line 21 ' dianggap sama
+        const ln = (r.line || '').toString().trim().toUpperCase();
+        const kd = (r.kode || '').toString().trim();
+        const nm = (r.nama || '').toString().trim();
+        
+        // 🔥 FIX PENTING: Group by Line + Kode + NAMA
+        // Sebelumnya cuma Line + Kode, jadi kalau ada 2 barang beda nama tapi kode sama/kosong, kegabung.
+        // Sekarang dibedakan juga berdasarkan namanya.
+        const k = ln + "##" + kd + "##" + nm;
+        
+        if(!g[k]) g[k] = { l: ln, k: kd, n: nm, o: 0, r: 0, w: 0, y: 0, c: 0 };
+        
+        g[k].o += +r.okpcs;
+        g[k].r += +r.reject;
+        g[k].w += +r.okkg;
+        g[k].y += +r.yieldpct;
+        g[k].c++;
+    });
+
+    // Hitung unit mesin fisik yang aktif (berdasarkan nama line unik)
+    const uniqueLines = new Set(Object.values(g).map(x => x.l)).size;
+
+    $('rekapMachineCount').innerHTML = `Total Data: <b style="color:#fff">${d.length}</b> | Mesin Aktif: <b style="color:#fff">${uniqueLines} Unit</b>`;
+    
+    // 🔥 SORTING: Urutkan berdasarkan Line, lalu Produk
+    const sortedData = Object.values(g).sort((a,b) => {
+        const lineDiff = a.l.localeCompare(b.l, undefined, { numeric: true });
+        if(lineDiff !== 0) return lineDiff;
+        return a.n.localeCompare(b.n); // Sort nama juga
+    });
+
+    $('tbodyRekap').innerHTML = sortedData.map(x => `
+        <tr>
+            <td>${x.l}</td>
+            <td>${x.k}<br><small style="color:#fff">${x.n}</small></td>
+            <td class="right text-ok">${x.o.toLocaleString()}</td>
+            <td class="right text-danger">${x.r.toLocaleString()}</td>
+            <td class="right">${x.w.toFixed(2)}</td>
+            <td class="right"><b>${(x.c ? x.y / x.c : 0).toFixed(2)}%</b></td>
+        </tr>
+    `).join('');
 }
+
 function exportCSV(){
     const f=new Date($('fFrom').value), t=new Date($('fTo').value), d=logs.filter(r=>{const dr=new Date(r.tanggal); return dr>=f && dr<=t;}); if(!d.length) return alert("Kosong");
     const h=Object.keys(d[0]).join(","), c=[h].concat(d.map(r=>Object.values(r).map(v=>`"${v}"`).join(","))).join("\n");
