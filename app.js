@@ -270,10 +270,14 @@ async function saveEntry() {
     detail_sisa: p.details
   };
 
-  const { data, error } = await client
+  const res = await client
     .from('logs')
     .insert(payload)
-    .select(); // 🔥 WAJIB
+    .select();
+
+  console.log("SUPABASE RESPONSE:", res);
+
+  const { data, error } = res;
 
   $('loading').style.display = 'none';
 
