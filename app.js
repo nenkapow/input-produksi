@@ -145,9 +145,11 @@ async function refreshData(isFull = false) {
         const reqMaster = client.from('master').select('*');
 
         // 2. Siapkan Request Logs
-        let reqLogs = client.from('logs').select('*');
-        if (dateLimit) {
-            reqLogs = reqLogs.gte('tanggal', dateLimit); // Hanya ambil data baru
+        let reqLogs = client
+  	  .from('logs')
+  	  .select('*')
+  	  .order('tanggal', { ascending: false })
+  	  .limit(5000);
         }
 
         // 3. JALANKAN BARENGAN (Promise.all) -> Bikin Ngebut!
