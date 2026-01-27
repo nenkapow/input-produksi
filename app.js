@@ -337,9 +337,12 @@ function fetchAndShowRekap(){
 }
 
 function processRekapFilter() {
-    const rf = new Date($('rDateFrom').value);
-    const rt = new Date($('rDateTo').value);
-    _rekapLogs = logs.filter(r => { const d = new Date(r.tanggal); return d >= rf && d <= rt; });
+    const rf = new Date($('rDateFrom').value + 'T00:00:00');
+    const rt = new Date($('rDateTo').value + 'T23:59:59');
+    _rekapLogs = logs.filter(r => {
+      const d = new Date(r.tanggal + 'T12:00:00');
+      return d >= rf && d <= rt;
+    });
     
     // Cari tombol aktif
     const activeBtn = document.querySelector('#mRekap .filter-btn.active');
