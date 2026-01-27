@@ -215,17 +215,78 @@ function recalc(){
     $('rTotal').value=p.rtotal; $('warnOver').style.display=p.overpack?'block':'none';
 }
 async function saveEntry() {
-    if(!client) return alert("Database Belum Konek!"); const p=compute(); if(!p.prod) return alert("Pilih produk valid");
-    $('loading').style.display='flex';
-    const { error } = await client.from('logs').upsert({
-        id: $('eId').value || uid(), tanggal: $('eTanggal').value, shift: $('eShift').value, line: $('eLine').value,
-        kode: p.prod.kode, nama: p.prod.nama, tipe: p.tipe, gram: p.gram, runner: toNum($('eRunner').value), cavity: p.cav, counter: p.counter,
-        sisa_sblm: p.sblm_pcs, sisa_ssdh: p.ssdh_pcs, hasil: p.hasil, okpcs: p.okpcs, okkg: p.okkg, reject: p.rejectpcs, rejectkg: p.rejectkg, runnerkg: p.runnerkg, sisa_bahan: p.sisaBahan, yieldpct: p.yieldpct,
-        qty_dus: toNum($('eQtyDus').value), isi_dus: toNum($('eIsiDus').value), qty_box: toNum($('eQtyBox').value), isi_box: toNum($('eIsiBox').value), qty_dus_plus: toNum($('eQtyDusPlus').value), isi_dus_plus: toNum($('eIsiDusPlus').value), catatan: $('eCatatan').value,
-        reject_uneven: toNum($('rUneven').value), reject_mottled: toNum($('rMottled').value), reject_startup: toNum($('rStartup').value), reject_short: toNum($('rShort').value), reject_flow: toNum($('rFlow').value), reject_flashing: toNum($('rFlash').value), reject_crack: toNum($('rCrack').value), reject_spot: toNum($('rSpot').value), reject_scratch: toNum($('rScratch').value), reject_dirty: toNum($('rDirty').value), reject_total_kecil: toNum($('rTotal').value), reject_max: toNum($('rMax').value), detail_sisa: p.details 
-    });
-    $('loading').style.display='none'; if(error) alert('Error Save: '+error.message); else { alert('Alhamdulillah Tersimpan!'); resetEntryForm(); refreshData(false); }
+  if (!client) return alert("Database Belum Konek!");
+  const p = compute();
+  if (!p.prod) return alert("Pilih produk valid");
+
+  $('loading').style.display = 'flex';
+
+  const payload = {
+    id: $('eId').value || uid(),
+    tanggal: $('eTanggal').value,
+    shift: $('eShift').value,
+    line: $('eLine').value,
+
+    kode: p.prod.kode,
+    nama: p.prod.nama,
+    tipe: p.tipe,
+    gram: p.gram,
+    runner: toNum($('eRunner').value),
+    cavity: p.cav,
+    counter: p.counter,
+
+    sisa_sblm: p.sblm_pcs,
+    sisa_ssdh: p.ssdh_pcs,
+    hasil: p.hasil,
+    okpcs: p.okpcs,
+    okkg: p.okkg,
+    reject: p.rejectpcs,
+    rejectkg: p.rejectkg,
+    runnerkg: p.runnerkg,
+    sisa_bahan: p.sisaBahan,
+    yieldpct: p.yieldpct,
+
+    qty_dus: toNum($('eQtyDus').value),
+    isi_dus: toNum($('eIsiDus').value),
+    qty_box: toNum($('eQtyBox').value),
+    isi_box: toNum($('eIsiBox').value),
+    qty_dus_plus: toNum($('eQtyDusPlus').value),
+    isi_dus_plus: toNum($('eIsiDusPlus').value),
+    catatan: $('eCatatan').value,
+
+    reject_uneven: toNum($('rUneven').value),
+    reject_mottled: toNum($('rMottled').value),
+    reject_startup: toNum($('rStartup').value),
+    reject_short: toNum($('rShort').value),
+    reject_flow: toNum($('rFlow').value),
+    reject_flashing: toNum($('rFlash').value),
+    reject_crack: toNum($('rCrack').value),
+    reject_spot: toNum($('rSpot').value),
+    reject_scratch: toNum($('rScratch').value),
+    reject_dirty: toNum($('rDirty').value),
+    reject_total_kecil: toNum($('rTotal').value),
+    reject_max: toNum($('rMax').value),
+
+    detail_sisa: p.details
+  };
+
+  const { data, error } = await client
+    .from('logs')
+    .insert(payload)
+    .select(); // 🔥 WAJIB
+
+  $('loading').style.display = 'none';
+
+  if (error) {
+    console.error(error);
+    alert("Error Save: " + error.message);
+  } else {
+    alert("Alhamdulillah Tersimpan!");
+    resetEntryForm();
+    refreshData(false);
+  }
 }
+
 async function saveMaster() {
     if(!client) return alert("DB Error"); const k=$('mpKode').value.trim(), n=$('mpNama').value.trim(); if(!k) return alert("Kode wajib");
     let tID=uid(), ex=master.find(m=>m.kode.toLowerCase()===k.toLowerCase()&&m.nama.toLowerCase()===n.toLowerCase());
