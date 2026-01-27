@@ -14,17 +14,6 @@ let _rekapLogs = [];
 const ADMIN_PIN = "1234"; 
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 🔍 CEK STORAGE BROWSER
-  try {
-    localStorage.setItem('_sb_test','1');
-    localStorage.removeItem('_sb_test');
-  } catch (e) {
-    alert(
-      "Browser memblokir storage.\n" +
-      "Matikan Tracking Prevention / Wallet Extension."
-    );
-  }
-    
     // --- ACTIONS (MENU UTAMA) ---
     $('btnAdd').onclick = () => { $('mEntry').classList.add('open'); resetEntryForm(); };
     $('btnRekap').onclick = fetchAndShowRekap;
@@ -107,12 +96,33 @@ function checkAdmin(callback) {
 
 // === DATABASE ===
 function initSupabase(url, key) {
-    try {
-        if(typeof supabase === 'undefined') throw new Error("Library Supabase Error.");
-        client = supabase.createClient(url, key);
-        $('statusDb').innerText = "ONLINE"; $('statusDb').style.color = "var(--success)";
-        refreshData(false); // Init load cepat
-    } catch(e) { alert("Gagal konek: " + e.message); $('statusDb').innerText = "ERROR"; $('mConfig').classList.add('open'); }
+  try {
+    if (typeof supabase === 'undefined') {
+      throw new Error("Library Supabase Error.");
+    }
+
+    client = supabase.createClient(url, key, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false
+      },
+      global: {
+        headers: {
+          Authorization: `Bearer ${key}`
+        }
+      }
+    });
+
+    $('statusDb').innerText = "ONLINE";
+    $('statusDb').style.color = "var(--success)";
+
+    refreshData(false); // Init load cepat
+  } catch (e) {
+    alert("Gagal konek: " + e.message);
+    $('statusDb').innerText = "ERROR";
+    $('mConfig').classList.add('open');
+  }
 }
 
 function saveConfig() { localStorage.setItem('prod_sb_url', $('cfgUrl').value); localStorage.setItem('prod_sb_key', $('cfgKey').value); initSupabase($('cfgUrl').value, $('cfgKey').value); $('mConfig').classList.remove('open'); }
@@ -360,4 +370,3 @@ function setupExcelNavigation() {
         });
     });
 }
-
