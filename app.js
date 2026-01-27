@@ -34,8 +34,8 @@ document.addEventListener('DOMContentLoaded', () => {
     $('btnSaveConfig').onclick = saveConfig;
     
     // 🔥 SYNC MODE CEPAT & FULL 🔥
-    $('btnRefresh').onclick = () => refreshData(false); // Default: Cepat (30 Hari)
-    if($('btnLoadFull')) $('btnLoadFull').onclick = () => refreshData(true); // Full: Lama (Semua)
+    $('btnRefresh').onclick = () => refreshData(false); 
+    if($('btnLoadFull')) $('btnLoadFull').onclick = () => refreshData(true); 
 
     $('btnSaveEntry').onclick = saveEntry;
     $('btnExport').onclick = exportCSV;
@@ -63,7 +63,6 @@ document.addEventListener('DOMContentLoaded', () => {
     calcIds.forEach(id => { if($(id)) $(id).oninput = recalc; });
 
     // INIT DATE
-    const d = new Date();
     $('eTanggal').value = todayISO();
     $('eShift').value = '1';
     
@@ -74,7 +73,6 @@ document.addEventListener('DOMContentLoaded', () => {
     $('rDateFrom').value = today;
     $('rDateTo').value = today;
 
-    // AKTIFKAN NAVIGASI EXCEL (Panah Atas/Bawah)
     setupExcelNavigation();
 
     const sUrl = localStorage.getItem('prod_sb_url');
@@ -82,7 +80,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if(sUrl && sKey) initSupabase(sUrl, sKey); else $('mConfig').classList.add('open');
 });
 
-// --- 🔥 FUNGSI CEK PIN (ANTI SPASI) 🔥 ---
 function checkAdmin(callback) {
     let input = prompt("🔒 RESTRICTED AREA\nMasukkan PIN Admin:");
     if (input === null) return;
@@ -100,18 +97,16 @@ function initSupabase(url, key) {
         if(typeof supabase === 'undefined') throw new Error("Library Supabase Error.");
         client = supabase.createClient(url, key);
         $('statusDb').innerText = "ONLINE"; $('statusDb').style.color = "var(--success)";
-        refreshData(false); // Init load cepat
+        refreshData(false); 
     } catch(e) { alert("Gagal konek: " + e.message); $('statusDb').innerText = "ERROR"; $('mConfig').classList.add('open'); }
 }
 
 function saveConfig() { localStorage.setItem('prod_sb_url', $('cfgUrl').value); localStorage.setItem('prod_sb_key', $('cfgKey').value); initSupabase($('cfgUrl').value, $('cfgKey').value); $('mConfig').classList.remove('open'); }
 
-// --- 🔥 UPDATED: REFRESH DATA (PARALEL & 30 HARI) 🔥 ---
 async function refreshData(isFull = false) {
     if(!client) return; 
     $('loading').style.display = 'flex';
     
-    // Tentukan batas waktu (30 hari lalu) atau ambil semua
     let dateLimit = null;
     if (!isFull) {
         const d = new Date();
@@ -120,35 +115,24 @@ async function refreshData(isFull = false) {
     }
 
     try {
-        // 1. Siapkan Request Master
         const reqMaster = client.from('master').select('*');
-
-        // 2. Siapkan Request Logs
         let reqLogs = client.from('logs').select('*');
-        if (dateLimit) {
-            reqLogs = reqLogs.gte('tanggal', dateLimit); // Hanya ambil data baru
-        }
+        if (dateLimit) reqLogs = reqLogs.gte('tanggal', dateLimit);
 
-        // 3. JALANKAN BARENGAN (Promise.all) -> Bikin Ngebut!
         const [resMaster, resLogs] = await Promise.all([reqMaster, reqLogs]);
-
         if (resMaster.error) throw resMaster.error;
         if (resLogs.error) throw resLogs.error;
 
         master = resMaster.data || [];
         master.sort((a,b)=>(a.kode||'').localeCompare(b.kode||''));
-
         logs = resLogs.data || [];
         
         renderTable(); 
         renderMaster();
-        
         if(isFull) alert("History lengkap berhasil ditarik (" + logs.length + " data).");
-
     } catch (e) {
         alert("Gagal Sync: " + e.message);
     }
-
     $('loading').style.display = 'none';
 }
 
@@ -158,53 +142,83 @@ function resetEntryForm() {
     fields.forEach(id => { if($(id)) $(id).value = ''; });
     $('eId').value = ''; ['vHasil', 'vOkPcs', 'vRejectPcs', 'vYield', 'vOkKg', 'vRejectKg', 'vRunnerKg', 'vSisaBahanLabel'].forEach(id => $(id).innerText='0'); $('badgeTipe').innerText=''; $('warnOver').style.display='none';
 }
+
 function autoFillProductByLine() {
     const ln = $('eLine').value.trim(); if(!ln || !logs.length) return;
     const last = logs.sort((a,b)=>new Date(b.tanggal)-new Date(a.tanggal)).find(r=>r.line==ln);
     if(last) { $('eProduk').value = last.kode + " - " + last.nama; hydrateProduk(); }
 }
+
 function setupCustomSearch() {
     const inp = $('eProduk'), lst = $('produkSuggestions');
     inp.oninput = function() { const v = this.value.toLowerCase(); if(!v) { lst.style.display='none'; return; } const m = master.filter(p=>p.kode.toLowerCase().includes(v)||p.nama.toLowerCase().includes(v)); lst.innerHTML = m.length ? m.map(p=>`<div class="search-item" onclick="selectProduk('${p.kode} - ${p.nama}')"><span>${p.kode}</span> - ${p.nama}</div>`).join('') : ''; lst.style.display = m.length?'block':'none'; };
     document.addEventListener('click', e=>{ if(e.target!==inp && e.target!==lst) lst.style.display='none'; });
 }
+
 window.selectProduk = v => { $('eProduk').value=v; $('produkSuggestions').style.display='none'; hydrateProduk(); };
+
 function hydrateProduk(){ const val = $('eProduk').value, p = master.find(x=>(x.kode+" - "+x.nama)===val); if(p) { $('eGram').value=p.gram; $('eRunner').value=p.runner; $('eCavity').value=p.cavity; $('eIsiDus').value=p.per_dus; $('eIsiBox').value=p.per_box; $('badgeTipe').innerText=(p.tipe==='kg_sisa')?'Mode KG':'Mode PCS'; recalc(); } }
+
 function sum(ids){ return ids.map(id=>toNum($(id).value)).reduce((a,b)=>a+b,0); }
+
+// --- LOGIKA PERHITUNGAN (FIXED) ---
 function compute(){
     const prodNameFull=$('eProduk').value, prod=master.find(p=>(p.kode+" - "+p.nama)===prodNameFull);
     const gram=toNum($('eGram').value), tipe=$('badgeTipe').innerText.includes('KG')?'kg_sisa':'pcs';
     const cav=Math.max(1, toNum($('eCavity').value)), counter=toNum($('eCounter').value);
+    
     let sblm=sum(['eSblm1','eSblm2','eSblm3','eSblm4','eSblm5','eSblm6']), ssdh=sum(['eSsdh1','eSsdh2','eSsdh3','eSsdh4','eSsdh5','eSsdh6']);
     let sblm_pcs=sblm, ssdh_pcs=ssdh; if(tipe==='kg_sisa'){ const c=gram>0?(1000/gram):0; sblm_pcs=sblm*c; ssdh_pcs=ssdh*c; }
+    
     const qD=toNum($('eQtyDus').value), iD=toNum($('eIsiDus').value), qB=toNum($('eQtyBox').value), iB=toNum($('eIsiBox').value), qDp=toNum($('eQtyDusPlus').value), iDp=toNum($('eIsiDusPlus').value);
     const packpcs=(qD*iD)+(qB*iB)+(qDp*iDp), okpcs=packpcs-sblm_pcs+ssdh_pcs, produksi=counter*cav, hasil=produksi+sblm_pcs-ssdh_pcs, rejectpcs=produksi-okpcs;
+    
     const okkg=(okpcs*gram)/1000, rejectkg=(rejectpcs*gram)/1000, runnerkg=(counter*toNum($('eRunner').value))/1000;
     const jatah=toNum($('eJatah').value), stok=toNum($('eStok').value), balok=toNum($('eBalokan').value);
     const sisaBahan=(jatah+stok)-(runnerkg+rejectkg+okkg+balok), yieldpct=hasil>0?(okpcs/hasil)*100:0, overpack=packpcs>hasil;
+    
     const rIds=['rUneven','rMottled','rStartup','rShort','rFlow','rFlash','rCrack','rSpot','rScratch','rDirty'];
-    const details={ sblm:[1,2,3,4,5,6].map(i=>toNum($('eSblm'+i).value)), ssdh:[1,2,3,4,5,6].map(i=>toNum($('eSsdh'+i).value)) };
-    return { prod, tipe, gram, cav, counter, sblm_pcs, ssdh_pcs, hasil, okpcs, okkg, rejectpcs, rejectkg, runnerkg, yieldpct, sisaBahan, overpack, packpcs, rtotal:sum(rIds), rmax:Math.max(...rIds.map(i=>toNum($(i).value))), details };
+    const rValues = rIds.map(i=>toNum($(i).value));
+    
+    return { 
+        prod, tipe, gram, cav, counter, sblm_pcs, ssdh_pcs, hasil, okpcs, okkg, 
+        rejectpcs, rejectkg, runnerkg, yieldpct, sisaBahan, overpack, packpcs, 
+        rtotal:sum(rIds), rmax:Math.max(...rValues), 
+        details:{ sblm:[1,2,3,4,5,6].map(i=>toNum($('eSblm'+i).value)), ssdh:[1,2,3,4,5,6].map(i=>toNum($('eSsdh'+i).value)) } 
+    };
 }
+
 function recalc(){
     const p=compute();
     $('vHasil').innerText=p.hasil.toFixed(0); $('vOkPcs').innerText=p.okpcs.toFixed(0); $('vRejectPcs').innerText=p.rejectpcs.toFixed(0);
     $('vYield').innerText=p.yieldpct.toFixed(2)+'%'; $('vOkKg').innerText=p.okkg.toFixed(2); $('vRejectKg').innerText=p.rejectkg.toFixed(2);
     $('vRunnerKg').innerText=p.runnerkg.toFixed(2); $('vSisaBahanLabel').innerText=p.sisaBahan.toFixed(2); $('eSisaBahan').value=p.sisaBahan.toFixed(2);
-    $('rTotal').value=p.rtotal; $('warnOver').style.display=p.overpack?'block':'none';
+    
+    // 🔥 PERBAIKAN: Isi nilai rTotal dan rMax agar tidak kosong saat simpan
+    $('rTotal').value = p.rtotal; 
+    $('rMax').value = p.rmax; 
+    $('warnOver').style.display=p.overpack?'block':'none';
 }
+
 async function saveEntry() {
-    if(!client) return alert("Database Belum Konek!"); const p=compute(); if(!p.prod) return alert("Pilih produk valid");
+    if(!client) return alert("Database Belum Konek!"); 
+    const p=compute(); if(!p.prod) return alert("Pilih produk valid");
     $('loading').style.display='flex';
+    
     const { error } = await client.from('logs').upsert({
         id: $('eId').value || uid(), tanggal: $('eTanggal').value, shift: $('eShift').value, line: $('eLine').value,
         kode: p.prod.kode, nama: p.prod.nama, tipe: p.tipe, gram: p.gram, runner: toNum($('eRunner').value), cavity: p.cav, counter: p.counter,
         sisa_sblm: p.sblm_pcs, sisa_ssdh: p.ssdh_pcs, hasil: p.hasil, okpcs: p.okpcs, okkg: p.okkg, reject: p.rejectpcs, rejectkg: p.rejectkg, runnerkg: p.runnerkg, sisa_bahan: p.sisaBahan, yieldpct: p.yieldpct,
         qty_dus: toNum($('eQtyDus').value), isi_dus: toNum($('eIsiDus').value), qty_box: toNum($('eQtyBox').value), isi_box: toNum($('eIsiBox').value), qty_dus_plus: toNum($('eQtyDusPlus').value), isi_dus_plus: toNum($('eIsiDusPlus').value), catatan: $('eCatatan').value,
-        reject_uneven: toNum($('rUneven').value), reject_mottled: toNum($('rMottled').value), reject_startup: toNum($('rStartup').value), reject_short: toNum($('rShort').value), reject_flow: toNum($('rFlow').value), reject_flashing: toNum($('rFlash').value), reject_crack: toNum($('rCrack').value), reject_spot: toNum($('rSpot').value), reject_scratch: toNum($('rScratch').value), reject_dirty: toNum($('rDirty').value), reject_total_kecil: toNum($('rTotal').value), reject_max: toNum($('rMax').value), detail_sisa: p.details 
+        reject_uneven: toNum($('rUneven').value), reject_mottled: toNum($('rMottled').value), reject_startup: toNum($('rStartup').value), reject_short: toNum($('rShort').value), reject_flow: toNum($('rFlow').value), reject_flashing: toNum($('rFlash').value), reject_crack: toNum($('rCrack').value), reject_spot: toNum($('rSpot').value), reject_scratch: toNum($('rScratch').value), reject_dirty: toNum($('rDirty').value), 
+        reject_total_kecil: p.rtotal, reject_max: p.rmax, detail_sisa: p.details 
     });
-    $('loading').style.display='none'; if(error) alert('Error Save: '+error.message); else { alert('Alhamdulillah Tersimpan!'); resetEntryForm(); refreshData(false); }
+    
+    $('loading').style.display='none'; 
+    if(error) alert('Error Save: '+error.message); 
+    else { alert('Alhamdulillah Tersimpan!'); resetEntryForm(); refreshData(false); }
 }
+
 async function saveMaster() {
     if(!client) return alert("DB Error"); const k=$('mpKode').value.trim(), n=$('mpNama').value.trim(); if(!k) return alert("Kode wajib");
     let tID=uid(), ex=master.find(m=>m.kode.toLowerCase()===k.toLowerCase()&&m.nama.toLowerCase()===n.toLowerCase());
@@ -213,6 +227,7 @@ async function saveMaster() {
     await client.from('master').upsert({ id: tID, kode: k, nama: n, tipe: $('mpTipe').value, gram: toNum($('mpGram').value), runner: toNum($('mpRunner').value), cavity: toNum($('mpCavity').value), per_dus: toNum($('mpPerDus').value), per_box: toNum($('mpPerBox').value) });
     $('loading').style.display='none'; refreshData(false); ['mpKode','mpNama','mpGram','mpRunner','mpCavity','mpPerDus','mpPerBox'].forEach(i=>$(i).value='');
 }
+
 window.deleteLog=async(id)=>{if(confirm("Hapus?")){await client.from('logs').delete().eq('id',id); refreshData(false);}};
 window.deleteMaster=async(id)=>{if(confirm("Hapus?")){await client.from('master').delete().eq('id',id); refreshData(false);}};
 async function wipeLogs(){if(confirm('BAHAYA: HAPUS SEMUA DATA HARIAN? (PERMANEN)')){await client.from('logs').delete().neq('id','0'); refreshData(false);}}
@@ -227,6 +242,7 @@ window.editLog=(id)=>{
     if(r.detail_sisa){ const d=(typeof r.detail_sisa==='string')?JSON.parse(r.detail_sisa):r.detail_sisa; if(d.sblm)d.sblm.forEach((v,i)=>{if($('eSblm'+(i+1)))$('eSblm'+(i+1)).value=v===0?'':v}); if(d.ssdh)d.ssdh.forEach((v,i)=>{if($('eSsdh'+(i+1)))$('eSsdh'+(i+1)).value=v===0?'':v}); }
     recalc(); $('mEntry').classList.add('open'); $('vLaporan').classList.remove('open');
 };
+
 function renderTable() {
     const t=$('tbody'); t.innerHTML='';
     const f=new Date($('fFrom').value), to=new Date($('fTo').value), q=$('fProduk').value.toLowerCase(), s=$('fShift').value, l=$('fLine').value.toLowerCase();
@@ -238,14 +254,12 @@ function renderTable() {
         t.appendChild(tr);
     });
 }
+
 function renderMaster(){$('mpBody').innerHTML=master.map((p,i)=>`<tr><td>${p.kode}</td><td>${p.nama}</td><td>${p.tipe}</td><td class="right">${p.gram}</td><td class="right">${p.runner}</td><td class="right">${p.cavity}</td><td class="right">${p.per_dus}</td><td style="text-align:center"><button class="btn sm" onclick="editMaster(${i})">✎</button> <button class="btn sm danger" onclick="deleteMaster('${p.id}')">🗑</button></td></tr>`).join('');}
 
-// --- REKAP LOGIC ---
 function fetchAndShowRekap(){ 
-    // 🔥 AUTO-SYNC: Ambil tanggal dari Filter Utama agar user tidak bingung
     if($('fFrom').value) $('rDateFrom').value = $('fFrom').value;
     if($('fTo').value) $('rDateTo').value = $('fTo').value;
-    
     processRekapFilter(); 
     $('mRekap').classList.add('open'); 
 }
@@ -254,8 +268,6 @@ function processRekapFilter() {
     const rf = new Date($('rDateFrom').value);
     const rt = new Date($('rDateTo').value);
     _rekapLogs = logs.filter(r => { const d = new Date(r.tanggal); return d >= rf && d <= rt; });
-    
-    // Cari tombol aktif
     const activeBtn = document.querySelector('#mRekap .filter-btn.active');
     filterRekap(activeBtn ? (activeBtn.innerText.includes('SEMUA') ? 'all' : activeBtn.innerText.replace('SHIFT ','')) : 'all', activeBtn);
 }
@@ -265,58 +277,29 @@ window.filterRekap = (m, b) => {
         document.querySelectorAll('.filter-btn').forEach(x=>x.classList.remove('active'));
         b.classList.add('active');
     }
-    // Jika tombol yang diklik berisi 'SEMUA', set mode ke 'all', jika tidak, ambil angkanya
     const mode = (b && b.innerText.includes('SEMUA')) ? 'all' : m;
     renderRekapTable(mode);
 }
 
 function renderRekapTable(m){
-    // Filter berdasarkan shift jika bukan 'all'
     const d = (m === 'all') ? _rekapLogs : _rekapLogs.filter(r => r.shift == m);
-    
     const g = {};
     d.forEach(r => {
-        // 🔥 NORMALISASI: Trim spasi dan uppercase agar 'Line 21' dan 'Line 21 ' dianggap sama
         const ln = (r.line || '').toString().trim().toUpperCase();
         const kd = (r.kode || '').toString().trim();
         const nm = (r.nama || '').toString().trim();
-        
-        // 🔥 FIX PENTING: Group by Line + Kode + NAMA
-        // Sebelumnya cuma Line + Kode, jadi kalau ada 2 barang beda nama tapi kode sama/kosong, kegabung.
-        // Sekarang dibedakan juga berdasarkan namanya.
         const k = ln + "##" + kd + "##" + nm;
-        
         if(!g[k]) g[k] = { l: ln, k: kd, n: nm, o: 0, r: 0, w: 0, y: 0, c: 0 };
-        
-        g[k].o += +r.okpcs;
-        g[k].r += +r.reject;
-        g[k].w += +r.okkg;
-        g[k].y += +r.yieldpct;
-        g[k].c++;
+        g[k].o += +r.okpcs; g[k].r += +r.reject; g[k].w += +r.okkg; g[k].y += +r.yieldpct; g[k].c++;
     });
-
-    // Hitung unit mesin fisik yang aktif (berdasarkan nama line unik)
     const uniqueLines = new Set(Object.values(g).map(x => x.l)).size;
-
     $('rekapMachineCount').innerHTML = `Total Data: <b style="color:#fff">${d.length}</b> | Mesin Aktif: <b style="color:#fff">${uniqueLines} Unit</b>`;
-    
-    // 🔥 SORTING: Urutkan berdasarkan Line, lalu Produk
     const sortedData = Object.values(g).sort((a,b) => {
         const lineDiff = a.l.localeCompare(b.l, undefined, { numeric: true });
         if(lineDiff !== 0) return lineDiff;
-        return a.n.localeCompare(b.n); // Sort nama juga
+        return a.n.localeCompare(b.n);
     });
-
-    $('tbodyRekap').innerHTML = sortedData.map(x => `
-        <tr>
-            <td>${x.l}</td>
-            <td>${x.k}<br><small style="color:#fff">${x.n}</small></td>
-            <td class="right text-ok">${x.o.toLocaleString()}</td>
-            <td class="right text-danger">${x.r.toLocaleString()}</td>
-            <td class="right">${x.w.toFixed(2)}</td>
-            <td class="right"><b>${(x.c ? x.y / x.c : 0).toFixed(2)}%</b></td>
-        </tr>
-    `).join('');
+    $('tbodyRekap').innerHTML = sortedData.map(x => `<tr><td>${x.l}</td><td>${x.k}<br><small style="color:#fff">${x.n}</small></td><td class="right text-ok">${x.o.toLocaleString()}</td><td class="right text-danger">${x.r.toLocaleString()}</td><td class="right">${x.w.toFixed(2)}</td><td class="right"><b>${(x.c ? x.y / x.c : 0).toFixed(2)}%</b></td></tr>`).join('');
 }
 
 function exportCSV(){
@@ -324,10 +307,11 @@ function exportCSV(){
     const h=Object.keys(d[0]).join(","), c=[h].concat(d.map(r=>Object.values(r).map(v=>`"${v}"`).join(","))).join("\n");
     const b=new Blob([c],{type:'text/csv'}), u=URL.createObjectURL(b), a=document.createElement('a'); a.href=u; a.download='Data.csv'; a.click();
 }
+
 function importCSV(e){ alert("Fitur Import CSV aktif"); refreshData(false); }
+
 window.editMaster=(i)=>{const p=master[i]; $('mpKode').value=p.kode; $('mpNama').value=p.nama; $('mpTipe').value=p.tipe; $('mpGram').value=p.gram; $('mpRunner').value=p.runner; $('mpCavity').value=p.cavity; $('mpPerDus').value=p.per_dus; $('mpPerBox').value=p.per_box;}
 
-// --- FUNGSI NAVIGASI EXCEL (User Friendly) ---
 function setupExcelNavigation() {
     const inputs = document.querySelectorAll('#mEntry input:not([type="hidden"]), #mEntry select, #mEntry textarea');
     inputs.forEach((input, index) => {
