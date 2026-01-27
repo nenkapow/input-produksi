@@ -103,6 +103,7 @@ function initSupabase(url, key) {
 
 function saveConfig() { localStorage.setItem('prod_sb_url', $('cfgUrl').value); localStorage.setItem('prod_sb_key', $('cfgKey').value); initSupabase($('cfgUrl').value, $('cfgKey').value); $('mConfig').classList.remove('open'); }
 
+// --- 🔥 FIXED REFRESH DATA (STRUKTUR DIPERBAIKI) 🔥 ---
 async function refreshData(isFull = false) {
     if(!client) return; 
     $('loading').style.display = 'flex';
@@ -115,25 +116,93 @@ async function refreshData(isFull = false) {
     }
 
     try {
+        // 1. Request Master
         const reqMaster = client.from('master').select('*');
-        let reqLogs = client.from('logs').select('*');
-        if (dateLimit) reqLogs = reqLogs.gte('tanggal', dateLimit);
 
+        // 2. Request Logs (Perbaikan struktur query)
+        let reqLogs = client
+            .from('logs')
+            .select('*')
+            .order('tanggal', { ascending: false });
+
+        if (dateLimit && !isFull) {
+            reqLogs = reqLogs.gte('tanggal', dateLimit);
+        }
+
+        // 3. JALANKAN PARALEL
         const [resMaster, resLogs] = await Promise.all([reqMaster, reqLogs]);
+
         if (resMaster.error) throw resMaster.error;
         if (resLogs.error) throw resLogs.error;
 
         master = resMaster.data || [];
         master.sort((a,b)=>(a.kode||'').localeCompare(b.kode||''));
+
         logs = resLogs.data || [];
+        console.log('DATA BERHASIL DI-LOAD:', logs.length);
         
         renderTable(); 
         renderMaster();
+        
         if(isFull) alert("History lengkap berhasil ditarik (" + logs.length + " data).");
+
     } catch (e) {
+        console.error("Gagal Sync:", e);
         alert("Gagal Sync: " + e.message);
     }
+
     $('loading').style.display = 'none';
+}
+
+// --- 🔥 FIXED RENDER TABLE (ANTISIPASI DATA NULL) 🔥 ---
+function renderTable() {
+    const t = $('tbody'); 
+    if(!t) return;
+    t.innerHTML = '';
+    
+    // Ambil filter dari UI
+    const fFrom = $('fFrom').value ? new Date($('fFrom').value + 'T00:00:00') : null;
+    const fTo = $('fTo').value ? new Date($('fTo').value + 'T23:59:59') : null;
+    const q = ($('fProduk').value || '').toLowerCase();
+    const s = $('fShift').value;
+    const l = ($('fLine').value || '').toLowerCase();
+
+    const filteredLogs = logs.filter(r => {
+        const dr = new Date(r.tanggal + 'T12:00:00');
+        const matchDate = (!fFrom || dr >= fFrom) && (!fTo || dr <= fTo);
+        const matchProd = q ? (r.nama || '').toLowerCase().includes(q) : true;
+        const matchShift = s ? r.shift == s : true;
+        const matchLine = l ? (r.line || '').toLowerCase().includes(l) : true;
+        return matchDate && matchProd && matchShift && matchLine;
+    });
+
+    $('rowCount').textContent = filteredLogs.length + " data";
+
+    filteredLogs.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${r.tanggal || '-'}</td>
+            <td>${r.shift || '-'}</td>
+            <td>${r.line || '-'}</td>
+            <td><b>${r.nama || '-'}</b><br><small>${r.kode || '-'}</small></td>
+            <td>${r.tipe || '-'}</td>
+            <td class="right">${(+r.counter || 0).toLocaleString()}</td>
+            <td class="right">${(+r.cavity || 0)}</td>
+            <td class="right">${(+r.qty_dus || 0)}</td>
+            <td class="right">${(+r.qty_box || 0)}</td>
+            <td class="right text-ok"><b>${(+r.okpcs || 0).toLocaleString()}</b></td>
+            <td class="right">${(+r.okkg || 0).toFixed(2)}</td>
+            <td class="right text-danger">${(+r.reject || 0).toLocaleString()}</td>
+            <td class="right">${(+r.sisa_bahan || 0).toFixed(2)}</td>
+            <td class="right"><b>${(+r.yieldpct || 0).toFixed(2)}%</b></td>
+            <td class="right">${r.reject_max || 0}</td>
+            <td style="text-align:center; white-space:nowrap;">
+                <button class="btn sm info" onclick="editLog('${r.id}')">✎</button> 
+                <button class="btn sm danger" onclick="deleteLog('${r.id}')">🗑</button>
+            </td>
+        `;
+        t.appendChild(tr);
+    });
 }
 
 // === ENTRY ===
