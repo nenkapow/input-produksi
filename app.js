@@ -80,6 +80,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const sUrl = localStorage.getItem('prod_sb_url');
     const sKey = localStorage.getItem('prod_sb_key');
     if(sUrl && sKey) initSupabase(sUrl, sKey); else $('mConfig').classList.add('open');
+    $('statusDb').innerText = "ONLINE";
+    $('statusDb').style.color = "var(--success)";
 });
 
 // --- 🔥 FUNGSI CEK PIN (ANTI SPASI) 🔥 ---
