@@ -162,6 +162,7 @@ async function refreshData(isFull = false) {
         master.sort((a,b)=>(a.kode||'').localeCompare(b.kode||''));
 
         logs = resLogs.data || [];
+	console.log('LOGS LOADED:', logs.length, logs[0]?.tanggal);
         
         renderTable(); 
         renderMaster();
