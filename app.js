@@ -14,6 +14,17 @@ let _rekapLogs = [];
 const ADMIN_PIN = "1234"; 
 
 document.addEventListener('DOMContentLoaded', () => {
+    // 🔍 CEK STORAGE BROWSER
+  try {
+    localStorage.setItem('_sb_test','1');
+    localStorage.removeItem('_sb_test');
+  } catch (e) {
+    alert(
+      "Browser memblokir storage.\n" +
+      "Matikan Tracking Prevention / Wallet Extension."
+    );
+  }
+    
     // --- ACTIONS (MENU UTAMA) ---
     $('btnAdd').onclick = () => { $('mEntry').classList.add('open'); resetEntryForm(); };
     $('btnRekap').onclick = fetchAndShowRekap;
@@ -349,3 +360,4 @@ function setupExcelNavigation() {
         });
     });
 }
+
