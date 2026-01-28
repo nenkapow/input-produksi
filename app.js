@@ -58,6 +58,9 @@ document.addEventListener('DOMContentLoaded', () => {
     setupCustomSearch();
     $('eLine').onchange = autoFillProductByLine;
 
+    // 🔥 PENCARIAN MASTER PRODUK (BARU) 🔥
+    if($('mpSearch')) $('mpSearch').oninput = renderMaster; 
+
     // Kalkulasi Realtime
     const calcIds = ['eCavity', 'eCounter', 'eRunner', 'eJatah', 'eStok', 'eBalokan', 'eQtyDus', 'eQtyBox', 'eQtyDusPlus', 'eIsiDusPlus', 'eSblm1','eSblm2', 'eSblm3', 'eSblm4', 'eSblm5', 'eSblm6', 'eSsdh1', 'eSsdh2', 'eSsdh3', 'eSsdh4', 'eSsdh5', 'eSsdh6', 'rUneven', 'rMottled', 'rStartup', 'rShort', 'rFlow', 'rFlash', 'rCrack', 'rSpot', 'rScratch', 'rDirty'];
     calcIds.forEach(id => { if($(id)) $(id).oninput = recalc; });
@@ -312,19 +315,59 @@ window.editLog=(id)=>{
     recalc(); $('mEntry').classList.add('open'); $('vLaporan').classList.remove('open');
 };
 
-function renderTable() {
-    const t=$('tbody'); t.innerHTML='';
-    const f=new Date($('fFrom').value), to=new Date($('fTo').value), q=$('fProduk').value.toLowerCase(), s=$('fShift').value, l=$('fLine').value.toLowerCase();
-    const d=logs.filter(r=>{ const dr=new Date(r.tanggal); return dr>=f && dr<=to && (q?r.nama.toLowerCase().includes(q):true) && (s?r.shift==s:true) && (l?r.line.toLowerCase().includes(l):true); });
-    $('rowCount').textContent=d.length+" data";
-    d.forEach(r=>{
-        const tr=document.createElement('tr');
-        tr.innerHTML=`<td>${r.tanggal}</td><td>${r.shift}</td><td>${r.line}</td><td><b>${r.nama}</b><br><small>${r.kode}</small></td><td>${r.tipe}</td><td class="right">${r.counter}</td><td class="right">${r.cavity}</td><td class="right">${r.qty_dus}</td><td class="right">${r.qty_box}</td><td class="right text-ok"><b>${(+r.okpcs).toLocaleString()}</b></td><td class="right">${(+r.okkg).toFixed(2)}</td><td class="right text-danger">${(+r.reject).toLocaleString()}</td><td class="right">${(+r.sisa_bahan).toFixed(2)}</td><td class="right"><b>${(+r.yieldpct).toFixed(2)}%</b></td><td class="right">${r.reject_max}</td><td style="text-align:center; white-space:nowrap;"><button class="btn sm info" onclick="editLog('${r.id}')" title="Edit">✎</button> <button class="btn sm danger" onclick="deleteLog('${r.id}')" title="Hapus">🗑</button></td>`;
-        t.appendChild(tr);
-    });
+// --- FUNGSI RENDER MASTER (SUDAH DIUPGRADE PENCARIAN & ID-BASED) ---
+function renderMaster(){
+    const t = $('mpBody'); 
+    if(!t) return;
+    t.innerHTML = '';
+
+    // Ambil kata kunci pencarian
+    const q = $('mpSearch') ? $('mpSearch').value.toLowerCase() : '';
+
+    // Filter master array berdasarkan Kode ATAU Nama
+    const filteredMaster = master.filter(p => 
+        (p.kode || '').toLowerCase().includes(q) || 
+        (p.nama || '').toLowerCase().includes(q)
+    );
+
+    // Render data yang sudah difilter
+    // PERHATIKAN: onclick="editMaster('${p.id}')" -> Kita kirim ID, bukan Index (i)
+    t.innerHTML = filteredMaster.map(p => `
+        <tr>
+            <td>${p.kode}</td>
+            <td>${p.nama}</td>
+            <td>${p.tipe}</td>
+            <td class="right">${p.gram}</td>
+            <td class="right">${p.runner}</td>
+            <td class="right">${p.cavity}</td>
+            <td class="right">${p.per_dus}</td>
+            <td style="text-align:center">
+                <button class="btn sm" onclick="editMaster('${p.id}')">✎</button> 
+                <button class="btn sm danger" onclick="deleteMaster('${p.id}')">🗑</button>
+            </td>
+        </tr>
+    `).join('');
 }
 
-function renderMaster(){$('mpBody').innerHTML=master.map((p,i)=>`<tr><td>${p.kode}</td><td>${p.nama}</td><td>${p.tipe}</td><td class="right">${p.gram}</td><td class="right">${p.runner}</td><td class="right">${p.cavity}</td><td class="right">${p.per_dus}</td><td style="text-align:center"><button class="btn sm" onclick="editMaster(${i})">✎</button> <button class="btn sm danger" onclick="deleteMaster('${p.id}')">🗑</button></td></tr>`).join('');}
+// Fungsi Edit Master yang LEBIH AMAN (Pakai ID)
+window.editMaster = (id) => {
+    // Cari data berdasarkan ID, bukan urutan array
+    const p = master.find(x => x.id === id); 
+    if(!p) return;
+
+    // Isi form dengan data yang ditemukan
+    $('mpKode').value = p.kode; 
+    $('mpNama').value = p.nama; 
+    $('mpTipe').value = p.tipe; 
+    $('mpGram').value = p.gram; 
+    $('mpRunner').value = p.runner; 
+    $('mpCavity').value = p.cavity; 
+    $('mpPerDus').value = p.per_dus; 
+    $('mpPerBox').value = p.per_box;
+    
+    // Scroll ke atas biar formnya kelihatan
+    if($('mMaster').scrollTo) $('mMaster').scrollTo({ top: 0, behavior: 'smooth' });
+}
 
 function fetchAndShowRekap(){ 
     if($('fFrom').value) $('rDateFrom').value = $('fFrom').value;
@@ -378,8 +421,6 @@ function exportCSV(){
 }
 
 function importCSV(e){ alert("Fitur Import CSV aktif"); refreshData(false); }
-
-window.editMaster=(i)=>{const p=master[i]; $('mpKode').value=p.kode; $('mpNama').value=p.nama; $('mpTipe').value=p.tipe; $('mpGram').value=p.gram; $('mpRunner').value=p.runner; $('mpCavity').value=p.cavity; $('mpPerDus').value=p.per_dus; $('mpPerBox').value=p.per_box;}
 
 function setupExcelNavigation() {
     const inputs = document.querySelectorAll('#mEntry input:not([type="hidden"]), #mEntry select, #mEntry textarea');
