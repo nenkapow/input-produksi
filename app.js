@@ -401,40 +401,4 @@ function setupExcelNavigation() {
             }
         });
     });
-// Tambahkan listener untuk input pencarian di Master Produk
-$('fMasterSearch').oninput = function() {
-    renderMaster(this.value.toLowerCase());
-};
-
-// Update fungsi renderMaster kamu jadi seperti ini sayang:
-function renderMaster(filter = '') {
-    const body = $('mpBody');
-    if (!body) return;
-
-    // Filter data berdasarkan input user
-    const filteredMaster = master.filter(p => 
-        (p.kode || '').toLowerCase().includes(filter) || 
-        (p.nama || '').toLowerCase().includes(filter)
-    );
-
-    body.innerHTML = filteredMaster.map((p, i) => {
-        // Cari index asli di array 'master' supaya fungsi editMaster tetap akurat
-        const originalIndex = master.findIndex(m => m.id === p.id);
-        
-        return `
-            <tr>
-                <td>${p.kode || '-'}</td>
-                <td>${p.nama || '-'}</td>
-                <td>${p.tipe || '-'}</td>
-                <td class="right">${p.gram || 0}</td>
-                <td class="right">${p.runner || 0}</td>
-                <td class="right">${p.cavity || 0}</td>
-                <td class="right">${p.per_dus || 0}</td>
-                <td style="text-align:center">
-                    <button class="btn sm" onclick="editMaster(${originalIndex})">✎</button> 
-                    <button class="btn sm danger" onclick="deleteMaster('${p.id}')">🗑</button>
-                </td>
-            </tr>`;
-    }).join('');
 }
-
