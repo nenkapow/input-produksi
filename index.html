@@ -11,6 +11,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="style.css?v=2.6.0">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
 </head>
 <body>
 
@@ -141,7 +148,10 @@
             <div class="row" style="margin-bottom:16px; align-items:flex-end; background:#151515; padding:20px; border-radius:12px; border:1px solid var(--border);">
                 <div style="flex:1; min-width:200px;"><div class="muted">Dari Tanggal</div><input id="rDateFrom" type="date" class="input"></div>
                 <div style="flex:1; min-width:200px;"><div class="muted">Sampai Tanggal</div><input id="rDateTo" type="date" class="input"></div>
-                <div style="flex:0;"><button id="btnRefreshRekap" class="btn primary" style="height:46px; padding:0 30px;">PROSES DATA</button></div>
+                <div style="display:flex; gap:10px;">
+    <button id="btnRefreshRekap" class="btn primary" style="height:46px; padding:0 20px;">PROSES DATA</button>
+    <button id="btnExportRekap" class="btn ok" style="height:46px; padding:0 20px;" title="Download Excel Asli">📊 EXCEL .XLSX</button>
+</div>
             </div>
             <div style="display:flex; gap:12px; margin-bottom:24px;">
                 <button class="filter-btn active" onclick="filterRekap('all', this)" style="padding:12px;">SEMUA SHIFT</button>
