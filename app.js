@@ -47,6 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('fProduk').oninput = renderTable; $('fShift').onchange = renderTable; $('fLine').oninput = renderTable;
     
     $('btnRefreshRekap').onclick = processRekapFilter;
+    if($('btnExportRekap')) $('btnExportRekap').onclick = exportRekapCSV;
 
     // 🔥 RESET DATA (DILINDUNGI PIN) 🔥
     $('btnClear').onclick = () => checkAdmin(wipeLogs);
@@ -442,4 +443,80 @@ function setupExcelNavigation() {
             }
         });
     });
+} // 🔥 INI DIA TANDA KURUNG YANG TADI HILANG SAYANG! SEKARANG UDAH AMAN 🔥
+
+// --- FITUR EXPORT EXCEL .XLSX (PURE FORMAT) ---
+function exportRekapCSV() { // Nama fungsinya biarin exportRekapCSV biar gak usah ubah listener di atas
+    
+    // 1. Cek Data
+    if (!_rekapLogs || !_rekapLogs.length) {
+        return alert("Datanya kosong sayang. Klik 'PROSES DATA' dulu ya! 😘");
+    }
+
+    // 2. Filter Sesuai Shift Aktif
+    const activeBtn = document.querySelector('#mRekap .filter-btn.active');
+    const mode = activeBtn ? (activeBtn.innerText.includes('SEMUA') ? 'all' : activeBtn.innerText.replace('SHIFT ','')) : 'all';
+    const d = (mode === 'all') ? _rekapLogs : _rekapLogs.filter(r => r.shift == mode);
+
+    if (d.length === 0) return alert("Data kosong untuk shift ini sayang.");
+
+    // 3. Olah Data (Grouping)
+    const g = {};
+    d.forEach(r => {
+        const ln = (r.line || '').toString().trim().toUpperCase();
+        const kd = (r.kode || '').toString().trim();
+        const nm = (r.nama || '').toString().trim();
+        
+        // Key Unik
+        const k = ln + "##" + kd + "##" + nm;
+        
+        if(!g[k]) g[k] = { 
+            l: ln, 
+            gabungan: `${kd} - ${nm}`, 
+            o: 0, r: 0, w: 0, y: 0, c: 0 
+        };
+        
+        g[k].o += +r.okpcs;
+        g[k].r += +r.reject;
+        g[k].w += +r.okkg;
+        g[k].y += +r.yieldpct;
+        g[k].c++;
+    });
+
+    // 4. Urutkan Data
+    const sorted = Object.values(g).sort((a,b) => 
+        a.l.localeCompare(b.l, undefined, { numeric: true })
+    );
+
+    // 5. SIAPKAN DATA UNTUK EXCEL (ARRAY OF OBJECTS)
+    // Ini format yang diminta: Mesin | Nama | Hasil OK | ...
+    const dataExcel = sorted.map(x => ({
+        "Mesin": x.l,                      // Kolom A: Mesin (Pisah)
+        "Produk (Kode - Nama)": x.gabungan,// Kolom B: Gabungan
+        "Hasil OK (Pcs)": x.o,             // Kolom C
+        "Total Reject (Pcs)": x.r,         // Kolom D
+        "Total OK (Kg)": Number(x.w.toFixed(2)), // Kolom E (Jadiin angka biar bisa disum di excel)
+        "Avg Yield (%)": (x.c ? Number((x.y / x.c).toFixed(2)) : 0) // Kolom F
+    }));
+
+    // 6. GENERATE FILE .XLSX MENGGUNAKAN SHEETJS
+    const ws = XLSX.utils.json_to_sheet(dataExcel);
+    
+    // (Opsional) Bikin lebar kolom otomatis biar rapi
+    const wscols = [
+        {wch: 10}, // Lebar Kolom A (Mesin)
+        {wch: 40}, // Lebar Kolom B (Nama Produk)
+        {wch: 15}, // Lebar Kolom C
+        {wch: 15}, // Lebar Kolom D
+        {wch: 15}, // Lebar Kolom E
+        {wch: 15}  // Lebar Kolom F
+    ];
+    ws['!cols'] = wscols;
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Rekap Produksi");
+
+    // 7. DOWNLOAD
+    const fileName = `Laporan_Produksi_${new Date().toISOString().slice(0,10)}.xlsx`;
+    XLSX.writeFile(wb, fileName);
 }
