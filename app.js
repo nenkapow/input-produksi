@@ -274,22 +274,96 @@ function recalc(){
 }
 
 async function saveEntry() {
-    if(!client) return alert("Database Belum Konek!"); 
-    const p=compute(); if(!p.prod) return alert("Pilih produk valid");
-    $('loading').style.display='flex';
+    if(!client) return Swal.fire({icon:'error', title:'Error', text:'Database Belum Konek!', background:'#1e1e1e', color:'#e5e5e5'}); 
     
+    const p = compute(); 
+    
+    // 1. Validasi Produk Kosong (Pakai SweetAlert)
+    if(!p.prod) {
+        Swal.fire({
+            icon: 'warning', // Pakai icon warning lebih pas
+            title: 'Belum Lengkap',
+            text: 'Pilih produk yang valid dulu ya sayang!',
+            background: '#1e1e1e',
+            color: '#e5e5e5',
+            confirmButtonColor: '#d4af37',
+            confirmButtonText: 'Oke Siap'
+        });
+        return;
+    }
+
+    $('loading').style.display = 'flex';
+    
+    // 2. Simpan ke Database
     const { error } = await client.from('logs').upsert({
-        id: $('eId').value || uid(), tanggal: $('eTanggal').value, shift: $('eShift').value, line: $('eLine').value,
-        kode: p.prod.kode, nama: p.prod.nama, tipe: p.tipe, gram: p.gram, runner: toNum($('eRunner').value), cavity: p.cav, counter: p.counter,
-        sisa_sblm: p.sblm_pcs, sisa_ssdh: p.ssdh_pcs, hasil: p.hasil, okpcs: p.okpcs, okkg: p.okkg, reject: p.rejectpcs, rejectkg: p.rejectkg, runnerkg: p.runnerkg, sisa_bahan: p.sisaBahan, yieldpct: p.yieldpct,
-        qty_dus: toNum($('eQtyDus').value), isi_dus: toNum($('eIsiDus').value), qty_box: toNum($('eQtyBox').value), isi_box: toNum($('eIsiBox').value), qty_dus_plus: toNum($('eQtyDusPlus').value), isi_dus_plus: toNum($('eIsiDusPlus').value), catatan: $('eCatatan').value,
-        reject_uneven: toNum($('rUneven').value), reject_mottled: toNum($('rMottled').value), reject_startup: toNum($('rStartup').value), reject_short: toNum($('rShort').value), reject_flow: toNum($('rFlow').value), reject_flashing: toNum($('rFlash').value), reject_crack: toNum($('rCrack').value), reject_spot: toNum($('rSpot').value), reject_scratch: toNum($('rScratch').value), reject_dirty: toNum($('rDirty').value), 
-        reject_total_kecil: p.rtotal, reject_max: p.rmax, detail_sisa: p.details 
+        id: $('eId').value || uid(),
+        tanggal: $('eTanggal').value,
+        shift: $('eShift').value,
+        line: $('eLine').value.toUpperCase(),
+        kode: p.prod.kode,
+        nama: p.prod.nama,
+        tipe: p.tipe,
+        gram: p.gram,
+        runner: p.runner,
+        cavity: p.cav,
+        counter: p.counter,
+        qty_dus: toNum($('eQtyDus').value),
+        isi_dus: toNum($('eIsiDus').value),
+        qty_box: toNum($('eQtyBox').value),
+        isi_box: toNum($('eIsiBox').value),
+        qty_dus_plus: toNum($('eQtyDusPlus').value),
+        isi_dus_plus: toNum($('eIsiDusPlus').value),
+        hasil: p.hasil,
+        okpcs: p.okpcs,
+        okkg: p.okkg,
+        reject: p.rejectpcs,
+        yieldpct: p.yieldpct,
+        sisa_bahan: p.sisaBahan,
+        catatan: $('eCatatan').value,
+        reject_uneven: toNum($('rUneven').value),
+        reject_mottled: toNum($('rMottled').value),
+        reject_startup: toNum($('rStartup').value),
+        reject_short: toNum($('rShort').value),
+        reject_flow: toNum($('rFlow').value),
+        reject_flashing: toNum($('rFlash').value),
+        reject_crack: toNum($('rCrack').value),
+        reject_spot: toNum($('rSpot').value),
+        reject_scratch: toNum($('rScratch').value),
+        reject_dirty: toNum($('rDirty').value),
+        reject_max: p.rmax,
+        detail_sisa: JSON.stringify(p.details)
     });
     
-    $('loading').style.display='none'; 
-    if(error) alert('Error Save: '+error.message); 
-    else { alert('Alhamdulillah Tersimpan!'); resetEntryForm(); refreshData(false); }
+    $('loading').style.display = 'none'; 
+
+    if(error) {
+        // 3. Error Database (Pakai SweetAlert)
+        Swal.fire({
+            icon: 'error',
+            title: 'Gagal Simpan',
+            text: error.message,
+            background: '#1e1e1e',
+            color: '#e5e5e5',
+            confirmButtonColor: '#ef4444'
+        });
+    } else { 
+        // 4. SUKSES (Pakai SweetAlert Gold Kamu)
+        Swal.fire({
+            icon: 'success',
+            title: 'Berhasil!',
+            text: 'Alhamdulillah data tersimpan!',
+            background: '#1e1e1e', 
+            color: '#e5e5e5',      
+            iconColor: '#d4af37',  
+            confirmButtonColor: '#d4af37', 
+            confirmButtonText: 'Mantap',
+            timer: 2000,           
+            timerProgressBar: true
+        });
+
+        resetEntryForm(); 
+        refreshData(false); 
+    }
 }
 
 async function saveMaster() {
@@ -301,10 +375,160 @@ async function saveMaster() {
     $('loading').style.display='none'; refreshData(false); ['mpKode','mpNama','mpGram','mpRunner','mpCavity','mpPerDus','mpPerBox'].forEach(i=>$(i).value='');
 }
 
-window.deleteLog=async(id)=>{if(confirm("Hapus?")){await client.from('logs').delete().eq('id',id); refreshData(false);}};
-window.deleteMaster=async(id)=>{if(confirm("Hapus?")){await client.from('master').delete().eq('id',id); refreshData(false);}};
-async function wipeLogs(){if(confirm('BAHAYA: HAPUS SEMUA DATA HARIAN? (PERMANEN)')){await client.from('logs').delete().neq('id','0'); refreshData(false);}}
-async function wipeMaster(){if(confirm('BAHAYA: HAPUS SEMUA MASTER PRODUK?')){await client.from('master').delete().neq('id','0'); refreshData(false);}}
+// --- FITUR HAPUS & RESET (VERSI SWEETALERT DARK & GOLD) ---
+
+// 1. Hapus Satu Data Laporan (Log)
+// --- FITUR HAPUS & RESET (REVISI FIX ERROR) ---
+
+// 1. Hapus Satu Data Laporan (Log)
+window.deleteLog = (id) => {
+    Swal.fire({
+        title: 'Hapus Data Ini?',
+        text: "Data laporan yang dihapus tidak bisa kembali lho!",
+        icon: 'warning',
+        showCancelButton: true,
+        background: '#1e1e1e',
+        color: '#e5e5e5',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#333',
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            $('loading').style.display = 'flex';
+            
+            // 🔥 INI PERBAIKANNYA: Kita tangkap error-nya
+            const { error } = await client.from('logs').delete().eq('id', id);
+            
+            $('loading').style.display = 'none';
+            
+            if (error) {
+                // Kalau Gagal, Munculkan Pesan Error Aslinya
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal Hapus',
+                    text: error.message, // <--- Ini biar kita tau alasannya!
+                    background: '#1e1e1e',
+                    color: '#e5e5e5'
+                });
+            } else {
+                // Kalau Sukses Baru Muncul Ini
+                Swal.fire({
+                    title: 'Terhapus!',
+                    icon: 'success',
+                    background: '#1e1e1e',
+                    color: '#e5e5e5',
+                    confirmButtonColor: '#d4af37',
+                    timer: 1000,
+                    showConfirmButton: false
+                });
+                refreshData(false);
+            }
+        }
+    });
+};
+
+// 2. Hapus Satu Master Produk
+window.deleteMaster = (id) => {
+    Swal.fire({
+        title: 'Hapus Produk?',
+        text: "Produk ini akan hilang dari database master.",
+        icon: 'warning',
+        showCancelButton: true,
+        background: '#1e1e1e',
+        color: '#e5e5e5',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#333',
+        confirmButtonText: 'Ya, Hapus Produk',
+        cancelButtonText: 'Batal'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            $('loading').style.display = 'flex';
+            
+            // 🔥 Tangkap error juga disini
+            const { error } = await client.from('master').delete().eq('id', id);
+            
+            $('loading').style.display = 'none';
+            
+            if (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal Hapus',
+                    text: error.message,
+                    background: '#1e1e1e',
+                    color: '#e5e5e5'
+                });
+            } else {
+                Swal.fire({
+                    title: 'Produk Dihapus!',
+                    icon: 'success',
+                    background: '#1e1e1e',
+                    color: '#e5e5e5',
+                    confirmButtonColor: '#d4af37',
+                    timer: 1000,
+                    showConfirmButton: false
+                });
+                refreshData(false);
+            }
+        }
+    });
+};
+
+// 3. WIPE DATA (Logs)
+async function wipeLogs() {
+    Swal.fire({
+        title: '⚠️ RESET TOTAL?',
+        text: "Yakin hapus SEMUA data laporan?",
+        icon: 'error',
+        showCancelButton: true,
+        background: '#1e1e1e',
+        color: '#e5e5e5',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#333',
+        confirmButtonText: 'YA, BERSIHKAN!'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            $('loading').style.display = 'flex';
+            const { error } = await client.from('logs').delete().neq('id', '0');
+            $('loading').style.display = 'none';
+            
+            if (error) {
+                Swal.fire({ icon: 'error', title: 'Error', text: error.message, background:'#1e1e1e', color:'#e5e5e5' });
+            } else {
+                Swal.fire({ title: 'Bersih!', icon: 'success', background:'#1e1e1e', color:'#e5e5e5', confirmButtonColor:'#d4af37' });
+                refreshData(false);
+            }
+        }
+    });
+}
+
+// 4. WIPE MASTER
+async function wipeMaster() {
+    Swal.fire({
+        title: '⚠️ HAPUS SEMUA PRODUK?',
+        text: "Master Produk akan kosong!",
+        icon: 'error',
+        showCancelButton: true,
+        background: '#1e1e1e',
+        color: '#e5e5e5',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#333',
+        confirmButtonText: 'YA, HAPUS!'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            $('loading').style.display = 'flex';
+            const { error } = await client.from('master').delete().neq('id', '0');
+            $('loading').style.display = 'none';
+            
+            if (error) {
+                Swal.fire({ icon: 'error', title: 'Error', text: error.message, background:'#1e1e1e', color:'#e5e5e5' });
+            } else {
+                Swal.fire({ title: 'Bersih!', icon: 'success', background:'#1e1e1e', color:'#e5e5e5', confirmButtonColor:'#d4af37' });
+                refreshData(false);
+            }
+        }
+    });
+}
 
 window.editLog=(id)=>{
     const r=logs.find(x=>x.id===id); if(!r) return;
