@@ -85,14 +85,44 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function checkAdmin(callback) {
-    let input = prompt("🔒 RESTRICTED AREA\nMasukkan PIN Admin:");
-    if (input === null) return;
-    input = input.toString().trim();
-    if (input == ADMIN_PIN) {
-        callback(); 
-    } else {
-        alert("⛔ AKSES DITOLAK! PIN SALAH.");
-    }
+    Swal.fire({
+        title: '🔒 AREA TERBATAS',
+        text: 'Masukkan Security PIN Admin:',
+        input: 'password', // 🔥 Fitur ini bikin ketikan jadi titik-titik/bintang
+        inputAttributes: {
+            autocapitalize: 'off',
+            placeholder: 'Masukkan PIN...',
+            style: 'font-size: 1.5rem; text-align: center; letter-spacing: 4px;' // Biar angka PIN-nya gede & keren
+        },
+        background: '#1e1e1e',     // Gelap Mewah
+        color: '#d4af37',          // Teks Emas
+        confirmButtonText: 'BUKA AKSES',
+        confirmButtonColor: '#d4af37',
+        showCancelButton: true,
+        cancelButtonColor: '#333',
+        cancelButtonText: 'Batal',
+        
+        // Validasi Langsung di Popup
+        preConfirm: (inputPin) => {
+            if (inputPin === ADMIN_PIN) { // Cek sama variabel global ADMIN_PIN
+                return true;
+            } else {
+                Swal.showValidationMessage(`⛔ AKSES DITOLAK! PIN SALAH.`);
+            }
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Kalau PIN benar, jalankan perintah rahasia (callback)
+            callback(); 
+            
+            // Opsional: Notifikasi kecil kalau berhasil masuk
+            const Toast = Swal.mixin({
+                toast: true, position: 'top-end', showConfirmButton: false, timer: 2000,
+                background: '#10b981', color: '#fff'
+            });
+            Toast.fire({ icon: 'success', title: 'Admin Mode Unlocked' });
+        }
+    });
 }
 
 // === DATABASE ===
