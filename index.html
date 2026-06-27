@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8" />
+    <meta name="theme-color" content="#070B18" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Production System v3.0 - Clean Premium UI</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=3.3.0">
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+
+<div id="loading" class="loading-overlay">
+    <div class="spinner"></div>
+    <div style="margin-top:16px; font-weight:600; color:var(--gold); letter-spacing:1px;">MENGHUBUNGKAN...</div>
+</div>
+
+<div class="wrap app-wrap">
+    <div class="app-shell">
+        <aside class="erp-sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-mark">PC</div>
+                <div>
+                    <div class="brand-title">Portal Produksi</div>
+                    <div class="brand-subtitle">Target Control v3.0</div>
+                </div>
+            </div>
+
+            <div class="sidebar-mini-info">
+                <div class="bismillah">بسم الله الرحمن الرحيم</div>
+                <div class="slogan">Production System</div>
+            </div>
+
+            <nav class="sidebar-nav" aria-label="Menu utama produksi">
+                <button id="btnAdd" class="side-nav-item active primary" type="button"><span class="side-icon">IN</span><span><b>Input Produksi</b><small>Form laporan shift</small></span></button>
+                <button id="btnDashboard" class="side-nav-item" type="button"><span class="side-icon">MO</span><span><b>Monitoring Room</b><small>Analisa chart & pareto</small></span></button>
+                <button id="btnOpenLog" class="side-nav-item" type="button"><span class="side-icon">DA</span><span><b>Data Harian</b><small>Tabel & history</small></span></button>
+                <button id="btnRekap" class="side-nav-item" type="button"><span class="side-icon">RE</span><span><b>Rekap Line</b><small>Total output mesin</small></span></button>
+                <button id="btnMaster" class="side-nav-item" type="button"><span class="side-icon">MA</span><span><b>Master Produk</b><small>Database item</small></span></button>
+                <button id="btnConfig" class="side-nav-item" type="button"><span class="side-icon">CF</span><span><b>Konfigurasi</b><small>Koneksi database</small></span></button>
+            </nav>
+
+            <div class="sidebar-footer-card">
+                <div class="muted">Status Database</div>
+                <div class="sidebar-status-row"><span id="statusDb" class="status-dot-text">Disconnected</span></div>
+                <button id="btnRefresh" class="btn primary sm sidebar-sync">Sync 30 Hari</button>
+            </div>
+        </aside>
+
+        <main class="erp-main">
+            <section id="targetControlBoard" class="target-board card">
+
+                <!-- COMMAND HEADER -->
+                <div class="cmd-header">
+                    <div class="cmd-header-left">
+                        <div class="cmd-eyebrow">PRODUCTION CONTROL CENTER</div>
+                        <div class="cmd-title-row">
+                            <h2 class="cmd-title">Target Control</h2>
+                            <span id="targetBoardSync" class="cmd-sync-badge">Menunggu sync</span>
+                        </div>
+                        <div id="targetBoardSubtitle" class="cmd-subtitle muted">-</div>
+                    </div>
+                    <div class="cmd-header-right">
+                        <button id="btnOpenInputFromAlert" class="btn primary sm">+ Input Laporan</button>
+                    </div>
+                </div>
+
+                <!-- KPI STRIP -->
+                <div class="kpi-strip">
+                    <div class="kpi-strip-item ksi-danger">
+                        <span class="ksi-label">BELUM AMAN</span>
+                        <span id="alertKpiBad" class="ksi-value">0</span>
+                        <span class="ksi-sub">shift terakhir</span>
+                    </div>
+                    <div class="kpi-strip-div"></div>
+                    <div class="kpi-strip-item ksi-warning">
+                        <span class="ksi-label">LOSS CAPACITY</span>
+                        <span id="alertKpiLoss" class="ksi-value">0</span>
+                        <span class="ksi-sub">pcs terdampak</span>
+                    </div>
+                    <div class="kpi-strip-div"></div>
+                    <div class="kpi-strip-item ksi-success">
+                        <span class="ksi-label">TARGET AMAN</span>
+                        <span id="alertKpiOk" class="ksi-value">0</span>
+                        <span class="ksi-sub">di shift terbaru</span>
+                    </div>
+                    <div class="kpi-strip-div"></div>
+                    <div class="kpi-strip-item ksi-info">
+                        <span class="ksi-label">LATEST SHIFT</span>
+                        <span id="alertKpiShift" class="ksi-value">-</span>
+                        <span class="ksi-sub">data terakhir</span>
+                    </div>
+                </div>
+
+                <!-- LINE FOCUS PANEL -->
+                <div id="lineFocusPanel" class="line-focus-panel">
+                    <div class="lf-search-bar">
+                        <span class="lf-search-icon">🔍</span>
+                        <input type="text" id="lfLineInput" class="lf-input" placeholder="No. Line... (misal: 08)" maxlength="6">
+                        <div class="lf-date-range">
+                            <input type="date" id="lfFrom" class="lf-date">
+                            <span class="lf-date-sep">—</span>
+                            <input type="date" id="lfTo" class="lf-date">
+                        </div>
+                        <button id="btnLfLoad" class="btn primary sm">Tampilkan</button>
+                        <button id="btnLfReset" class="btn sm" style="display:none">✕ Reset</button>
+                    </div>
+                    <div id="lfContent" class="lf-content" style="display:none"></div>
+                </div>
+
+                <!-- ALERT PANELS -->
+                <div class="alert-sections command-layout">
+                    <div class="alert-panel critical-panel">
+                        <div class="panel-title-row"><h3>Critical Lines</h3><span>Urut gap terparah</span></div>
+                        <div id="latestShiftAlerts" class="alert-list muted">Belum ada data.</div>
+                    </div>
+                    <div class="alert-panel capacity-panel">
+                        <div class="panel-title-row"><h3>Capacity & Reasons</h3><span>Stop, cavity, jam efektif</span></div>
+                        <div id="cavityLossAlerts" class="alert-list muted">Belum ada data loss capacity.</div>
+                    </div>
+                    <div class="alert-panel history-panel">
+                        <div class="panel-title-row"><h3>Daily Comparison</h3><span>Hari kemarin / terakhir</span></div>
+                        <div id="yesterdayAlerts" class="alert-list muted">Belum ada data.</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="quick-overview-grid">
+                <div class="quick-card"><span>01</span><div><b>Input akhir shift</b><small>Mandor cukup isi laporan final, halaman depan langsung baca status.</small></div></div>
+                <div class="quick-card"><span>02</span><div><b>CT dari master produk</b><small>Cycle time tetap standar, tidak diketik ulang di laporan.</small></div></div>
+                <div class="quick-card"><span>03</span><div><b>Target otomatis</b><small>Target mengikuti jam efektif, cavity aktif, dan data master.</small></div></div>
+            </section>
+
+            <div class="app-footer">&copy; 2026 Production System</div>
+        </main>
+    </div>
+</div>
+
+<div id="vLaporan" class="modal full">
+    <nav class="modal-sticky-nav">
+        <div class="modal-nav-title">
+            <span class="modal-nav-icon">📁</span>
+            <h2>Data Laporan Harian</h2>
+        </div>
+        <div class="modal-nav-actions">
+            <button id="btnLoadFull" class="btn info sm" title="Ambil semua data lama">Load Full</button>
+            <button id="btnExport" class="btn ok sm">Export CSV</button>
+            <button id="btnClear" class="btn danger sm">Reset Data</button>
+            <button id="vLaporanClose" class="btn sm">KEMBALI</button>
+        </div>
+    </nav>
+    <div class="wrap-full">
+        <div class="card sticky-header">
+            <div class="row" style="align-items:flex-end;">
+                <div style="flex:1; min-width:140px"><div class="muted">Dari</div><input id="fFrom" type="date" class="input"></div>
+                <div style="flex:1; min-width:140px"><div class="muted">Sampai</div><input id="fTo" type="date" class="input"></div>
+                <div style="flex:2; min-width:200px"><div class="muted">Cari Produk</div><input id="fProduk" class="input" placeholder="Ketik..." /></div>
+                <div style="flex:1; min-width:100px"><div class="muted">Shift</div><select id="fShift" class="input"><option value="">All</option><option>1</option><option>2</option><option>3</option></select></div>
+                <div style="flex:1; min-width:120px"><div class="muted">Line</div><input id="fLine" class="input" placeholder="L-01" /></div>
+                <div><button id="btnClearFilter" class="btn">Reset</button></div>
+            </div>
+        </div>
+        <div class="card" style="padding:0;">
+            <div style="padding:16px 24px; background:#252525; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border);">
+                <div class="muted">Menampilkan Data</div><span id="rowCount" class="badge">0 baris</span>
+            </div>
+            <div class="table-container" style="border:none; border-radius:0;">
+                <table>
+                    <thead><tr><th>Tanggal</th><th>Shift</th><th>Line</th><th>Produk</th><th>Tipe</th><th class="right">Counter</th><th class="right">Cav Aktif</th><th class="right">Jam</th><th class="right">Target Aktual</th><th class="right">OK (pcs)</th><th class="right">Gap</th><th class="right">Achv</th><th>Status Target</th><th class="right">Reject</th><th class="right">Yield %</th><th style="text-align:center">Aksi</th></tr></thead>
+                    <tbody id="tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="pDashboard" class="modal full">
+    <nav class="modal-sticky-nav">
+        <div class="modal-nav-title">
+            <span class="modal-nav-icon">📊</span>
+            <h2>Monitoring Room</h2>
+            <span class="badge">Live</span>
+        </div>
+        <div class="modal-nav-actions">
+            <button id="pDashboardClose" class="btn danger sm">KEMBALI</button>
+        </div>
+    </nav>
+    <div class="wrap-full">
+        <div class="card sticky-header">
+            <div class="row" style="align-items:flex-end;">
+                <div style="flex:1"><div class="muted">Awal</div><input id="dFrom" type="date" class="input"></div>
+                <div style="flex:1"><div class="muted">Akhir</div><input id="dTo" type="date" class="input"></div>
+                <div style="flex:1"><div class="muted">Filter Line</div><input id="dLine" class="input" placeholder="Semua Line"></div>
+                <button id="btnLoadDash" class="btn primary sm">ANALISA</button>
+            </div>
+        </div>
+
+        <div class="dash-kpi-grid-compact">
+            <div class="stat-box"><div class="muted">Total Produksi</div><span id="kpiHasil" class="stat-value">0</span></div>
+            <div class="stat-box"><div class="muted">Total OK</div><span id="kpiOk" class="stat-value" style="color:var(--success);">0</span></div>
+            <div class="stat-box"><div class="muted">Total Reject</div><span id="kpiReject" class="stat-value" style="color:var(--danger);">0</span></div>
+            <div class="stat-box"><div class="muted">Avg Yield</div><span id="kpiYield" class="stat-value" style="color:var(--gold);">0%</span></div>
+        </div>
+        <div class="dash-kpi-grid-compact">
+            <div class="stat-box danger-soft"><div class="muted">Tidak / Hampir Target</div><span id="kpiTargetBad" class="stat-value">0</span></div>
+            <div class="stat-box warning-soft"><div class="muted">Loss Capacity</div><span id="kpiCapacityLoss" class="stat-value">0</span></div>
+            <div class="stat-box info-soft"><div class="muted">Gap Target Aktual</div><span id="kpiGapActual" class="stat-value">0</span></div>
+            <div class="stat-box success-soft"><div class="muted">Target Aktual Tercapai</div><span id="kpiTargetOk" class="stat-value">0</span></div>
+        </div>
+
+        <div class="row" style="align-items:stretch;">
+            <div class="card" style="flex:2; min-width:300px;"><h3 style="margin-bottom:16px; font-size:1rem;">📈 Trend Produksi</h3><div style="height:300px;"><canvas id="chartTrend"></canvas></div></div>
+            <div class="card" style="flex:1; min-width:300px;"><h3 style="margin-bottom:16px; font-size:1rem; color:var(--danger);">⚠ Pareto Reject (Jenis)</h3><div style="height:300px;"><canvas id="chartPareto"></canvas></div></div>
+        </div>
+
+<div class="row" style="align-items:stretch;">
+            <div class="card" style="flex:1; min-width:300px;">
+                <h3 style="margin-bottom:12px; font-size:1rem; color:var(--success);">🏆 Top 5 Produk (OK Terbanyak)</h3>
+                <div class="table-container">
+                    <table id="tblTopProd">
+                        <thead><tr><th>Produk</th><th class="right">Total OK</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card" style="flex:1; min-width:300px;">
+                <h3 style="margin-bottom:12px; font-size:1rem; color:var(--danger);">💀 Top 5 Produk (Reject Terbanyak)</h3>
+                <div class="table-container">
+                    <table id="tblTopReject"> 
+                        <thead><tr><th>Produk</th><th class="right">Total Reject</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div> 
+    </div> 
+</div> 
+
+<div id="mRekap" class="modal full">
+    <nav class="modal-sticky-nav">
+        <div class="modal-nav-title">
+            <span class="modal-nav-icon">🏭</span>
+            <h2>Rekapitulasi Line</h2>
+        </div>
+        <div class="modal-nav-actions">
+            <button id="mRekapClose" class="btn danger sm">KEMBALI</button>
+        </div>
+    </nav>
+    <div class="wrap-full">
+        <div class="card">
+            <div class="row" style="margin-bottom:16px; align-items:flex-end; background:#151515; padding:20px; border-radius:12px; border:1px solid var(--border);">
+                <div style="flex:1; min-width:200px;"><div class="muted">Dari Tanggal</div><input id="rDateFrom" type="date" class="input"></div>
+                <div style="flex:1; min-width:200px;"><div class="muted">Sampai Tanggal</div><input id="rDateTo" type="date" class="input"></div>
+                <div style="display:flex; gap:10px;">
+    <button id="btnRefreshRekap" class="btn primary" style="height:46px; padding:0 20px;">PROSES DATA</button>
+    <button id="btnExportRekap" class="btn ok" style="height:46px; padding:0 20px;" title="Download Excel Asli">📊 EXCEL .XLSX</button>
+</div>
+            </div>
+            <div style="display:flex; gap:12px; margin-bottom:24px;">
+                <button class="filter-btn active" onclick="filterRekap('all', this)" style="padding:12px;">SEMUA SHIFT</button>
+                <button class="filter-btn" onclick="filterRekap('1', this)" style="padding:12px;">SHIFT 1</button>
+                <button class="filter-btn" onclick="filterRekap('2', this)" style="padding:12px;">SHIFT 2</button>
+                <button class="filter-btn" onclick="filterRekap('3', this)" style="padding:12px;">SHIFT 3</button>
+            </div>
+            <div style="margin-bottom:16px;" id="rekapMachineCount" class="muted">Total Mesin: 0</div>
+            <div class="table-container">
+                <table><thead><tr><th>Line / Mesin</th><th>Produk (Kode)</th><th class="right">Total OK (pcs)</th><th class="right">Total Reject</th><th class="right">Total OK (kg)</th><th class="right">Avg Yield</th></tr></thead><tbody id="tbodyRekap"></tbody></table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="mMaster" class="modal full">
+    <nav class="modal-sticky-nav">
+        <div class="modal-nav-title">
+            <span class="modal-nav-icon">📦</span>
+            <h2>Master Produk</h2>
+        </div>
+        <div class="modal-nav-actions">
+            <button id="btnWipeMaster" class="btn danger sm">Hapus Semua</button>
+            <button id="mMasterClose" class="btn danger sm">KEMBALI</button>
+        </div>
+    </nav>
+    <div class="wrap-full">
+        <div class="card">
+            <div style="background:#151515; padding:24px; border-radius:var(--radius); margin-bottom:24px; border:1px solid var(--border);">
+                <h4 style="font-size:1rem; margin-bottom:16px; color:var(--gold);">TAMBAH / EDIT MANUAL</h4>
+                <div class="grid-simple cols-4">
+                    <div><div class="muted">Kode</div><input id="mpKode" class="input" placeholder="AUTO..." /></div>
+                    <div class="span-2"><div class="muted">Nama Produk</div><input id="mpNama" class="input" /></div>
+                    <div><div class="muted">Tipe</div><select id="mpTipe" class="input"><option value="pcs">pcs</option><option value="kg_sisa">kg</option></select></div>
+                    <div><div class="muted">Gram</div><input id="mpGram" class="input" type="number" step="0.01" /></div>
+                    <div><div class="muted">Runner</div><input id="mpRunner" class="input" type="number" step="0.01" /></div>
+                    <div><div class="muted">Cavity Standard</div><input id="mpCavity" class="input" type="number" /></div>
+                    <div><div class="muted">Cycle Time (detik)</div><input id="mpCycleTime" class="input" type="number" step="0.01" placeholder="ct" /></div>
+                    <div><div class="muted">Isi Dus</div><input id="mpPerDus" class="input" type="number" /></div>
+                    <div><div class="muted">Isi Box</div><input id="mpPerBox" class="input" type="number" /></div>
+                    <div style="display:flex; align-items:flex-end;"><button id="mpAdd" class="btn primary" style="width:100%; height:46px;">SIMPAN</button></div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <input id="mpSearch" class="input" placeholder="🔍 Cari Kode atau Nama Produk..." style="border-color:var(--border); background:#1a1a1a;" />
+            </div>
+
+            <div class="table-container"><table id="tblMaster"><thead><tr><th>Kode</th><th>Nama</th><th>Tipe</th><th class="right">Gram</th><th class="right">Runner</th><th class="right">Cav Std</th><th class="right">CT</th><th class="right">Target/Jam</th><th class="right">Dus</th><th style="text-align:center">Aksi</th></tr></thead><tbody id="mpBody"></tbody></table></div>
+        </div>
+    </div>
+</div>
+
+<div id="mEntry" class="modal full entry-modal">
+    <div class="wrap-full entry-wrap">
+        <div class="entry-card card">
+            <div class="entry-premium-head">
+                <div class="entry-title-block">
+                    <div class="entry-icon">📝</div>
+                    <div>
+                        <div class="eyebrow">FAST SHIFT REPORT</div>
+                        <h2>Input Laporan Shift</h2>
+                        <p class="muted">Semua section bisa ditutup-buka. Default terbuka agar alur input tetap cepat dan lengkap.</p>
+                    </div>
+                    <span id="badgeTipe" class="badge entry-mode-badge"></span>
+                </div>
+                <button id="mEntryClose" class="btn danger entry-close-btn" type="button">BATAL / KEMBALI</button>
+            </div>
+
+            <input type="hidden" id="eId" />
+
+            <div class="entry-layout">
+                <div class="entry-flow">
+                    <details class="entry-accordion entry-section priority-section required-accordion" open>
+                        <summary class="section-heading">
+                            <span class="step-dot">1</span>
+                            <div>
+                                <h3>Identitas Shift</h3>
+                                <p class="muted">Tanggal, shift, dan line mesin.</p>
+                            </div>
+                        </summary>
+                        <div class="grid-simple cols-3 fast-grid">
+                            <label class="field-tile"><span>Tanggal</span><input id="eTanggal" type="date" class="input" /></label>
+                            <label class="field-tile"><span>Shift</span><select id="eShift" class="input"><option>1</option><option>2</option><option>3</option></select></label>
+                            <label class="field-tile"><span>Line</span><input id="eLine" class="input input-strong" placeholder="Contoh: 03" /></label>
+                        </div>
+                    </details>
+
+                    <details class="entry-accordion entry-section product-section required-accordion" open>
+                        <summary class="section-heading">
+                            <span class="step-dot">2</span>
+                            <div>
+                                <h3>Produk</h3>
+                                <p class="muted">Pilih produk, data standar otomatis terisi dari master.</p>
+                            </div>
+                        </summary>
+                        <div class="product-search-box">
+                            <label class="field-tile wide"><span>Produk (Ketik Kode / Nama)</span><input id="eProduk" class="input input-strong" placeholder="Cari kode atau nama produk..." autocomplete="off" /></label>
+                            <div id="produkSuggestions" class="search-list"></div>
+                        </div>
+                        <div class="product-standard-strip">
+                            <label><span>Gram</span><input id="eGram" type="number" class="input" step="0.01" readonly /></label>
+                            <label><span>Runner</span><input id="eRunner" type="number" class="input" step="0.01" readonly /></label>
+                            <label><span>Cav Std</span><input id="eCavityStd" type="number" class="input" readonly /></label>
+                            <label><span>CT/detik</span><input id="eCycleTime" type="number" class="input" readonly /></label>
+                        </div>
+                        <input id="eTargetShotHour" type="hidden" />
+                        <input id="eTargetStandard" type="hidden" />
+                    </details>
+
+                    <details class="entry-accordion entry-section production-section required-accordion" open>
+                        <summary class="section-heading">
+                            <span class="step-dot">3</span>
+                            <div>
+                                <h3>Produksi Utama</h3>
+                                <p class="muted">Bagian paling penting untuk menghitung target, actual, dan gap.</p>
+                            </div>
+                        </summary>
+                        <div class="grid-simple cols-3 fast-grid">
+                            <label class="field-tile hero-input"><span>Counter (Shot)</span><input id="eCounter" type="number" class="input input-strong" placeholder="0" /></label>
+                            <label class="field-tile"><span>Cavity Aktif</span><input id="eCavity" type="number" class="input input-strong" min="1" placeholder="Auto" /></label>
+                            <div class="field-tile hour-field">
+                                <span>Jam Efektif</span>
+                                <select id="eEffectiveHours" class="input fast-hidden-select"><option value="8">8 jam - normal</option><option value="7">7 jam - stop 1 jam</option><option value="6">6 jam - stop 2 jam</option></select>
+                                <div class="quick-hour-grid" role="group" aria-label="Jam efektif shift">
+                                    <button type="button" class="quick-hour-chip active" data-hours="8" data-reason="">8 Jam<br><small>Normal</small></button>
+                                    <button type="button" class="quick-hour-chip" data-hours="7" data-reason="Istirahat">7 Jam<br><small>Istirahat</small></button>
+                                    <button type="button" class="quick-hour-chip" data-hours="6" data-reason="Menggantikan Mesin Lain">6 Jam<br><small>Ganti Mesin</small></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="reason-grid">
+                            <div id="stopReasonBox" class="target-reason-box" style="display:none;">
+                                <div class="muted">Alasan Stop Mesin / Jam Berkurang</div>
+                                <select id="eStopReason" class="input">
+                                    <option value="">Pilih alasan...</option>
+                                    <option>Istirahat</option>
+                                    <option>Menggantikan Mesin Lain</option>
+                                </select>
+                            </div>
+                            <div id="cavityReasonBox" class="target-reason-box" style="display:none;">
+                                <div class="muted">Alasan Cavity Turun</div>
+                                <select id="eCavityReason" class="input">
+                                    <option value="">Pilih alasan...</option>
+                                    <option>Mold problem / cavity ditutup</option>
+                                    <option>Produk nempel</option>
+                                    <option>Core / pin problem</option>
+                                    <option>Kualitas tidak stabil</option>
+                                    <option>Lainnya</option>
+                                </select>
+                            </div>
+                        </div>
+                    </details>
+
+                    <details class="entry-accordion required-accordion" open>
+                        <summary><span>Material Usage</span><small>Wajib isi sesuai laporan mandor</small></summary>
+                        <div class="accordion-body">
+                            <div class="grid-simple cols-4 fast-grid">
+                                <label class="field-tile"><span>Jatah</span><input id="eJatah" type="number" step="0.01" class="input" /></label>
+                                <label class="field-tile"><span>Stok Awal</span><input id="eStok" type="number" step="0.01" class="input" /></label>
+                                <label class="field-tile"><span>Balokan</span><input id="eBalokan" type="number" step="0.01" class="input" /></label>
+                                <label class="field-tile readonly"><span>Sisa Auto</span><input id="eSisaBahan" type="number" readonly class="input" /></label>
+                            </div>
+                            <div class="residue-grid">
+                                <div>
+                                    <div class="muted residue-title">Sisa Sebelum (Kg/Pcs)</div>
+                                    <div class="grid-simple cols-3 mini-grid">
+                                        <input id="eSblm1" class="input" type="number" step="0.01" /><input id="eSblm2" class="input" type="number" step="0.01" /><input id="eSblm3" class="input" type="number" step="0.01" />
+                                        <input id="eSblm4" class="input" type="number" step="0.01" /><input id="eSblm5" class="input" type="number" step="0.01" /><input id="eSblm6" class="input" type="number" step="0.01" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="muted residue-title">Sisa Sesudah (Kg/Pcs)</div>
+                                    <div class="grid-simple cols-3 mini-grid">
+                                        <input id="eSsdh1" class="input" type="number" step="0.01" /><input id="eSsdh2" class="input" type="number" step="0.01" /><input id="eSsdh3" class="input" type="number" step="0.01" />
+                                        <input id="eSsdh4" class="input" type="number" step="0.01" /><input id="eSsdh5" class="input" type="number" step="0.01" /><input id="eSsdh6" class="input" type="number" step="0.01" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
+
+                    <details class="entry-accordion entry-section packaging-section required-accordion" open>
+                        <summary class="section-heading compact-heading">
+                            <span class="step-dot">4</span>
+                            <div>
+                                <h3>Output Packing</h3>
+                                <p class="muted">Isi dus/box agar OK pcs otomatis dihitung.</p>
+                            </div>
+                        </summary>
+                        <div class="grid-simple cols-6 pack-grid">
+                            <label class="field-tile"><span>Dus</span><input id="eQtyDus" type="number" class="input input-strong" /></label>
+                            <label class="field-tile readonly"><span>Isi/D</span><input id="eIsiDus" type="number" class="input" readonly /></label>
+                            <label class="field-tile"><span>Box</span><input id="eQtyBox" type="number" class="input input-strong" /></label>
+                            <label class="field-tile readonly"><span>Isi/B</span><input id="eIsiBox" type="number" class="input" readonly /></label>
+                            <label class="field-tile"><span>Dus+</span><input id="eQtyDusPlus" type="number" class="input" /></label>
+                            <label class="field-tile"><span>Isi+</span><input id="eIsiDusPlus" type="number" class="input" /></label>
+                        </div>
+                    </details>
+
+                    <details class="entry-accordion reject-accordion required-accordion" open>
+                        <summary><span>Reject Detail</span><small>Wajib cek/isi rincian defect</small></summary>
+                        <div class="accordion-body reject-body">
+                            <div class="grid-simple cols-reject">
+                                <label><span class="reject-label">Uneven Color</span><input id="rUneven" type="number" class="input" /></label>
+                                <label><span class="reject-label">Mottled</span><input id="rMottled" type="number" class="input" /></label>
+                                <label><span class="reject-label">Start Up</span><input id="rStartup" type="number" class="input" /></label>
+                                <label><span class="reject-label">Short Shot</span><input id="rShort" type="number" class="input" /></label>
+                                <label><span class="reject-label">Flow Mark</span><input id="rFlow" type="number" class="input" /></label>
+                                <label><span class="reject-label">Flashing</span><input id="rFlash" type="number" class="input" /></label>
+                                <label><span class="reject-label">Crack</span><input id="rCrack" type="number" class="input" /></label>
+                                <label><span class="reject-label">Spot</span><input id="rSpot" type="number" class="input" /></label>
+                                <label><span class="reject-label">Scratch</span><input id="rScratch" type="number" class="input" /></label>
+                                <label><span class="reject-label">Dirty</span><input id="rDirty" type="number" class="input" /></label>
+                            </div>
+                            <div class="reject-total-row">
+                                <div>
+                                    <div class="muted">Total Reject Detail</div>
+                                    <input id="rTotal" type="number" class="input" readonly />
+                                    <input id="rMax" type="hidden" />
+                                </div>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+
+                <aside class="entry-summary-rail" aria-label="Ringkasan produksi">
+                    <div class="summary-card sticky-summary compact-summary-card">
+                        <div class="summary-head compact-summary-head">
+                            <div>
+                                <div class="eyebrow">OUTPUT LAPORAN</div>
+                                <h3>Format Mandor</h3>
+                            </div>
+                            <span id="vTargetStatus" class="target-pill neutral compact-status">Target belum aktif</span>
+                        </div>
+
+                        <div class="summary-list compact-output-list manual-report-grid">
+                            <div class="summary-row"><span>Runner</span><b id="vRunnerKg">0.00</b><small>kg</small></div>
+                            <div class="summary-row bad"><span>Reject</span><b id="vRejectPcs">0</b><small>pcs</small></div>
+                            <div class="summary-row bad-soft"><span>Kg Reject</span><b id="vRejectKg">0.00</b><small>kg</small></div>
+                            <div class="summary-row ok"><span>OK</span><b id="vOkPcs">0</b><small>pcs</small></div>
+                            <div class="summary-row ok-soft"><span>Kg OK</span><b id="vOkKg">0.00</b><small>kg</small></div>
+                            <div class="summary-row"><span>Balokan</span><b id="vBalokan">0.00</b><small>kg</small></div>
+                            <div class="summary-row hero"><span>Sisa Bahan</span><b id="vSisaBahanLabel">0.00</b><small>kg</small></div>
+                        </div>
+
+                        <div class="hidden-target-values" aria-hidden="true">
+                            <span id="vHasil">0</span><span id="vYield">0%</span><span id="vTargetActual">0</span><span id="vGapActual" class="stat-value">0</span><span id="vAchActual">0%</span><span id="vCapacityLoss">0</span>
+                            <span id="vTargetStd">0</span><span id="vAchStd">0%</span><span id="vTargetHourActual">0</span><span id="vShiftHours">8</span><span id="vTargetHelper">Angka target dihitung otomatis.</span>
+                        </div>
+
+                        <div id="targetReasonBox" class="summary-reason-box" style="display:none;">
+                            <div class="muted">Alasan Tidak Target</div>
+                            <select id="eTargetReason" class="input">
+                                <option value="">Pilih alasan...</option>
+                                <option>Mesin trouble</option>
+                                <option>Mold trouble</option>
+                                <option>Material telat / kurang</option>
+                                <option>Manpower kurang</option>
+                                <option>Setting / start up lama</option>
+                                <option>Waiting QC</option>
+                                <option>Ganti produk / model</option>
+                                <option>Lainnya</option>
+                            </select>
+                        </div>
+
+                        <div id="warnOver" class="overpack-warning" style="display:none;">Packaging melebihi Hasil Produksi!</div>
+
+                        <div class="save-dock compact-save-dock">
+                            <button id="btnSaveEntry" class="btn primary save-entry-btn" type="button">SIMPAN DATA PRODUKSI</button>
+                            <small>Setelah berhasil, form otomatis kembali ke atas.</small>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="mConfig" class="modal"><div class="card" style="max-width:500px">
+    <h3 style="margin-bottom:8px; color:var(--gold)">Database Setup</h3>
+    <div class="grid"><div><div class="muted">Project URL</div><input id="cfgUrl" class="input" /></div><div><div class="muted">Anon Public Key</div><textarea id="cfgKey" class="input" rows="4"></textarea></div><button id="btnSaveConfig" class="btn primary" style="width:100%;">SIMPAN & KONEK</button><button id="mConfigClose" class="btn" style="width:100%">Batal</button></div>
+</div></div>
+
+<script src="app.js?v=3.4.0"></script>
+<script src="dashboard.js?v=3.4.0"></script>
+</body>
+</html>
