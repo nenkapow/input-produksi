@@ -3697,6 +3697,10 @@ tbody tr:hover td {
     line-height: 1;
 }
 
+.lf-loss-val {
+    color: #FDE68A !important;
+}
+
 /* Reject pills */
 .lf-reject-pills {
     display: flex;

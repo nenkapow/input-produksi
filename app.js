@@ -536,6 +536,7 @@ function renderLineFocus() {
         const avgAch  = tgR.length ? tgR.reduce((s,x) => s + x.tg.achActual, 0) / tgR.length : null;
         const gapTot  = tgR.reduce((s,x) => s + x.tg.gapActual, 0);
         const badCnt  = tgR.filter(x => isTargetUnsafe(x.tg.status)).length;
+        const capLoss = tgR.reduce((s,x) => s + (x.tg.capacityLossTotal||0), 0);
 
         // Top reject types
         const rejMap = {};
@@ -573,6 +574,7 @@ function renderLineFocus() {
                 <div class="lf-pstat"><span class="text-danger">${fmtInt(rej)}</span><small>Reject</small></div>
                 <div class="lf-pstat"><span class="${gapTot<0?'text-danger':'text-ok'}">${gapTot>=0?'+':''}${fmtInt(gapTot)}</span><small>Gap</small></div>
                 <div class="lf-pstat"><span>${prod.rows.length}</span><small>Shift</small></div>
+                ${capLoss > 0 ? `<div class="lf-pstat"><span class="lf-loss-val">${fmtInt(capLoss)}</span><small>Loss Cap</small></div>` : ''}
             </div>
             ${topRej.length ? `<div class="lf-reject-pills">${topRej.map(([k,v]) => `<span class="lf-reject-pill">${k.toUpperCase()} <b>${fmtInt(v)}</b></span>`).join('')}</div>` : ''}
             ${issues.size  ? `<div class="lf-issues">${[...issues].slice(0,3).map(i=>`<div class="lf-issue-item">⚠ ${i}</div>`).join('')}</div>` : ''}
