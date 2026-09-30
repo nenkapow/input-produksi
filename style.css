@@ -3743,3 +3743,19 @@ tbody tr:hover td {
         width: 100%;
     }
 }
+
+/* Fix: allow product autocomplete dropdown to extend outside its accordion. */
+.entry-flow details.product-section[open] {
+    overflow: visible !important;
+    position: relative;
+    z-index: 30;
+}
+
+.product-section .product-search-box {
+    position: relative;
+    z-index: 40;
+}
+
+.product-section .search-list {
+    z-index: 9999;
+}
