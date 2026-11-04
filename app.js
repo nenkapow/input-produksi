@@ -717,7 +717,7 @@ window.selectProduk = v => { $('eProduk').value=v; $('produkSuggestions').style.
 function hydrateProduk(){
     const val = $('eProduk').value, p = master.find(x=>(x.kode+" - "+x.nama)===val);
     if(p) {
-        refreshWO();
+        scheduleWOResolve();
         const cycleTime = getProductCycleTime(p);
         const stdCav = getProductStdCavity(p);
         const shotHour = getTargetShotHour(cycleTime);
@@ -849,6 +849,8 @@ async function saveEntry() {
         });
         return;
     }
+
+    if (woResolving || woAmbiguous || woResolveError) { Swal.fire({icon:'warning', title:'WO belum siap', text: woAmbiguous ? 'Pilih WO aktif terlebih dahulu.' : 'Tunggu atau periksa koneksi untuk memastikan WO aktif.'}); return; }
 
     if ($('eWoMode').value === 'continue' && !$('eWoSelect').value) {
         Swal.fire({icon:'warning', title:'Pilih WO', text:'Pilih WO yang akan dilanjutkan.'}); return;
@@ -1211,8 +1213,7 @@ async function wipeMaster() {
 window.editLog=(id)=>{
     const r=logs.find(x=>x.id===id); if(!r) return;
     $('eId').value=r.id; $('eTanggal').value=r.tanggal; $('eShift').value=r.shift; $('eLine').value=r.line; $('eProduk').value=r.kode+" - "+r.nama; hydrateProduk();
-    $('eWoMode').value = 'new'; $('woNewFields').hidden = false; $('woSelectField').hidden = true; $('woContinueSummary').hidden = true; $('eWoRef').value=r.wo_ref || ''; $('eWoQty').value=r.wo_qty ?? ''; $('eWoDate').value=r.wo_start_date || ''; $('eWoShift').value=r.wo_start_shift || '1';
-    refreshWO();
+    scheduleWOResolve();
     $('eCounter').value=r.counter; 
     if($('eCavityStd')) $('eCavityStd').value = r.cavity_standard_snapshot || r.cavity_standard || $('eCavityStd').value;
     if($('eCycleTime')) $('eCycleTime').value = r.cycle_time_sec_snapshot || $('eCycleTime').value;
@@ -1432,7 +1433,7 @@ function exportRekapCSV() { // Nama fungsinya biarin exportRekapCSV biar gak usa
 }
 
 // WO progress is independent of the existing production calculations.
-let woRequest = 0, woHistorical = null, woRows = [], woAssignments = [], woContributions = new Map(), woAssignmentValid = false, woLoaded = false, woIncludesUnreferenced = false, woGeneratedRef = null, woCustomTime = false;
+let woRequest = 0, woHistorical = null, woRows = [], woAssignments = [], woContributions = new Map(), woAssignmentValid = false, woLoaded = false, woIncludesUnreferenced = false, woGeneratedRef = null, woCustomTime = false, woResolveTimer = null, woResolving = false, woAmbiguous = false, woResolveError = false;
 const woNorm = v => (v || '').toString().trim().replace(/\s+/g, ' ').toUpperCase();
 const woUsed = () => !!($('eWoRef').value.trim() || $('eWoQty').value || $('eWoDate').value);
 function woInternalRef() {
@@ -1452,6 +1453,8 @@ function woLogMatches(r, ref, assignments) {
     return (!logRef || logRef === woNorm(ref)) && assignments.some(a => woMatches(a, ref, r.line, {kode:r.kode, nama:r.nama}, r.tanggal, r.shift));
 }
 function resetWO() {
+    clearTimeout(woResolveTimer); woResolving = false; woAmbiguous = false; woResolveError = false;
+    $('woManual').hidden = true; $('woAutoChoice').hidden = true; $('woCompactStatus').textContent = 'Belum ada WO aktif untuk mesin & produk ini'; $('woManage').textContent = '+ Buat / Hubungkan WO';
     ++woRequest; woLoaded = false; woHistorical = null; woRows = []; woAssignments = []; woContributions = new Map(); woAssignmentValid = false; woIncludesUnreferenced = false; woGeneratedRef = null; woCustomTime = false;
     ['eWoRef','eWoQty','eWoDate'].forEach(id => $(id).value = '');
     $('eWoShift').value = '1'; $('eWoMode').value = 'new'; $('eWoSelect').disabled = false;
@@ -1471,6 +1474,7 @@ function renderWO(current) {
     const canAdd = !$('eWoRef').value.trim() || woAssignmentValid || (draft && woMatches(draft, $('eWoRef').value, $('eLine').value, compute().prod || {}, date, $('eShift').value));
     const live = inBoundary && canAdd ? (current ?? compute().okpcs) : 0;
     const total = woHistorical + live, balance = toNum($('eWoQty').value) - total;
+    if ($('eWoRef').value.trim() && woAssignmentValid) { $('woCompactStatus').textContent = `WO Aktif: ${$('eWoRef').value.trim()} · Target ${fmtInt($('eWoQty').value)} · Sisa ${fmtInt(balance)}`; $('woManage').textContent = 'Kelola / Ganti WO'; }
     $('woContinueSummary').hidden = $('eWoMode').value !== 'continue' || !$('eWoSelect').value;
     if (!$('woContinueSummary').hidden) $('woContinueSummary').textContent = `Referensi: ${$('eWoRef').value} · Target WO: ${fmtInt($('eWoQty').value)} · OK Kumulatif: ${fmtInt(total)} · Sisa Produksi: ${fmtInt(balance)} PCS`;
     meta.textContent = `${$('eWoRef').value.trim() ? $('eWoRef').value.trim() + ' · ' : ''}WO ${fmtInt($('eWoQty').value)} · OK Kumulatif ${fmtInt(total)}`;
@@ -1537,10 +1541,10 @@ function woRecalculate() {
     woHistorical = filtered.reduce((sum,r) => { const key = `${r.line} / ${r.kode} - ${r.nama}`; woContributions.set(key, (woContributions.get(key) || 0) + toNum(r.okpcs)); return sum + toNum(r.okpcs); }, 0);
     renderWO();
 }
-async function refreshWO() {
+async function refreshWO(resolve = false) {
     const request = ++woRequest, line = woNorm($('eLine').value), product = master.find(p => p.kode + ' - ' + p.nama === $('eProduk').value);
     woLoaded = false; woHistorical = null; renderWO();
-    if (!client || !line || !product) { woHistorical = false; renderWO(); return; }
+    if (!client || !line || !product || (resolve && !woPoint($('eTanggal').value, $('eShift').value))) { woHistorical = false; woResolving = false; renderWO(); return; }
     try {
         const [rows, assignments] = await Promise.all([woFetchAll('logs','id,tanggal,shift,line,kode,nama,okpcs,wo_ref,wo_qty,wo_start_date,wo_start_shift'), woFetchAll('production_wo_assignments','id,wo_ref,line_code,product_code,product_name,effective_date,effective_shift,ended_date,ended_shift')]);
         if (request !== woRequest) return;
@@ -1550,8 +1554,51 @@ async function refreshWO() {
         $('eWoSelect').replaceChildren(new Option('Pilih WO...', ''));
         refs.forEach((r,key) => { const total = rows.filter(x => woLogMatches(x, r.wo_ref, assignments)).reduce((n,x) => n + toNum(x.okpcs),0); $('eWoSelect').add(new Option(`${r.wo_ref} · target ${fmtInt(r.wo_qty)} · OK ${fmtInt(total)}`, key)); });
         $('eWoSelect').value = selected;
+        if (resolve) resolveWOSelection(product, refs);
         woRecalculate();
-    } catch (error) { if (request === woRequest) { woHistorical = false; $('woAssignmentMessage').textContent = 'Gagal memuat assignment WO: ' + (error.message || 'kesalahan database'); renderWO(); } }
+    } catch (error) { if (request === woRequest) { woHistorical = false; woResolving = false; if (resolve) { woResolveError = true; $('woCompactStatus').textContent = 'WO tidak dapat diperiksa. Periksa koneksi database.'; } $('woAssignmentMessage').textContent = 'Gagal memuat assignment WO: ' + (error.message || 'kesalahan database'); renderWO(); } }
+}
+function clearWOSelection() {
+    ['eWoRef','eWoQty','eWoDate'].forEach(id => $(id).value = '');
+    $('eWoShift').value = '1'; $('eWoMode').value = 'new'; $('eWoSelect').value = '';
+    $('woContinueSummary').hidden = true; $('woAssignmentBox').hidden = true;
+    $('woNewFields').hidden = false; $('woSelectField').hidden = true; $('woProgress').hidden = true;
+    woGeneratedRef = null; woAssignmentValid = false; woHistorical = null;
+}
+function scheduleWOResolve() {
+    clearTimeout(woResolveTimer); ++woRequest;
+    clearWOSelection(); woLoaded = false; woAmbiguous = false; woResolveError = false;
+    $('woManual').hidden = true; $('woAutoChoice').hidden = true;
+    $('woManage').textContent = '+ Buat / Hubungkan WO';
+    const product = master.find(p => p.kode + ' - ' + p.nama === $('eProduk').value);
+    if (!product || !$('eLine').value.trim() || !woPoint($('eTanggal').value, $('eShift').value)) {
+        woResolving = false; $('woCompactStatus').textContent = 'Belum ada WO aktif untuk mesin & produk ini'; return;
+    }
+    woResolving = true; $('woCompactStatus').textContent = 'Mencari WO aktif…';
+    woResolveTimer = setTimeout(() => refreshWO(true), 250);
+}
+function applyWOReference(key) {
+    const row = woRows.filter(r => woNorm(r.wo_ref) === key && r.wo_qty > 0 && r.wo_start_date).sort((a,b) => (b.tanggal || '').localeCompare(a.tanggal || '') || (+b.shift - +a.shift))[0];
+    if (!row) return false;
+    $('eWoMode').value = 'continue'; $('eWoSelect').value = key;
+    $('eWoRef').value = row.wo_ref; $('eWoQty').value = row.wo_qty; $('eWoDate').value = row.wo_start_date; $('eWoShift').value = row.wo_start_shift || '1';
+    $('woNewFields').hidden = true; $('woSelectField').hidden = false;
+    woCustomTime = false; $('woMachineDate').value = $('eTanggal').value; $('woMachineShift').value = $('eShift').value;
+    return true;
+}
+function resolveWOSelection(product, refs) {
+    woResolving = false;
+    const candidates = new Map();
+    woAssignments.forEach(a => { if (woNorm(a.wo_ref) && woMatches(a, a.wo_ref, $('eLine').value, product, $('eTanggal').value, $('eShift').value)) candidates.set(woNorm(a.wo_ref), a.wo_ref); });
+    if (!candidates.size) { $('woCompactStatus').textContent = 'Belum ada WO aktif untuk mesin & produk ini'; return; }
+    const missing = [...candidates.keys()].some(key => !refs.has(key));
+    if (missing) { woResolveError = true; $('woCompactStatus').textContent = 'Data target WO aktif tidak tersedia. Periksa data WO.'; return; }
+    if (candidates.size === 1) { applyWOReference([...candidates.keys()][0]); return; }
+    woAmbiguous = true; $('woCompactStatus').textContent = `Ditemukan ${candidates.size} WO aktif — pilih WO`;
+    $('woAutoSelect').replaceChildren(new Option('Pilih WO...', ''));
+    candidates.forEach((ref,key) => $('woAutoSelect').add(new Option(ref, key)));
+    $('woAutoChoiceLabel').textContent = `Ditemukan ${candidates.size} WO aktif — pilih WO`;
+    $('woAutoChoice').hidden = false;
 }
 async function ensureWOAssignment(product) {
     if (woHistorical === null || woHistorical === false) { Swal.fire({icon:'error', title:'WO belum siap', text:'Histori atau assignment belum berhasil dimuat.'}); return false; }
@@ -1570,12 +1617,13 @@ async function ensureWOAssignment(product) {
     return true;
 }
 function setupWO() {
-    ['eLine','eProduk'].forEach(id => { $(id).addEventListener('input', refreshWO); $(id).addEventListener('change', refreshWO); });
+    ['eLine','eProduk','eTanggal','eShift'].forEach(id => { $(id).addEventListener('input', scheduleWOResolve); $(id).addEventListener('change', scheduleWOResolve); });
     ['eWoRef','eWoDate','eWoShift'].forEach(id => { $(id).addEventListener('input', woRecalculate); $(id).addEventListener('change', woRecalculate); });
-    ['eTanggal','eShift'].forEach(id => { const update = () => { if (!woCustomTime) { $('woMachineDate').value = $('eTanggal').value; $('woMachineShift').value = $('eShift').value; } woRecalculate(); }; $(id).addEventListener('input', update); $(id).addEventListener('change', update); });
     $('eWoQty').addEventListener('input', woRecalculate);
-    ['woAssignmentType','woTransferSource'].forEach(id => { $(id).addEventListener('change', woRecalculate); });
-    ['woMachineDate','woMachineShift'].forEach(id => { $(id).addEventListener('change', () => { woCustomTime = true; woRecalculate(); }); });
-    $('eWoMode').addEventListener('change', () => { const isNew = $('eWoMode').value === 'new'; $('woNewFields').hidden = !isNew; $('woSelectField').hidden = isNew; $('woContinueSummary').hidden = true; $('eWoSelect').value = ''; ['eWoRef','eWoQty','eWoDate'].forEach(id => $(id).value = ''); $('eWoShift').value = '1'; woGeneratedRef = null; woCustomTime = false; $('woMachineDate').value = $('eTanggal').value; $('woMachineShift').value = $('eShift').value; refreshWO(); });
-    $('eWoSelect').addEventListener('change', () => { const row = woRows.filter(r => woNorm(r.wo_ref) === $('eWoSelect').value && r.wo_qty > 0 && r.wo_start_date).sort((a,b) => (b.tanggal || '').localeCompare(a.tanggal || '') || (+b.shift - +a.shift))[0]; if (!row) { ['eWoRef','eWoQty','eWoDate'].forEach(id => $(id).value = ''); $('woContinueSummary').hidden = true; woRecalculate(); return; } $('eWoRef').value = row.wo_ref; $('eWoQty').value = row.wo_qty; $('eWoDate').value = row.wo_start_date; $('eWoShift').value = row.wo_start_shift || '1'; woCustomTime = false; $('woMachineDate').value = $('eTanggal').value; $('woMachineShift').value = $('eShift').value; woRecalculate(); });
+    ['woAssignmentType','woTransferSource'].forEach(id => $(id).addEventListener('change', woRecalculate));
+    ['woMachineDate','woMachineShift'].forEach(id => $(id).addEventListener('change', () => { woCustomTime = true; woRecalculate(); }));
+    $('woManage').addEventListener('click', () => { $('woManual').hidden = !$('woManual').hidden; if (!$('woManual').hidden && !woLoaded && !woResolving) refreshWO(); });
+    $('woAutoSelect').addEventListener('change', () => { const key = $('woAutoSelect').value; if (!key) { clearWOSelection(); woAmbiguous = true; $('woCompactStatus').textContent = $('woAutoChoiceLabel').textContent; return; } if (applyWOReference(key)) { woAmbiguous = false; woRecalculate(); } });
+    $('eWoMode').addEventListener('change', () => { const isNew = $('eWoMode').value === 'new'; $('woNewFields').hidden = !isNew; $('woSelectField').hidden = isNew; $('woContinueSummary').hidden = true; $('eWoSelect').value = ''; ['eWoRef','eWoQty','eWoDate'].forEach(id => $(id).value = ''); $('eWoShift').value = '1'; woGeneratedRef = null; woCustomTime = false; $('woMachineDate').value = $('eTanggal').value; $('woMachineShift').value = $('eShift').value; woAmbiguous = false; $('woAutoChoice').hidden = true; woRecalculate(); });
+    $('eWoSelect').addEventListener('change', () => { if (!applyWOReference($('eWoSelect').value)) { ['eWoRef','eWoQty','eWoDate'].forEach(id => $(id).value = ''); $('woContinueSummary').hidden = true; } woRecalculate(); });
 }
