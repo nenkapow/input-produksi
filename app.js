@@ -850,8 +850,8 @@ async function saveEntry() {
         return;
     }
 
-    if (woUsed() && !$('eWoRef').value.trim()) {
-        Swal.fire({icon:'warning', title:'Referensi WO wajib', text:'Isi WO / Referensi agar laporan dapat dikaitkan dengan WO.'}); return;
+    if ($('eWoMode').value === 'continue' && !$('eWoSelect').value) {
+        Swal.fire({icon:'warning', title:'Pilih WO', text:'Pilih WO yang akan dilanjutkan.'}); return;
     }
 
     if (woUsed() && (!$('eWoQty').value || toNum($('eWoQty').value) <= 0 || !$('eWoDate').value)) {
@@ -894,6 +894,7 @@ async function saveEntry() {
         if(!confirmNoTarget.isConfirmed) return;
     }
 
+    if (woUsed() && !$('eWoRef').value.trim()) $('eWoRef').value = woInternalRef();
     $('loading').style.display = 'flex';
     
     const payload = {
@@ -1210,7 +1211,7 @@ async function wipeMaster() {
 window.editLog=(id)=>{
     const r=logs.find(x=>x.id===id); if(!r) return;
     $('eId').value=r.id; $('eTanggal').value=r.tanggal; $('eShift').value=r.shift; $('eLine').value=r.line; $('eProduk').value=r.kode+" - "+r.nama; hydrateProduk();
-    $('eWoMode').value = 'new'; $('eWoRef').value=r.wo_ref || ''; $('eWoQty').value=r.wo_qty ?? ''; $('eWoDate').value=r.wo_start_date || ''; $('eWoShift').value=r.wo_start_shift || '1';
+    $('eWoMode').value = 'new'; $('woNewFields').hidden = false; $('woSelectField').hidden = true; $('woContinueSummary').hidden = true; $('eWoRef').value=r.wo_ref || ''; $('eWoQty').value=r.wo_qty ?? ''; $('eWoDate').value=r.wo_start_date || ''; $('eWoShift').value=r.wo_start_shift || '1';
     refreshWO();
     $('eCounter').value=r.counter; 
     if($('eCavityStd')) $('eCavityStd').value = r.cavity_standard_snapshot || r.cavity_standard || $('eCavityStd').value;
@@ -1431,9 +1432,13 @@ function exportRekapCSV() { // Nama fungsinya biarin exportRekapCSV biar gak usa
 }
 
 // WO progress is independent of the existing production calculations.
-let woRequest = 0, woHistorical = null, woRows = [], woAssignments = [], woContributions = new Map(), woAssignmentValid = false, woLoaded = false, woIncludesUnreferenced = false;
+let woRequest = 0, woHistorical = null, woRows = [], woAssignments = [], woContributions = new Map(), woAssignmentValid = false, woLoaded = false, woIncludesUnreferenced = false, woGeneratedRef = null, woCustomTime = false;
 const woNorm = v => (v || '').toString().trim().replace(/\s+/g, ' ').toUpperCase();
 const woUsed = () => !!($('eWoRef').value.trim() || $('eWoQty').value || $('eWoDate').value);
+function woInternalRef() {
+    if (!woGeneratedRef) woGeneratedRef = 'WO-' + todayISO().replace(/-/g, '') + '-' + crypto.randomUUID().toUpperCase();
+    return woGeneratedRef;
+}
 const woPoint = (date, shift) => date && [1,2,3].includes(+shift) ? date + ':' + shift : '';
 function woMatches(a, ref, line, product, date, shift) {
     const point = woPoint(date, shift), start = woPoint(a.effective_date, a.effective_shift);
@@ -1447,11 +1452,11 @@ function woLogMatches(r, ref, assignments) {
     return (!logRef || logRef === woNorm(ref)) && assignments.some(a => woMatches(a, ref, r.line, {kode:r.kode, nama:r.nama}, r.tanggal, r.shift));
 }
 function resetWO() {
-    ++woRequest; woLoaded = false; woHistorical = null; woRows = []; woAssignments = []; woContributions = new Map(); woAssignmentValid = false; woIncludesUnreferenced = false;
+    ++woRequest; woLoaded = false; woHistorical = null; woRows = []; woAssignments = []; woContributions = new Map(); woAssignmentValid = false; woIncludesUnreferenced = false; woGeneratedRef = null; woCustomTime = false;
     ['eWoRef','eWoQty','eWoDate'].forEach(id => $(id).value = '');
-    $('eWoShift').value = '1'; $('eWoMode').value = 'new'; $('eWoSelect').disabled = true;
-    $('eWoSelect').replaceChildren(new Option('Pilih WO...', '')); $('woAssign').checked = false;
-    $('woAssignmentBox').hidden = true; $('woAssignmentOptions').hidden = true; $('woMachineDate').value = ''; $('woMachineShift').value = '1'; $('woAssignmentType').value = 'parallel'; $('woTransferSource').replaceChildren(new Option('Pilih mesin asal...', '')); $('woAssignmentMessage').textContent = ''; $('woProgress').hidden = true;
+    $('eWoShift').value = '1'; $('eWoMode').value = 'new'; $('eWoSelect').disabled = false;
+    $('eWoSelect').replaceChildren(new Option('Pilih WO...', '')); $('woNewFields').hidden = false; $('woSelectField').hidden = true; $('woContinueSummary').hidden = true;
+    $('woAssignmentBox').hidden = true; $('woMachineDate').value = ''; $('woMachineShift').value = '1'; $('woAssignmentType').value = 'parallel'; $('woTransferSource').replaceChildren(new Option('Pilih mesin asal...', '')); $('woAssignmentMessage').textContent = ''; $('woProgress').hidden = true;
 }
 function renderWO(current) {
     if (!$('woProgress')) return;
@@ -1466,6 +1471,8 @@ function renderWO(current) {
     const canAdd = !$('eWoRef').value.trim() || woAssignmentValid || (draft && woMatches(draft, $('eWoRef').value, $('eLine').value, compute().prod || {}, date, $('eShift').value));
     const live = inBoundary && canAdd ? (current ?? compute().okpcs) : 0;
     const total = woHistorical + live, balance = toNum($('eWoQty').value) - total;
+    $('woContinueSummary').hidden = $('eWoMode').value !== 'continue' || !$('eWoSelect').value;
+    if (!$('woContinueSummary').hidden) $('woContinueSummary').textContent = `Referensi: ${$('eWoRef').value} · Target WO: ${fmtInt($('eWoQty').value)} · OK Kumulatif: ${fmtInt(total)} · Sisa Produksi: ${fmtInt(balance)} PCS`;
     meta.textContent = `${$('eWoRef').value.trim() ? $('eWoRef').value.trim() + ' · ' : ''}WO ${fmtInt($('eWoQty').value)} · OK Kumulatif ${fmtInt(total)}`;
     if (woIncludesUnreferenced) { const note = document.createElement('small'); note.textContent = 'Termasuk histori sebelum WO tracking aktif'; meta.append(document.createElement('br'), note); }
     const contributions = new Map(woContributions);
@@ -1482,14 +1489,14 @@ async function woFetchAll(table, columns) {
     return rows;
 }
 function woDraftAssignment() {
-    if (!$('woAssign').checked) return null;
+    if (!woUsed() || woAssignmentValid || ($('eWoMode').value === 'continue' && !$('eWoSelect').value)) return null;
     const product = master.find(p => p.kode + ' - ' + p.nama === $('eProduk').value);
     if (!product) return null;
     const isNew = $('eWoMode').value === 'new';
     const date = isNew ? $('eWoDate').value : $('woMachineDate').value;
     const shift = isNew ? $('eWoShift').value : $('woMachineShift').value;
     if (!woPoint(date, shift)) return null;
-    return {wo_ref:$('eWoRef').value, line_code:$('eLine').value, product_code:product.kode, product_name:product.nama, effective_date:date, effective_shift:+shift};
+    return {wo_ref:$('eWoRef').value.trim() || woInternalRef(), line_code:$('eLine').value, product_code:product.kode, product_name:product.nama, effective_date:date, effective_shift:+shift};
 }
 function woPreviewAssignments() {
     const draft = woDraftAssignment();
@@ -1511,18 +1518,19 @@ function woPreviousPoint(date, shift) {
 }
 function woRecalculate() {
     if (!woLoaded) { renderWO(); return; }
-    const ref = $('eWoRef').value.trim(), line = $('eLine').value.trim(), product = master.find(p => p.kode + ' - ' + p.nama === $('eProduk').value);
+    const ref = $('eWoRef').value.trim() || (woUsed() ? woInternalRef() : ''), line = $('eLine').value.trim(), product = master.find(p => p.kode + ' - ' + p.nama === $('eProduk').value);
     woContributions = new Map(); woAssignmentValid = false;
     if (!product || !line) { woHistorical = false; renderWO(); return; }
     const start = $('eWoDate').value, shift = +$('eWoShift').value;
     woAssignmentValid = !!ref && woAssignments.some(a => woMatches(a, ref, line, product, $('eTanggal').value, $('eShift').value));
-    $('woAssignmentBox').hidden = !ref || woAssignmentValid;
-    $('woAssignmentMessage').textContent = ref ? (woAssignmentValid ? 'Mesin dan produk telah terdaftar pada WO ini.' : 'Mesin dan produk belum terdaftar pada WO ini untuk shift laporan.') : '';
-    $('woAssignmentOptions').hidden = $('eWoMode').value !== 'continue' || $('woAssignmentBox').hidden;
+    $('woAssignmentBox').hidden = $('eWoMode').value !== 'continue' || !$('eWoSelect').value || woAssignmentValid;
+    $('woAssignmentMessage').textContent = '';
     const oldSource = $('woTransferSource').value;
     $('woTransferSource').replaceChildren(new Option('Pilih mesin asal...', ''));
-    woAssignments.filter(a => woNorm(a.wo_ref) === woNorm(ref) && !a.ended_date).forEach(a => $('woTransferSource').add(new Option(`${a.line_code} / ${a.product_code} - ${a.product_name} · ${a.effective_date} shift ${a.effective_shift}`, String(a.id))));
-    $('woTransferSource').value = oldSource;
+    const sources = woAssignments.filter(a => woNorm(a.wo_ref) === woNorm(ref) && !a.ended_date);
+    sources.forEach(a => $('woTransferSource').add(new Option(`${a.line_code} / ${a.product_code} - ${a.product_name} · ${a.effective_date} shift ${a.effective_shift}`, String(a.id))));
+    $('woTransferSource').value = sources.length === 1 ? String(sources[0].id) : oldSource;
+    $('woTransferField').hidden = $('woAssignmentBox').hidden || $('woAssignmentType').value !== 'transfer' || sources.length <= 1;
     const previewAssignments = woPreviewAssignments();
     const filtered = woRows.filter(r => String(r.id) !== $('eId').value && (ref ? woLogMatches(r, ref, previewAssignments) : woNorm(r.line) === woNorm(line) && woNorm(r.kode) === woNorm(product.kode) && woNorm(r.nama) === woNorm(product.nama) && start && (r.tanggal > start || (r.tanggal === start && +r.shift >= shift))));
     woIncludesUnreferenced = !!ref && filtered.some(r => !woNorm(r.wo_ref));
@@ -1550,7 +1558,6 @@ async function ensureWOAssignment(product) {
     // Recheck against the loaded assignment at the current report boundary.
     woRecalculate();
     if (woAssignmentValid) return true;
-    if (!$('woAssign').checked) { Swal.fire({icon:'warning', title:'Assignment diperlukan', text:'Setujui pendaftaran mesin dan produk ini untuk WO sebelum menyimpan.'}); return false; }
     const draft = woDraftAssignment();
     const reportPoint = woPoint($('eTanggal').value, $('eShift').value);
     if (!draft || !reportPoint || woPoint(draft.effective_date, draft.effective_shift) > reportPoint || woPoint(draft.effective_date, draft.effective_shift) < woPoint($('eWoDate').value, $('eWoShift').value)) { Swal.fire({icon:'warning', title:'Boundary tidak valid', text:'Tanggal dan shift mulai mesin harus antara awal WO dan laporan ini.'}); return false; }
@@ -1563,10 +1570,12 @@ async function ensureWOAssignment(product) {
     return true;
 }
 function setupWO() {
-    ['eLine','eProduk'].forEach(id => { const update = () => { $('woAssign').checked = false; refreshWO(); }; $(id).addEventListener('input', update); $(id).addEventListener('change', update); });
-    ['eWoRef','eWoDate','eWoShift','eTanggal','eShift'].forEach(id => { const update = () => { $('woAssign').checked = false; woRecalculate(); }; $(id).addEventListener('input', update); $(id).addEventListener('change', update); });
-    $('eWoQty').addEventListener('input', () => renderWO()); $('woAssign').addEventListener('change', woRecalculate);
-    ['woAssignmentType','woTransferSource','woMachineDate','woMachineShift'].forEach(id => { $(id).addEventListener('input', woRecalculate); $(id).addEventListener('change', woRecalculate); });
-    $('eWoMode').addEventListener('change', () => { $('eWoSelect').disabled = $('eWoMode').value !== 'continue'; $('woAssign').checked = false; if ($('eWoMode').value === 'new') { $('eWoSelect').value = ''; ['eWoRef','eWoQty','eWoDate'].forEach(id => $(id).value = ''); $('eWoShift').value = '1'; } refreshWO(); });
-    $('eWoSelect').addEventListener('change', () => { const row = woRows.filter(r => woNorm(r.wo_ref) === $('eWoSelect').value && r.wo_qty > 0 && r.wo_start_date).sort((a,b) => (b.tanggal || '').localeCompare(a.tanggal || '') || (+b.shift - +a.shift))[0]; if (!row) return; $('eWoRef').value = row.wo_ref; $('eWoQty').value = row.wo_qty; $('eWoDate').value = row.wo_start_date; $('eWoShift').value = row.wo_start_shift || '1'; $('woAssign').checked = false; woRecalculate(); });
+    ['eLine','eProduk'].forEach(id => { $(id).addEventListener('input', refreshWO); $(id).addEventListener('change', refreshWO); });
+    ['eWoRef','eWoDate','eWoShift'].forEach(id => { $(id).addEventListener('input', woRecalculate); $(id).addEventListener('change', woRecalculate); });
+    ['eTanggal','eShift'].forEach(id => { const update = () => { if (!woCustomTime) { $('woMachineDate').value = $('eTanggal').value; $('woMachineShift').value = $('eShift').value; } woRecalculate(); }; $(id).addEventListener('input', update); $(id).addEventListener('change', update); });
+    $('eWoQty').addEventListener('input', woRecalculate);
+    ['woAssignmentType','woTransferSource'].forEach(id => { $(id).addEventListener('change', woRecalculate); });
+    ['woMachineDate','woMachineShift'].forEach(id => { $(id).addEventListener('change', () => { woCustomTime = true; woRecalculate(); }); });
+    $('eWoMode').addEventListener('change', () => { const isNew = $('eWoMode').value === 'new'; $('woNewFields').hidden = !isNew; $('woSelectField').hidden = isNew; $('woContinueSummary').hidden = true; $('eWoSelect').value = ''; ['eWoRef','eWoQty','eWoDate'].forEach(id => $(id).value = ''); $('eWoShift').value = '1'; woGeneratedRef = null; woCustomTime = false; $('woMachineDate').value = $('eTanggal').value; $('woMachineShift').value = $('eShift').value; refreshWO(); });
+    $('eWoSelect').addEventListener('change', () => { const row = woRows.filter(r => woNorm(r.wo_ref) === $('eWoSelect').value && r.wo_qty > 0 && r.wo_start_date).sort((a,b) => (b.tanggal || '').localeCompare(a.tanggal || '') || (+b.shift - +a.shift))[0]; if (!row) { ['eWoRef','eWoQty','eWoDate'].forEach(id => $(id).value = ''); $('woContinueSummary').hidden = true; woRecalculate(); return; } $('eWoRef').value = row.wo_ref; $('eWoQty').value = row.wo_qty; $('eWoDate').value = row.wo_start_date; $('eWoShift').value = row.wo_start_shift || '1'; woCustomTime = false; $('woMachineDate').value = $('eTanggal').value; $('woMachineShift').value = $('eShift').value; woRecalculate(); });
 }
