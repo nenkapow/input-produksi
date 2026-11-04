@@ -45,6 +45,7 @@
                 <button id="btnDashboard" class="side-nav-item" type="button"><span class="side-icon">MO</span><span><b>Monitoring Room</b><small>Analisa chart & pareto</small></span></button>
                 <button id="btnOpenLog" class="side-nav-item" type="button"><span class="side-icon">DA</span><span><b>Data Harian</b><small>Tabel & history</small></span></button>
                 <button id="btnRekap" class="side-nav-item" type="button"><span class="side-icon">RE</span><span><b>Rekap Line</b><small>Total output mesin</small></span></button>
+                <button id="btnWoAttention" class="side-nav-item" type="button"><span class="side-icon">WO</span><span><b>WO Attention</b><small>Kontrol pergantian produk</small></span></button>
                 <button id="btnMaster" class="side-nav-item" type="button"><span class="side-icon">MA</span><span><b>Master Produk</b><small>Database item</small></span></button>
                 <button id="btnConfig" class="side-nav-item" type="button"><span class="side-icon">CF</span><span><b>Konfigurasi</b><small>Koneksi database</small></span></button>
             </nav>
@@ -318,6 +319,20 @@
     </div>
 </div>
 
+<div id="mWoAttention" class="modal full">
+    <nav class="modal-sticky-nav"><div class="modal-nav-title"><h2>WO Attention</h2></div><div class="modal-nav-actions"><button id="woAttentionReload" class="btn primary sm">Refresh</button><button id="woAttentionClose" class="btn danger sm">KEMBALI</button></div></nav>
+    <div class="wrap-full"><div class="card wo-attention">
+        <div id="woAttentionKpis" class="wo-attention-kpis"></div>
+        <div class="grid-simple cols-4">
+            <label class="field-tile"><span>Mesin</span><input id="woAttentionLine" class="input" /></label>
+            <label class="field-tile"><span>Status</span><select id="woAttentionStatus" class="input"><option value="">Semua</option><option>OPEN</option><option>ON_HOLD</option><option>CLOSED</option></select></label>
+            <label class="field-tile"><span>Produk</span><input id="woAttentionProduct" class="input" /></label>
+            <label class="field-tile"><span>WO Ref</span><input id="woAttentionRef" class="input" /></label>
+        </div>
+        <div id="woAttentionList" aria-live="polite"></div>
+    </div></div>
+</div>
+
 <div id="mEntry" class="modal full entry-modal">
     <div class="wrap-full entry-wrap">
         <div class="entry-card card">
@@ -588,5 +603,6 @@
 
 <script src="app.js?v=3.4.0"></script>
 <script src="dashboard.js?v=3.4.0"></script>
+<script src="wo-attention.js"></script>
 </body>
 </html>

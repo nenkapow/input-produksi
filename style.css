@@ -3766,3 +3766,11 @@ tbody tr:hover td {
 .wo-progress #woLabel, .wo-progress #woCaption { font-weight: 800; }
 .wo-progress #woBalance { display: block; font-size: 2rem; font-weight: 900; line-height: 1.2; }
 #woUseLast { margin-top: 10px; }
+.wo-attention-kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:20px; }
+.wo-attention-kpi, .wo-attention-card { background:#111c2e; border:1px solid #334155; border-radius:12px; padding:16px; }
+.wo-attention-kpi strong { display:block; font-size:1.6rem; color:#f8fafc; }
+.wo-attention-card { margin-top:14px; }
+.wo-attention-card.alert { border-color:#f59e0b; background:#281c18; }
+.wo-attention-card h3 { margin:0 0 8px; overflow-wrap:anywhere; }
+.wo-attention-assignment { padding:10px; margin:8px 0; background:#0f172a; border-radius:8px; }
+.wo-attention-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }

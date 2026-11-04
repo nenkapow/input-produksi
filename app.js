@@ -191,6 +191,10 @@ document.addEventListener('DOMContentLoaded', () => {
     $('btnOpenLog').onclick = () => { $('vLaporan').classList.add('open'); renderTable(); };
 
     // --- PROTECTED MENUS (BUTUH PIN) ---
+    $('btnWoAttention').onclick = () => checkAdmin(() => { $('mWoAttention').classList.add('open'); loadWOAttention(); });
+    $('woAttentionClose').onclick = () => $('mWoAttention').classList.remove('open');
+    $('woAttentionReload').onclick = loadWOAttention;
+    ['woAttentionLine','woAttentionStatus','woAttentionProduct','woAttentionRef'].forEach(id => $(id).addEventListener('input', renderWOAttention));
     $('btnConfig').onclick = () => checkAdmin(() => $('mConfig').classList.add('open'));
     $('btnMaster').onclick = () => checkAdmin(() => $('mMaster').classList.add('open'));
 
@@ -969,6 +973,10 @@ async function saveEntry() {
         under_target_reason: $('eTargetReason') ? $('eTargetReason').value : ''
     };
 
+    if (payload.wo_ref) {
+        try { const status = await woRpc('wo_status_for_ref', {p_ref:payload.wo_ref}); if (status !== 'OPEN') { $('loading').style.display = 'none'; Swal.fire({icon:'warning', title:'WO tidak aktif', text:'WO ' + status + '. Hubungi Admin.'}); return; } }
+        catch (e) { $('loading').style.display = 'none'; Swal.fire({icon:'error', title:'Status WO tidak tersedia', text:e.message}); return; }
+    }
     if (payload.wo_ref && !(await ensureWOAssignment(p.prod))) { $('loading').style.display = 'none'; return; }
     const { data: savedRow, error } = await client.from('logs').upsert(payload).select().single();
     
@@ -1546,7 +1554,7 @@ async function refreshWO(resolve = false) {
 }
 async function loadWOList() {
     try {
-        const rows = await woRpc('wo_list_metadata', {});
+        const rows = await woRpc('wo_list_open_metadata', {});
         woRows = rows || [];
         const selected = $('eWoSelect').value;
         $('eWoSelect').replaceChildren(new Option('Pilih WO...', ''));
@@ -1598,6 +1606,9 @@ async function applyWOReference(key) {
     try {
         const [metadata, assignments] = await Promise.all([woRpc('wo_metadata', {p_ref:key}), woRpc('wo_assignments_for_ref', {p_ref:key})]);
         if (request !== woRequest) return;
+        const status = await woRpc('wo_status_for_ref', {p_ref:key});
+        if (request !== woRequest) return;
+        if (status !== 'OPEN') throw new Error('WO tidak OPEN. Hubungi Admin.');
         const row = metadata && metadata[0];
         if (!row) throw new Error('Data target WO aktif tidak tersedia.');
         $('eWoMode').value = 'continue';
@@ -1614,7 +1625,11 @@ async function applyWOReference(key) {
 async function resolveWOSelection(product, request) {
     const candidates = new Map();
     woAssignments.forEach(a => { if (woNorm(a.wo_ref) && woMatches(a, a.wo_ref, $('eLine').value, product, $('eTanggal').value, $('eShift').value)) candidates.set(woNorm(a.wo_ref), a.wo_ref); });
-    if (!candidates.size) { woResolving = false; $('woCompactStatus').textContent = 'Belum ada WO aktif untuk mesin & produk ini'; return; }
+    const statuses = await Promise.all([...candidates.keys()].map(async key => [key, await woRpc('wo_status_for_ref', {p_ref:key})]));
+    if (request !== woRequest) return;
+    const hasHold = statuses.some(([,status]) => status === 'ON_HOLD');
+    statuses.forEach(([key,status]) => { if (status !== 'OPEN') candidates.delete(key); });
+    if (!candidates.size) { woResolving = false; $('woCompactStatus').textContent = hasHold ? 'Ada WO tertunda yang dapat dilanjutkan — hubungi Admin.' : 'Belum ada WO aktif untuk mesin & produk ini'; return; }
     if (candidates.size === 1) { await applyWOReference([...candidates.keys()][0]); return; }
     woResolving = false; woAmbiguous = true; $('woCompactStatus').textContent = `Ditemukan ${candidates.size} WO aktif — pilih WO`;
     $('woAutoSelect').replaceChildren(new Option('Pilih WO...', ''));
