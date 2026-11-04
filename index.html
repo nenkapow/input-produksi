@@ -339,7 +339,10 @@
             <div class="entry-layout">
                 <div class="entry-flow">
                     <details class="entry-accordion entry-section" open>
-                        <summary class="section-heading"><div><h3>WO Produksi</h3><p class="muted">Opsional. Isi jumlah dan tanggal mulai untuk menghitung progress.</p></div></summary>
+                        <summary class="section-heading"><div><h3>WO Produksi</h3><p id="woCompactStatus" class="muted">Belum ada WO aktif untuk mesin &amp; produk ini</p></div></summary>
+                        <button type="button" id="woManage" class="btn sm">+ Buat / Hubungkan WO</button>
+                        <div id="woAutoChoice" hidden><label class="field-tile"><span id="woAutoChoiceLabel">Pilih WO aktif</span><select id="woAutoSelect" class="input"><option value="">Pilih WO...</option></select></label></div>
+                        <div id="woManual" hidden>
                         <div class="grid-simple cols-3 fast-grid">
                             <label class="field-tile"><span>Pilihan WO</span><select id="eWoMode" class="input"><option value="new">WO Baru</option><option value="continue">Lanjut WO</option></select></label>
                             <label id="woSelectField" class="field-tile" hidden><span>WO Tersedia</span><select id="eWoSelect" class="input"><option value="">Pilih WO...</option></select></label>
@@ -360,6 +363,7 @@
                             </div></details>
                         </div>
                         <div id="woAssignmentMessage" class="muted"></div>
+                        </div>
                     </details>
                     <details class="entry-accordion entry-section priority-section required-accordion" open>
                         <summary class="section-heading">
