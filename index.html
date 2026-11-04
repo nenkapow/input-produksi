@@ -342,20 +342,22 @@
                         <summary class="section-heading"><div><h3>WO Produksi</h3><p class="muted">Opsional. Isi jumlah dan tanggal mulai untuk menghitung progress.</p></div></summary>
                         <div class="grid-simple cols-3 fast-grid">
                             <label class="field-tile"><span>Pilihan WO</span><select id="eWoMode" class="input"><option value="new">WO Baru</option><option value="continue">Lanjut WO</option></select></label>
-                            <label class="field-tile"><span>WO tersedia</span><select id="eWoSelect" class="input" disabled><option value="">Pilih WO...</option></select></label>
-                            <label class="field-tile"><span>WO / Referensi</span><input id="eWoRef" class="input" /></label>
+                            <label id="woSelectField" class="field-tile" hidden><span>WO Tersedia</span><select id="eWoSelect" class="input"><option value="">Pilih WO...</option></select></label>
+                        </div>
+                        <div id="woNewFields" class="grid-simple cols-3 fast-grid">
+                            <label class="field-tile"><span>WO / Referensi (opsional)</span><input id="eWoRef" class="input" /></label>
                             <label class="field-tile"><span>WO Qty (pcs)</span><input id="eWoQty" type="number" min="1" step="1" class="input" /></label>
                             <label class="field-tile"><span>WO Mulai Tanggal</span><input id="eWoDate" type="date" class="input" /></label>
                             <label class="field-tile"><span>WO Mulai Shift</span><select id="eWoShift" class="input"><option>1</option><option>2</option><option>3</option></select></label>
                         </div>
+                        <div id="woContinueSummary" class="muted" hidden></div>
                         <div id="woAssignmentBox" hidden>
-                            <label><input id="woAssign" type="checkbox" /> Daftarkan mesin dan produk ini ke WO.</label>
-                            <div id="woAssignmentOptions" class="grid-simple cols-3 fast-grid" hidden>
-                                <label class="field-tile"><span>Jenis assignment</span><select id="woAssignmentType" class="input"><option value="parallel">Tambah Mesin Paralel</option><option value="transfer">Pindah Mesin</option></select></label>
-                                <label class="field-tile"><span>Assignment asal untuk pindah</span><select id="woTransferSource" class="input"><option value="">Pilih mesin asal...</option></select></label>
+                            <label class="field-tile"><span>Cara Melanjutkan WO</span><select id="woAssignmentType" class="input"><option value="transfer">Pindah Mesin</option><option value="parallel">Tambah Mesin Paralel</option></select></label>
+                            <label id="woTransferField" class="field-tile" hidden><span>Mesin asal yang dihentikan</span><select id="woTransferSource" class="input"><option value="">Pilih mesin asal...</option></select></label>
+                            <details><summary>Ubah waktu mulai</summary><div class="grid-simple cols-3 fast-grid">
                                 <label class="field-tile"><span>Tanggal mulai di mesin ini</span><input id="woMachineDate" type="date" class="input" /></label>
                                 <label class="field-tile"><span>Shift mulai di mesin ini</span><select id="woMachineShift" class="input"><option>1</option><option>2</option><option>3</option></select></label>
-                            </div>
+                            </div></details>
                         </div>
                         <div id="woAssignmentMessage" class="muted"></div>
                     </details>
