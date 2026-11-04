@@ -1417,7 +1417,7 @@ function exportRekapCSV() { // Nama fungsinya biarin exportRekapCSV biar gak usa
 }
 
 // WO progress is independent of the existing production calculations.
-let woRequest = 0, woHistorical = null, woRows = [], woAssignments = [], woContributions = new Map(), woAssignmentValid = false, woLoaded = false, woIncludesUnreferenced = false, woGeneratedRef = null, woCustomTime = false, woResolveTimer = null, woResolving = false, woAmbiguous = false, woResolveError = false, woProgressRequest = 0, woProgressTimer = null;
+let woRequest = 0, woHistorical = null, woRows = [], woAssignments = [], woContributions = new Map(), woAssignmentValid = false, woLoaded = false, woIncludesUnreferenced = false, woGeneratedRef = null, woCustomTime = false, woResolveTimer = null, woResolving = false, woAmbiguous = false, woResolveError = false, woProgressRequest = 0, woProgressTimer = null, woHistoryRequest = 0, woHistoryCandidates = [];
 const woNorm = v => (v || '').toString().trim().replace(/\s+/g, ' ').toUpperCase();
 const woUsed = () => !!($('eWoRef').value.trim() || $('eWoQty').value || $('eWoDate').value);
 function woInternalRef() {
@@ -1433,7 +1433,7 @@ function woMatches(a, ref, line, product, date, shift) {
         point >= start && (!a.ended_date || (!!end && point <= end));
 }
 function resetWO() {
-    clearTimeout(woResolveTimer); clearTimeout(woProgressTimer); ++woProgressRequest; woResolving = false; woAmbiguous = false; woResolveError = false;
+    clearTimeout(woResolveTimer); clearTimeout(woProgressTimer); ++woProgressRequest; ++woHistoryRequest; woHistoryCandidates = []; $('woHistoryTools').hidden = true; $('woHistorySearch').disabled = false; $('woHistoryAdd').disabled = false; $('woHistoryCandidates').replaceChildren(); $('woHistoryAdd').hidden = true; $('woHistoryMessage').textContent = ''; woResolving = false; woAmbiguous = false; woResolveError = false;
     $('woManual').hidden = true; $('woAutoChoice').hidden = true; $('woCompactStatus').textContent = 'Belum ada WO aktif untuk mesin & produk ini'; $('woManage').textContent = '+ Buat / Hubungkan WO';
     ++woRequest; woLoaded = false; woHistorical = null; woRows = []; woAssignments = []; woContributions = new Map(); woAssignmentValid = false; woIncludesUnreferenced = false; woGeneratedRef = null; woCustomTime = false;
     ['eWoRef','eWoQty','eWoDate'].forEach(id => $(id).value = '');
@@ -1461,11 +1461,21 @@ function renderWO(current) {
     if (woIncludesUnreferenced) { const note = document.createElement('small'); note.textContent = 'Termasuk histori sebelum WO tracking aktif'; meta.append(document.createElement('br'), note); }
     const contributions = new Map(woContributions);
     if (live) { const key = `${$('eLine').value.trim()} / ${$('eProduk').value}`; contributions.set(key, (contributions.get(key) || 0) + live); }
-    if (contributions.size) { const details = document.createElement('details'), summary = document.createElement('summary'); summary.textContent = 'Kontribusi mesin / produk'; details.append(summary); contributions.forEach((value, key) => { const row = document.createElement('div'); row.textContent = `Mesin ${key}: ${fmtInt(value)} PCS`; details.append(row); }); $('woContributions').append(details); }
+    if (contributions.size) { const details = document.createElement('details'), summary = document.createElement('summary'); summary.textContent = 'Kontribusi mesin / produk'; details.append(summary); contributions.forEach((value, key) => { const row = document.createElement('div'); row.textContent = `Mesin ${key}${woContributionBoundary(key)} · ${fmtInt(value)} PCS`; details.append(row); }); $('woContributions').append(details); }
     card.classList.toggle('wo-good', balance <= 0); card.classList.toggle('wo-bad', balance > 0);
     label.textContent = balance > 0 ? 'SISA PRODUKSI' : balance < 0 ? 'LEBIH PRODUKSI' : 'WO TERPENUHI';
     balanceEl.textContent = (balance < 0 ? '+' : '') + fmtInt(Math.abs(balance)) + ' PCS';
     caption.textContent = balance > 0 ? 'KURANG DARI WO' : balance < 0 ? 'WO SUDAH TERPENUHI' : '';
+}
+function woContributionBoundary(key) {
+    const ref = $('eWoRef').value.trim() || woGeneratedRef;
+    const periods = woPreviewAssignments().filter(a => woNorm(a.wo_ref) === woNorm(ref) && `${a.line_code} / ${a.product_code} - ${a.product_name}` === key && a.effective_date);
+    if (!periods.length) return '';
+    return ' · ' + periods.map(a => {
+        const date = a.effective_date.split('-').reverse().join('/');
+        const end = a.ended_date ? `–${a.ended_date.split('-').reverse().join('/')} S${a.ended_shift}` : '';
+        return `sejak ${date} S${a.effective_shift}${end}`;
+    }).join(', ');
 }
 function woDraftAssignment() {
     if (!woUsed() || woAssignmentValid || ($('eWoMode').value === 'continue' && !$('eWoSelect').value)) return null;
@@ -1570,7 +1580,7 @@ function clearWOSelection() {
     woGeneratedRef = null; woAssignmentValid = false; woHistorical = null;
 }
 function scheduleWOResolve() {
-    clearTimeout(woResolveTimer); clearTimeout(woProgressTimer); ++woProgressRequest; ++woRequest;
+    clearTimeout(woResolveTimer); clearTimeout(woProgressTimer); ++woProgressRequest; ++woHistoryRequest; $('woHistoryTools').hidden = true; $('woHistoryCandidates').replaceChildren(); $('woHistoryAdd').hidden = true; $('woHistoryMessage').textContent = ''; ++woRequest;
     clearWOSelection(); woLoaded = false; woAmbiguous = false; woResolveError = false;
     $('woManual').hidden = true; $('woAutoChoice').hidden = true;
     $('woManage').textContent = '+ Buat / Hubungkan WO';
@@ -1582,6 +1592,7 @@ function scheduleWOResolve() {
     woResolveTimer = setTimeout(() => refreshWO(true), 250);
 }
 async function applyWOReference(key) {
+    ++woHistoryRequest; $('woHistorySearch').disabled = false; $('woHistoryAdd').disabled = false; $('woHistoryTools').hidden = true;
     clearTimeout(woProgressTimer); ++woProgressRequest;
     const request = ++woRequest; woResolving = true; woHistorical = null; renderWO();
     try {
@@ -1596,6 +1607,7 @@ async function applyWOReference(key) {
         $('woNewFields').hidden = true; $('woSelectField').hidden = false;
         woCustomTime = false; $('woMachineDate').value = $('eTanggal').value; $('woMachineShift').value = $('eShift').value;
         woAssignments = assignments || []; woLoaded = true; woResolving = false; woResolveError = false; woAmbiguous = false;
+        $('woHistoryTools').hidden = false; $('woHistoryCandidates').replaceChildren(); $('woHistoryAdd').hidden = true; $('woHistoryMessage').textContent = '';
         woRecalculate(); scheduleWOProgress();
     } catch (error) { if (request === woRequest) { woResolving = false; woResolveError = true; $('woCompactStatus').textContent = 'Data WO tidak tersedia: ' + (error.message || 'kesalahan database'); } }
 }
@@ -1626,15 +1638,48 @@ async function ensureWOAssignment(product) {
     woAssignments.push({...draft, id:result.data}); woAssignmentValid = true;
     return true;
 }
+async function searchWOHistory() {
+    const ref = $('eWoRef').value.trim(), date = $('eWoDate').value, shift = +$('eWoShift').value;
+    if (!ref || !date || !shift) return;
+    const request = ++woHistoryRequest; $('woHistorySearch').disabled = true; $('woHistoryAdd').hidden = true;
+    $('woHistoryCandidates').replaceChildren(); $('woHistoryMessage').textContent = 'Mencari produksi sejak awal WO…';
+    try {
+        const rows = await woRpc('wo_historical_candidates', {p_ref:ref, p_start_date:date, p_start_shift:shift});
+        if (request !== woHistoryRequest) return;
+        woHistoryCandidates = rows || [];
+        $('woHistoryMessage').textContent = woHistoryCandidates.length ? 'Produksi terkait ditemukan sejak awal WO. Pilih yang memang bagian dari WO ini:' : 'Tidak ada kandidat histori tambahan.';
+        woHistoryCandidates.forEach((item, i) => { const label = document.createElement('label'), box = document.createElement('input'); box.type = 'checkbox'; box.value = String(i); label.append(box, document.createTextNode(` Mesin ${item.line_code} — ${item.product_code} ${item.product_name} — ${fmtInt(item.total_ok)} OK${item.first_assignment ? ' (assignment dimulai ' + item.first_assignment + ' S' + item.first_assignment_shift + ')' : ''}`)); const row = document.createElement('div'); row.append(label); $('woHistoryCandidates').append(row); });
+        $('woHistoryAdd').hidden = !woHistoryCandidates.length;
+    } catch (error) { if (request === woHistoryRequest) $('woHistoryMessage').textContent = 'Gagal mencari histori: ' + (error.message || 'kesalahan database'); }
+    finally { if (request === woHistoryRequest) $('woHistorySearch').disabled = false; }
+}
+async function addWOHistory() {
+    const selected = [...$('woHistoryCandidates').querySelectorAll('input:checked')].map(box => woHistoryCandidates[+box.value]).filter(Boolean);
+    if (!selected.length) { $('woHistoryMessage').textContent = 'Pilih produksi yang akan dihubungkan.'; return; }
+    const ref = $('eWoRef').value.trim(), date = $('eWoDate').value, shift = +$('eWoShift').value, request = ++woHistoryRequest;
+    $('woHistoryAdd').disabled = true; $('woHistorySearch').disabled = true;
+    try {
+        const count = await woRpc('wo_add_historical_parallel', {p_ref:ref, p_start_date:date, p_start_shift:shift, p_candidates:selected.map(({line_code,product_code,product_name}) => ({line_code,product_code,product_name}))});
+        if (request !== woHistoryRequest) return;
+        const assignments = await woRpc('wo_assignments_for_ref', {p_ref:ref});
+        if (request !== woHistoryRequest) return;
+        woAssignments = assignments || []; $('woHistoryCandidates').replaceChildren(); $('woHistoryAdd').hidden = true;
+        $('woHistoryMessage').textContent = `${count} assignment historis ditambahkan. Menghitung ulang progress…`;
+        woRecalculate(); scheduleWOProgress();
+    } catch (error) { if (request === woHistoryRequest) $('woHistoryMessage').textContent = 'Gagal menghubungkan histori: ' + (error.message || 'kesalahan database'); }
+    finally { if (request === woHistoryRequest) { $('woHistoryAdd').disabled = false; $('woHistorySearch').disabled = false; } }
+}
 function setupWO() {
     ['eLine','eProduk','eTanggal','eShift'].forEach(id => { $(id).addEventListener('input', scheduleWOResolve); $(id).addEventListener('change', scheduleWOResolve); });
     const refreshProgress = () => { woRecalculate(); scheduleWOProgress(); };
     ['eWoRef','eWoDate','eWoShift'].forEach(id => { $(id).addEventListener('input', refreshProgress); $(id).addEventListener('change', refreshProgress); });
     $('eWoQty').addEventListener('input', () => { if (woHistorical === null && woUsed()) refreshProgress(); else renderWO(); });
-    ['woAssignmentType','woTransferSource'].forEach(id => $(id).addEventListener('change', refreshProgress));
+    $('woAssignmentType').addEventListener('change', () => { if (!woCustomTime) { const parallel = $('woAssignmentType').value === 'parallel'; $('woMachineDate').value = parallel ? $('eWoDate').value : $('eTanggal').value; $('woMachineShift').value = parallel ? $('eWoShift').value : $('eShift').value; } refreshProgress(); });
+    $('woTransferSource').addEventListener('change', refreshProgress);
+    $('woHistorySearch').addEventListener('click', searchWOHistory); $('woHistoryAdd').addEventListener('click', addWOHistory);
     ['woMachineDate','woMachineShift'].forEach(id => $(id).addEventListener('change', () => { woCustomTime = true; refreshProgress(); }));
     $('woManage').addEventListener('click', () => { $('woManual').hidden = !$('woManual').hidden; });
     $('woAutoSelect').addEventListener('change', () => { const key = $('woAutoSelect').value; if (!key) { ++woRequest; ++woProgressRequest; clearTimeout(woProgressTimer); woResolving = false; clearWOSelection(); woAmbiguous = true; $('woCompactStatus').textContent = $('woAutoChoiceLabel').textContent; return; } applyWOReference(key); });
-    $('eWoMode').addEventListener('change', () => { const isNew = $('eWoMode').value === 'new'; $('woNewFields').hidden = !isNew; $('woSelectField').hidden = isNew; $('woContinueSummary').hidden = true; $('eWoSelect').value = ''; ['eWoRef','eWoQty','eWoDate'].forEach(id => $(id).value = ''); $('eWoShift').value = '1'; woGeneratedRef = null; woCustomTime = false; $('woMachineDate').value = $('eTanggal').value; $('woMachineShift').value = $('eShift').value; woAmbiguous = false; $('woAutoChoice').hidden = true; ++woProgressRequest; if (!isNew) loadWOList(); refreshProgress(); });
+    $('eWoMode').addEventListener('change', () => { ++woHistoryRequest; $('woHistoryTools').hidden = true; const isNew = $('eWoMode').value === 'new'; $('woNewFields').hidden = !isNew; $('woSelectField').hidden = isNew; $('woContinueSummary').hidden = true; $('eWoSelect').value = ''; ['eWoRef','eWoQty','eWoDate'].forEach(id => $(id).value = ''); $('eWoShift').value = '1'; woGeneratedRef = null; woCustomTime = false; $('woMachineDate').value = $('eTanggal').value; $('woMachineShift').value = $('eShift').value; woAmbiguous = false; $('woAutoChoice').hidden = true; ++woProgressRequest; if (!isNew) loadWOList(); refreshProgress(); });
     $('eWoSelect').addEventListener('change', () => { if ($('eWoSelect').value) applyWOReference($('eWoSelect').value); else { clearWOSelection(); woRecalculate(); } });
 }
