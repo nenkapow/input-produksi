@@ -1425,7 +1425,7 @@ function exportRekapCSV() { // Nama fungsinya biarin exportRekapCSV biar gak usa
 }
 
 // WO progress is independent of the existing production calculations.
-let woRequest = 0, woHistorical = null, woRows = [], woAssignments = [], woContributions = new Map(), woAssignmentValid = false, woLoaded = false, woIncludesUnreferenced = false, woGeneratedRef = null, woCustomTime = false, woResolveTimer = null, woResolving = false, woAmbiguous = false, woResolveError = false, woProgressRequest = 0, woProgressTimer = null, woHistoryRequest = 0, woHistoryCandidates = [];
+let woRequest = 0, woHistorical = null, woRows = [], woAssignments = [], woContributions = new Map(), woAssignmentValid = false, woLoaded = false, woIncludesUnreferenced = false, woGeneratedRef = null, woCustomTime = false, woResolveTimer = null, woResolving = false, woAmbiguous = false, woResolveError = false, woProgressRequest = 0, woProgressTimer = null, woHistoryRequest = 0, woHistoryCandidates = [], woCarryover = 0, woIsContinuation = false;
 const woNorm = v => (v || '').toString().trim().replace(/\s+/g, ' ').toUpperCase();
 const woUsed = () => !!($('eWoRef').value.trim() || $('eWoQty').value || $('eWoDate').value);
 function woInternalRef() {
@@ -1443,7 +1443,7 @@ function woMatches(a, ref, line, product, date, shift) {
 function resetWO() {
     clearTimeout(woResolveTimer); clearTimeout(woProgressTimer); ++woProgressRequest; ++woHistoryRequest; woHistoryCandidates = []; $('woHistoryTools').hidden = true; $('woHistorySearch').disabled = false; $('woHistoryAdd').disabled = false; $('woHistoryCandidates').replaceChildren(); $('woHistoryAdd').hidden = true; $('woHistoryMessage').textContent = ''; woResolving = false; woAmbiguous = false; woResolveError = false;
     $('woManual').hidden = true; $('woAutoChoice').hidden = true; $('woCompactStatus').textContent = 'Belum ada WO aktif untuk mesin & produk ini'; $('woManage').textContent = '+ Buat / Hubungkan WO';
-    ++woRequest; woLoaded = false; woHistorical = null; woRows = []; woAssignments = []; woContributions = new Map(); woAssignmentValid = false; woIncludesUnreferenced = false; woGeneratedRef = null; woCustomTime = false;
+    ++woRequest; woLoaded = false; woHistorical = null; woRows = []; woAssignments = []; woContributions = new Map(); woAssignmentValid = false; woIncludesUnreferenced = false; woGeneratedRef = null; woCustomTime = false; woCarryover = 0; woIsContinuation = false;
     ['eWoRef','eWoQty','eWoDate'].forEach(id => $(id).value = '');
     $('eWoShift').value = '1'; $('eWoMode').value = 'new'; $('eWoSelect').disabled = false;
     $('eWoSelect').replaceChildren(new Option('Pilih WO...', '')); $('woNewFields').hidden = false; $('woSelectField').hidden = true; $('woContinueSummary').hidden = true;
@@ -1461,11 +1461,12 @@ function renderWO(current) {
     const draft = woDraftAssignment();
     const canAdd = !$('eWoRef').value.trim() || woAssignmentValid || (draft && woMatches(draft, $('eWoRef').value, $('eLine').value, compute().prod || {}, date, $('eShift').value));
     const live = inBoundary && canAdd ? (current ?? compute().okpcs) : 0;
-    const total = woHistorical + live, balance = toNum($('eWoQty').value) - total;
+    const total = woCarryover + woHistorical + live, balance = toNum($('eWoQty').value) - total;
     if ($('eWoRef').value.trim() && woAssignmentValid) { $('woCompactStatus').textContent = `WO Aktif: ${$('eWoRef').value.trim()} · Target ${fmtInt($('eWoQty').value)} · Sisa ${fmtInt(balance)}`; $('woManage').textContent = 'Kelola / Ganti WO'; }
     $('woContinueSummary').hidden = $('eWoMode').value !== 'continue' || !$('eWoSelect').value;
     if (!$('woContinueSummary').hidden) $('woContinueSummary').textContent = `Referensi: ${$('eWoRef').value} · Target WO: ${fmtInt($('eWoQty').value)} · OK Kumulatif: ${fmtInt(total)} · Sisa Produksi: ${fmtInt(balance)} PCS`;
     meta.textContent = `${$('eWoRef').value.trim() ? $('eWoRef').value.trim() + ' · ' : ''}WO ${fmtInt($('eWoQty').value)} · OK Kumulatif ${fmtInt(total)}`;
+    if (woIsContinuation) { const credit = document.createElement('small'); credit.textContent = `WO Lanjutan · Carry-over ${fmtInt(woCarryover)} · Produksi Baru ${fmtInt(woHistorical + live)} · Progress ${fmtInt(total)}`; meta.append(document.createElement('br'), credit); }
     if (woIncludesUnreferenced) { const note = document.createElement('small'); note.textContent = 'Termasuk histori sebelum WO tracking aktif'; meta.append(document.createElement('br'), note); }
     const contributions = new Map(woContributions);
     if (live) { const key = `${$('eLine').value.trim()} / ${$('eProduk').value}`; contributions.set(key, (contributions.get(key) || 0) + live); }
@@ -1574,7 +1575,7 @@ function scheduleWOProgress() {
         try {
             const result = await woRpc('wo_progress', {p_ref:ref, p_exclude_id:$('eId').value || null, p_draft:transfer && !source ? null : draft, p_transfer_id:source ? Number(source) : null});
             if (request !== woProgressRequest) return;
-            woHistorical = toNum(result.historical_ok); woIncludesUnreferenced = !!result.includes_unreferenced;
+            woHistorical = toNum(result.production_ok ?? result.historical_ok); woCarryover = toNum(result.carryover_qty); woIsContinuation = !!result.is_continuation; woIncludesUnreferenced = !!result.includes_unreferenced;
             woContributions = new Map((result.contributions || []).map(r => [`${r.line} / ${r.kode} - ${r.nama}`, toNum(r.ok)]));
             renderWO();
         } catch (error) { if (request === woProgressRequest) { woHistorical = false; $('woAssignmentMessage').textContent = 'Gagal menghitung WO: ' + (error.message || 'kesalahan database'); renderWO(); } }
@@ -1585,7 +1586,7 @@ function clearWOSelection() {
     $('eWoShift').value = '1'; $('eWoMode').value = 'new'; $('eWoSelect').value = '';
     $('woContinueSummary').hidden = true; $('woAssignmentBox').hidden = true;
     $('woNewFields').hidden = false; $('woSelectField').hidden = true; $('woProgress').hidden = true;
-    woGeneratedRef = null; woAssignmentValid = false; woHistorical = null;
+    woGeneratedRef = null; woAssignmentValid = false; woHistorical = null; woCarryover = 0; woIsContinuation = false;
 }
 function scheduleWOResolve() {
     clearTimeout(woResolveTimer); clearTimeout(woProgressTimer); ++woProgressRequest; ++woHistoryRequest; $('woHistoryTools').hidden = true; $('woHistoryCandidates').replaceChildren(); $('woHistoryAdd').hidden = true; $('woHistoryMessage').textContent = ''; ++woRequest;

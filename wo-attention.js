@@ -29,6 +29,8 @@ function renderWOAttention() {
         const priority = attentionPriority(row), card = attentionNode('article',null,'wo-attention-card' + (priority === 0 ? ' alert' : ''));
         const heading = priority === 0 ? 'PRODUK BERGANTI SEBELUM WO SELESAI' : priority === 1 ? 'WO OPEN — TIDAK ADA PRODUKSI 3 HARI' : row.status === 'ON_HOLD' ? 'WO ON HOLD' : row.status === 'CLOSED' ? 'WO CLOSED' : 'WO OPEN';
         card.append(attentionNode('h3',heading), attentionNode('div',`${row.wo_ref} · ${row.status} · Target ${fmtInt(row.qty)} · OK ${fmtInt(row.ok)} · Sisa ${fmtInt(row.remaining)} PCS`));
+        if (row.parent_ref) card.append(attentionNode('div',`WO Lanjutan dari ${row.parent_ref} · Carry-over ${fmtInt(row.carryover_qty)} · Produksi Baru ${fmtInt(row.ok - row.carryover_qty)} · Progress ${fmtInt(row.ok)}`));
+        if (row.child_ref) card.append(attentionNode('div',`Lebih ${fmtInt(Math.max(0, row.ok - row.qty))} · Dilanjutkan ke: ${row.child_ref}`));
         (row.assignments || []).forEach(a => {
             const box=attentionNode('div',null,'wo-attention-assignment');
             box.append(attentionNode('strong',`Mesin ${attentionText(a.line_code)} · ${attentionText(a.product_code)} ${attentionText(a.product_name)}`),
@@ -37,7 +39,7 @@ function renderWOAttention() {
             if (row.status !== 'CLOSED') { const controls=attentionNode('div',null,'wo-attention-actions'); controls.append(attentionButton('Tutup assignment',() => attentionAssignment(row,a,'END_ASSIGNMENT')),attentionButton('Pindah Mesin',() => attentionAssignment(row,a,'TRANSFER')),attentionButton('Tambah Mesin Paralel',() => attentionAssignment(row,a,'PARALLEL'))); box.append(controls); }
             card.append(box);
         });
-        if (row.status !== 'CLOSED') { const actions=attentionNode('div',null,'wo-attention-actions'); actions.append(attentionButton('Tetap Open',() => attentionStatus(row,'OPEN','KEEP_OPEN')),attentionButton('Tunda / ON HOLD',() => attentionStatus(row,'ON_HOLD','HOLD')),attentionButton('Tutup WO',() => attentionStatus(row,'CLOSED','CLOSE'),'btn danger sm')); card.append(actions); }
+        if (row.status !== 'CLOSED') { const actions=attentionNode('div',null,'wo-attention-actions'); if (row.status === 'OPEN') actions.append(attentionButton('Tambah WO / WO Lanjutan',() => attentionContinuation(row))); actions.append(attentionButton('Tetap Open',() => attentionStatus(row,'OPEN','KEEP_OPEN')),attentionButton('Tunda / ON HOLD',() => attentionStatus(row,'ON_HOLD','HOLD')),attentionButton('Tutup WO',() => attentionStatus(row,'CLOSED','CLOSE'),'btn danger sm')); card.append(actions); }
         else card.append(attentionNode('div',`Ditutup: ${attentionText(row.closed_at)} · ${attentionText(row.reason)} · ${attentionText(row.note)}`));
         list.append(card);
     });
@@ -66,4 +68,21 @@ async function attentionAssignment(row,source,action) {
     const p=product.value === '' ? null : master[+product.value];
     try { await woRpc('wo_admin_assignment',{p_ref:row.wo_ref,p_action:action,p_source:source.id,p_line:line.value.trim() || null,p_code:p?.kode || null,p_name:p?.nama || null,p_date:date.value,p_shift:+shift.value,p_note:note.value.trim() || null}); await loadWOAttention(); }
     catch(error) { Swal.fire({icon:'error',title:'Aksi gagal',text:error.message}); }
+}
+
+async function attentionContinuation(row) {
+    const form = document.createElement('div'), qty = document.createElement('input'), date = document.createElement('input'), shift = document.createElement('select'), note = document.createElement('input'), use = document.createElement('input'), summary = attentionNode('p',''), choices = document.createElement('div');
+    const excess = Math.max(0, +row.ok - +row.qty);
+    qty.type='number'; qty.min='1'; qty.step='1'; qty.className='input'; qty.placeholder='Qty tambahan PPIC';
+    date.type='date'; date.value=todayISO(); date.className='input'; shift.className='input'; ['1','2','3'].forEach(v => shift.add(new Option('Shift ' + v,v)));
+    note.className='input'; note.placeholder='Catatan / nomor dokumen PPIC (opsional)'; use.type='checkbox'; use.checked=excess>0;
+    const useLabel=document.createElement('label'); useLabel.append(use, document.createTextNode(' Gunakan excess WO sebelumnya'));
+    (row.assignments || []).forEach(a => { const label=document.createElement('label'), box=document.createElement('input'), line=document.createElement('div'); box.type='checkbox'; box.value=String(a.assignment_id); box.checked=true; label.append(box,document.createTextNode(` Mesin ${a.line_code} — ${a.product_code} ${a.product_name}`)); line.append(label); choices.append(line); });
+    const update = () => { const added=Math.max(0,toNum(qty.value)), carry=use.checked ? Math.min(excess,added) : 0; summary.textContent=`Tambahan PPIC ${fmtInt(added)} · Carry-over ${fmtInt(carry)} · Sisa Produksi ${fmtInt(added-carry)}`; };
+    qty.addEventListener('input',update); use.addEventListener('change',update); update();
+    form.append(attentionNode('p',`WO Parent ${row.wo_ref} · Target ${fmtInt(row.qty)} · Actual ${fmtInt(row.ok)} · Excess ${fmtInt(excess)}`),qty,date,shift,note,useLabel,summary,attentionNode('p','Pilih assignment yang diteruskan:'),choices);
+    const result=await Swal.fire({title:'Tambah WO / WO Lanjutan',html:form,showCancelButton:true,confirmButtonText:'Buat WO Lanjutan',preConfirm:() => { const ids=[...choices.querySelectorAll('input:checked')].map(x => Number(x.value)); if (!(+qty.value>0) || !date.value || !ids.length) { Swal.showValidationMessage('Isi qty, tanggal dan pilih minimal satu assignment.'); return false; } return {ids}; }});
+    if (!result.isConfirmed) return;
+    try { const created=await woRpc('wo_create_continuation',{p_parent:row.wo_ref,p_added_qty:+qty.value,p_date:date.value,p_shift:+shift.value,p_use_excess:use.checked,p_assignment_ids:result.value.ids,p_note:note.value.trim() || null}); await Swal.fire({icon:'success',title:'WO lanjutan dibuat',text:`${created.child_wo_ref} · Carry-over ${fmtInt(created.carryover_qty)} · Sisa ${fmtInt(created.remaining)}`}); await loadWOAttention(); }
+    catch(error) { Swal.fire({icon:'error',title:'WO lanjutan gagal dibuat',text:error.message}); }
 }
