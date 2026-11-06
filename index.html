@@ -68,6 +68,7 @@
                             <h2 class="cmd-title">Target Control</h2>
                             <span id="targetBoardSync" class="cmd-sync-badge">Menunggu sync</span>
                         </div>
+                        <div class="tc-header-description">Ringkasan performa produksi dan line yang perlu tindakan</div>
                         <div id="targetBoardSubtitle" class="cmd-subtitle muted">-</div>
                     </div>
                     <div class="cmd-header-right">
@@ -78,25 +79,25 @@
                 <!-- KPI STRIP -->
                 <div class="kpi-strip">
                     <div class="kpi-strip-item ksi-danger">
-                        <span class="ksi-label">BELUM AMAN</span>
+                        <span class="ksi-label">PERLU TINDAKAN</span>
                         <span id="alertKpiBad" class="ksi-value">0</span>
                         <span class="ksi-sub">shift terakhir</span>
                     </div>
                     <div class="kpi-strip-div"></div>
                     <div class="kpi-strip-item ksi-warning">
-                        <span class="ksi-label">LOSS CAPACITY</span>
+                        <span class="ksi-label">POTENSI LOSS</span>
                         <span id="alertKpiLoss" class="ksi-value">0</span>
                         <span class="ksi-sub">pcs terdampak</span>
                     </div>
                     <div class="kpi-strip-div"></div>
                     <div class="kpi-strip-item ksi-success">
-                        <span class="ksi-label">TARGET AMAN</span>
+                        <span class="ksi-label">TARGET TERCAPAI</span>
                         <span id="alertKpiOk" class="ksi-value">0</span>
                         <span class="ksi-sub">di shift terbaru</span>
                     </div>
                     <div class="kpi-strip-div"></div>
                     <div class="kpi-strip-item ksi-info">
-                        <span class="ksi-label">LATEST SHIFT</span>
+                        <span class="ksi-label">SHIFT TERBARU</span>
                         <span id="alertKpiShift" class="ksi-value">-</span>
                         <span class="ksi-sub">data terakhir</span>
                     </div>
@@ -118,20 +119,20 @@
                     <div id="lfContent" class="lf-content" style="display:none"></div>
                 </div>
 
-                <!-- ALERT PANELS -->
-                <div class="alert-sections command-layout">
-                    <div class="alert-panel critical-panel">
-                        <div class="panel-title-row"><h3>Critical Lines</h3><span>Urut gap terparah</span></div>
+                <!-- Primary and secondary views share the existing data and filters. -->
+                <div class="tc-panels">
+                    <section class="tc-primary-panel">
+                        <div class="tc-panel-heading"><div><h3>Perlu Tindakan</h3><p>Diurutkan berdasarkan gap terbesar</p></div></div>
                         <div id="latestShiftAlerts" class="alert-list muted">Belum ada data.</div>
-                    </div>
-                    <div class="alert-panel capacity-panel">
-                        <div class="panel-title-row"><h3>Capacity & Reasons</h3><span>Stop, cavity, jam efektif</span></div>
+                    </section>
+                    <details class="tc-secondary-panel">
+                        <summary><span>Analisis Kapasitas</span><small>Stop, cavity, dan jam efektif</small></summary>
                         <div id="cavityLossAlerts" class="alert-list muted">Belum ada data loss capacity.</div>
-                    </div>
-                    <div class="alert-panel history-panel">
-                        <div class="panel-title-row"><h3>Daily Comparison</h3><span>Hari kemarin / terakhir</span></div>
+                    </details>
+                    <details class="tc-secondary-panel">
+                        <summary><span>Perbandingan Harian</span><small>Hari kemarin / terakhir</small></summary>
                         <div id="yesterdayAlerts" class="alert-list muted">Belum ada data.</div>
-                    </div>
+                    </details>
                 </div>
             </section>
 

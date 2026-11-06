@@ -425,8 +425,9 @@ function renderTable() {
 function makeAlertItem(r, opts = {}) {
     const tg = extractLogTarget(r);
     const meta = statusMeta(tg.status);
-    const title = `${r.line || '-'} · Shift ${r.shift || '-'} · ${r.kode || ''}`;
-    const subtitle = r.nama || '-';
+    const escape = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    const title = `${r.line || '-'} · Shift ${r.shift || '-'}`;
+    const product = `${r.kode || '-'} · ${r.nama || '-'}`;
     const reasonParts = [];
     if(r.under_target_reason) reasonParts.push(`Target: ${r.under_target_reason}`);
     if(r.planned_stop_reason) reasonParts.push(`Stop: ${r.planned_stop_reason}`);
@@ -436,24 +437,21 @@ function makeAlertItem(r, opts = {}) {
     const capParts = [];
     if(tg.effectiveHours < tg.standardShiftHours) capParts.push(`Jam ${tg.effectiveHours}/${tg.standardShiftHours} (${tg.plannedStopHours} jam stop${tg.stopReason ? ': ' + tg.stopReason : ''})`);
     if(tg.cavityActive < tg.cavityStd) capParts.push(`Cav ${tg.cavityStd} → ${tg.cavityActive}`);
-    const lossLine = (opts.showLoss || capParts.length) ? `<div class="alert-item-note">Kapasitas turun: <b>${fmtInt(tg.capacityLossTotal || tg.loss || tg.timeLoss)}</b> pcs${capParts.length ? ' | ' + capParts.join(' | ') : ''}</div>` : '';
+    const lossLine = (opts.showLoss || capParts.length) ? `<div>Kapasitas turun: <b>${fmtInt(tg.capacityLossTotal || tg.loss || tg.timeLoss)}</b> pcs${capParts.length ? ' | ' + escape(capParts.join(' | ')) : ''}</div>` : '';
+    const progress = tg.targetActual ? Math.max(0, Math.min(100, tg.achActual)) : 0;
     return `
-        <div class="alert-item ${meta.cls}">
-            <div class="alert-item-main">
-                <div>
-                    <div class="alert-title"><span class="status-dot-mini ${meta.cls}"></span><span>${title}</span></div>
-                    <div class="alert-subtitle">${subtitle}</div>
-                    ${lossLine}
-                </div>
-                <div class="alert-numbers">
-                    <span>Target Aktual: <b>${tg.targetActual ? fmtInt(tg.targetActual) : '-'}</b></span>
-                    <span>Actual: <b>${fmtInt(tg.okpcs)}</b></span>
-                    <span class="${tg.gapActual < 0 ? 'text-danger' : 'text-ok'}">Gap: <b>${tg.targetActual ? fmtSigned(tg.gapActual) : '-'}</b></span>
-                    <span>Achv: <b>${tg.targetActual ? fmtPct(tg.achActual) : '-'}</b></span>
-                </div>
+        <article class="tc-alert ${meta.cls}">
+            <div class="tc-alert-head"><div class="tc-alert-identity"><div class="tc-machine">${escape(title)}</div><div class="tc-product" title="${escape(product)}">${escape(product)}</div></div><span class="target-pill ${meta.cls}">${escape(meta.label)}</span></div>
+            <div class="tc-alert-metrics">
+                <div><span>Target Aktual</span><b>${tg.targetActual ? fmtInt(tg.targetActual) : '-'}</b></div>
+                <div><span>Actual</span><b>${fmtInt(tg.okpcs)}</b></div>
+                <div class="tc-gap ${tg.gapActual < 0 ? 'tc-gap-negative' : ''}"><span>Gap</span><b>${tg.targetActual ? fmtSigned(tg.gapActual) : '-'}</b><small> PCS</small></div>
+                <div><span>Achievement</span><b>${tg.targetActual ? fmtPct(tg.achActual) : '-'}</b></div>
             </div>
-            <div class="alert-footer"><span class="target-pill ${meta.cls}">${meta.label}</span><span>Keterangan: ${reason}</span></div>
-        </div>`;
+            <div class="tc-progress" role="progressbar" aria-label="Achievement" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress}"><div style="width:${progress}%"></div></div>
+            <div class="tc-reason" title="${escape(reason)}">Alasan: ${escape(reason)}</div>
+            <details class="tc-alert-details"><summary>Detail</summary><div class="tc-detail-content"><span class="target-pill ${meta.cls}">${escape(meta.label)}</span><div>Keterangan: ${escape(reason)}</div><div>Jam efektif: ${escape(tg.effectiveHours)} / ${escape(tg.standardShiftHours)} · Stop: ${escape(tg.plannedStopHours)} jam · Cavity: ${escape(tg.cavityStd)} → ${escape(tg.cavityActive)}</div>${lossLine}</div></details>
+        </article>`;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -668,7 +666,7 @@ function renderTargetBoard() {
     if($('latestShiftAlerts')) {
         $('latestShiftAlerts').innerHTML = latestBad.length
             ? latestBad.map(r => makeAlertItem(r)).join('')
-            : `<div class="alert-empty">Shift terakhir aman terhadap target aktual.</div>`;
+            : `<div class="tc-safe-state">Semua line pada shift terbaru dalam kondisi aman.</div>`;
     }
 
     if($('yesterdayAlerts')) {
