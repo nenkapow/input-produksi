@@ -3931,7 +3931,7 @@ tbody tr:hover td {
 #targetControlBoard .tc-v2-monitor { border: 1px solid #344b69; color: #bfd1ee; background: #1b2d48; padding: 8px 10px; border-radius: 7px; font: inherit; font-size: .7rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
 #targetControlBoard .tc-v2-columns, #targetControlBoard .tc-v2-row > summary { display: grid; grid-template-columns: minmax(60px,.6fr) minmax(120px,2.1fr) minmax(55px,.65fr) minmax(70px,.8fr) minmax(90px,1.15fr) auto; gap: 10px; align-items: center; }
 #targetControlBoard .tc-v2-columns { padding: 9px 10px; color: #7f93ae; font-size: .6rem; font-weight: 800; letter-spacing: .06em; }
-#targetControlBoard #latestShiftAlerts { display: block; }
+#targetControlBoard #latestShiftAlerts { display: block; max-width: none; }
 #targetControlBoard .tc-v2-row { border-top: 1px solid #24354b; min-width: 0; }
 #targetControlBoard .tc-v2-row > summary { padding: 9px 10px; min-height: 53px; cursor: pointer; color: #dce7f6; font-size: .74rem; list-style: none; }
 #targetControlBoard .tc-v2-row > summary::-webkit-details-marker, #targetControlBoard .tc-v2-more > summary::-webkit-details-marker { display: none; }
