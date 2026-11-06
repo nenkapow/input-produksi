@@ -19,30 +19,81 @@ async function loadWOAttention() {
     catch (error) { $('woAttentionList').textContent = 'Gagal memuat WO Attention: ' + error.message; }
 }
 function renderWOAttention() {
-    const list = $('woAttentionList'), kpis = $('woAttentionKpis'); list.replaceChildren(); kpis.replaceChildren();
+    const list = $('woAttentionList'), kpis = $('woAttentionKpis');
+    const historyWasOpen = list.querySelector('.woa-history')?.open || false;
+    list.replaceChildren(); kpis.replaceChildren();
     const today = todayISO();
-    [['Perlu Konfirmasi',woAttentionRows.filter(r => attentionPriority(r) === 0).length],['WO Open',woAttentionRows.filter(r => r.status === 'OPEN').length],['WO On Hold',woAttentionRows.filter(r => r.status === 'ON_HOLD').length],['WO Closed Hari Ini',woAttentionRows.filter(r => r.status === 'CLOSED' && r.closed_at && r.closed_at.slice(0,10) === today).length]].forEach(([label,value]) => { const item=attentionNode('div',null,'wo-attention-kpi'); item.append(attentionNode('span',label),attentionNode('strong',value)); kpis.append(item); });
+    [['Perlu Konfirmasi',woAttentionRows.filter(r => attentionPriority(r) === 0).length],['WO Open',woAttentionRows.filter(r => r.status === 'OPEN').length],['WO On Hold',woAttentionRows.filter(r => r.status === 'ON_HOLD').length],['WO Closed Hari Ini',woAttentionRows.filter(r => r.status === 'CLOSED' && r.closed_at && r.closed_at.slice(0,10) === today).length]].forEach(([label,value],i) => {
+        const item=attentionNode('div',null,'woa-kpi' + (i === 0 && value > 0 ? ' woa-kpi-alert' : '') + (value === 0 ? ' woa-kpi-zero' : ''));
+        item.append(attentionNode('span',label),attentionNode('strong',value)); kpis.append(item);
+    });
     const line = woNorm($('woAttentionLine').value), product = woNorm($('woAttentionProduct').value), ref = woNorm($('woAttentionRef').value), status = $('woAttentionStatus').value;
     const rows = woAttentionRows.filter(r => (!status || r.status === status) && (!ref || woNorm(r.wo_ref).includes(ref)) && (!line || r.assignments.some(a => woNorm(a.line_code).includes(line))) && (!product || r.assignments.some(a => woNorm(a.product_code + ' ' + a.product_name).includes(product)))).sort((a,b) => attentionPriority(a)-attentionPriority(b));
-    if (!rows.length) { list.textContent = 'Tidak ada WO yang cocok.'; return; }
-    rows.forEach(row => {
-        const priority = attentionPriority(row), card = attentionNode('article',null,'wo-attention-card' + (priority === 0 ? ' alert' : ''));
-        const heading = priority === 0 ? 'PRODUK BERGANTI SEBELUM WO SELESAI' : priority === 1 ? 'WO OPEN — TIDAK ADA PRODUKSI 3 HARI' : row.status === 'ON_HOLD' ? 'WO ON HOLD' : row.status === 'CLOSED' ? 'WO CLOSED' : 'WO OPEN';
-        card.append(attentionNode('h3',heading), attentionNode('div',`${row.wo_ref} · ${row.status} · Target ${fmtInt(row.qty)} · OK ${fmtInt(row.ok)} · Sisa ${fmtInt(row.remaining)} PCS`));
-        if (row.parent_ref) card.append(attentionNode('div',`WO Lanjutan dari ${row.parent_ref} · Carry-over ${fmtInt(row.carryover_qty)} · Produksi Baru ${fmtInt(row.ok - row.carryover_qty)} · Progress ${fmtInt(row.ok)}`));
-        if (row.child_ref) card.append(attentionNode('div',`Lebih ${fmtInt(Math.max(0, row.ok - row.qty))} · Dilanjutkan ke: ${row.child_ref}`));
-        (row.assignments || []).forEach(a => {
-            const box=attentionNode('div',null,'wo-attention-assignment');
-            box.append(attentionNode('strong',`Mesin ${attentionText(a.line_code)} · ${attentionText(a.product_code)} ${attentionText(a.product_name)}`),
-                attentionNode('div',`${a.changed ? 'Mesin meninggalkan WO' : a.latest_date ? 'Produk masih sesuai' : 'Belum ada laporan mesin'} · Terakhir produk WO: ${attentionText(a.previous_date)} S${attentionText(a.previous_shift)}`),
-                attentionNode('div',`Produk terbaru: ${attentionText(a.latest_code)} ${attentionText(a.latest_name)} · ${attentionText(a.latest_date)} S${attentionText(a.latest_shift)}`));
-            if (row.status !== 'CLOSED') { const controls=attentionNode('div',null,'wo-attention-actions'); controls.append(attentionButton('Tutup assignment',() => attentionAssignment(row,a,'END_ASSIGNMENT')),attentionButton('Pindah Mesin',() => attentionAssignment(row,a,'TRANSFER')),attentionButton('Tambah Mesin Paralel',() => attentionAssignment(row,a,'PARALLEL'))); box.append(controls); }
-            card.append(box);
-        });
-        if (row.status !== 'CLOSED') { const actions=attentionNode('div',null,'wo-attention-actions'); if (row.status === 'OPEN') actions.append(attentionButton('Tambah WO / WO Lanjutan',() => attentionContinuation(row))); actions.append(attentionButton('Tetap Open',() => attentionStatus(row,'OPEN','KEEP_OPEN')),attentionButton('Tunda / ON HOLD',() => attentionStatus(row,'ON_HOLD','HOLD')),attentionButton('Tutup WO',() => attentionStatus(row,'CLOSED','CLOSE'),'btn danger sm')); card.append(actions); }
-        else card.append(attentionNode('div',`Ditutup: ${attentionText(row.closed_at)} · ${attentionText(row.reason)} · ${attentionText(row.note)}`));
-        list.append(card);
+    if (!rows.length) { list.append(attentionNode('div','Tidak ada WO yang cocok.','woa-empty')); return; }
+    const sections = [
+        {label:'Perlu Perhatian', rows:rows.filter(r => attentionPriority(r) === 0 || attentionPriority(r) === 1)},
+        {label:'WO Aktif', rows:rows.filter(r => r.status === 'OPEN' && attentionPriority(r) > 1)},
+        {label:'On Hold', rows:rows.filter(r => r.status === 'ON_HOLD')}
+    ];
+    sections.forEach(section => {
+        if (!section.rows.length) return;
+        const container = attentionNode('section',null,'woa-section');
+        const heading = attentionNode('div',null,'woa-section-heading'); heading.append(attentionNode('h3',section.label),attentionNode('span',String(section.rows.length),'woa-count')); container.append(heading);
+        section.rows.forEach(row => container.append(renderWOAttentionCard(row))); list.append(container);
     });
+    const closed = rows.filter(r => r.status === 'CLOSED');
+    if (closed.length) {
+        const history = attentionNode('details',null,'woa-history'); history.open = historyWasOpen;
+        const todayClosed = closed.filter(r => r.closed_at && r.closed_at.slice(0,10) === today).length;
+        const summary = attentionNode('summary',null,'woa-section-heading'); summary.append(attentionNode('span','Riwayat WO Closed'),attentionNode('span',`${todayClosed} WO Closed Hari Ini · ${closed.length} total`,'woa-history-count')); history.append(summary);
+        closed.forEach(row => history.append(renderWOAttentionCard(row))); list.append(history);
+    }
+}
+function renderWOAttentionCard(row) {
+    const priority = attentionPriority(row), assignments = row.assignments || [];
+    const card = attentionNode('article',null,'woa-card ' + (priority === 0 ? 'woa-card-attention' : row.status === 'ON_HOLD' ? 'woa-card-hold' : row.status === 'CLOSED' ? 'woa-card-closed' : 'woa-card-open'));
+    const head = attentionNode('div',null,'woa-card-head'), title = attentionNode('div',null,'woa-card-title');
+    const first = assignments[0];
+    title.append(attentionNode('h4',first ? `${attentionText(first.product_code)} · ${attentionText(first.product_name)}` : 'WO Produksi'), attentionNode('div',`WO ${row.wo_ref}`,'woa-ref'));
+    const badges = attentionNode('div',null,'woa-badges');
+    if (row.parent_ref) badges.append(attentionNode('span','WO LANJUTAN','woa-badge woa-badge-continuation'));
+    badges.append(attentionNode('span',row.status,'woa-badge woa-badge-' + row.status.toLowerCase()));
+    head.append(title,badges); card.append(head);
+    if (priority === 0) card.append(attentionNode('div','PRODUK BERGANTI SEBELUM WO SELESAI','woa-alert'));
+    else if (priority === 1) card.append(attentionNode('div','WO OPEN — TIDAK ADA PRODUKSI 3 HARI','woa-notice'));
+    const metrics = attentionNode('div',null,'woa-metrics');
+    [['Target',row.qty],['Progress',row.ok],['Sisa',row.remaining]].forEach(([label,value]) => { const item=attentionNode('div',null,'woa-metric'); item.append(attentionNode('span',label),attentionNode('strong',fmtInt(value)),attentionNode('small','PCS')); metrics.append(item); });
+    card.append(metrics);
+    const track = attentionNode('div',null,'woa-progress'); track.setAttribute('role','progressbar'); track.setAttribute('aria-label','Progress WO');
+    const percent = +row.qty > 0 ? Math.max(0,Math.min(100,(+row.ok / +row.qty)*100)) : 0;
+    track.setAttribute('aria-valuemin','0'); track.setAttribute('aria-valuemax','100'); track.setAttribute('aria-valuenow',String(Math.round(percent)));
+    const fill=attentionNode('div',null,'woa-progress-fill'); fill.style.width=percent+'%'; track.append(fill); card.append(track);
+    if (row.parent_ref) card.append(attentionNode('div',`Lanjutan dari ${row.parent_ref} · Carry-over ${fmtInt(row.carryover_qty)} · Produksi Baru ${fmtInt(row.ok - row.carryover_qty)}`,'woa-secondary'));
+    if (row.child_ref) card.append(attentionNode('div',`Lebih ${fmtInt(Math.max(0, row.ok - row.qty))} · Dilanjutkan ke: ${row.child_ref}`,'woa-secondary'));
+    if (assignments.length) {
+        const machines=attentionNode('div',null,'woa-machines'); machines.append(attentionNode('div','MESIN / PRODUK','woa-machines-label'));
+        assignments.forEach(a => {
+            const box=attentionNode('div',null,'woa-machine'), identity=attentionNode('div',null,'woa-machine-identity');
+            identity.append(attentionNode('strong',`Mesin ${attentionText(a.line_code)}`),attentionNode('span',`${attentionText(a.product_code)} · ${attentionText(a.product_name)}`,'woa-machine-product'));
+            const data=attentionNode('div',null,'woa-machine-data');
+            data.append(attentionNode('span',a.changed ? 'MENINGGALKAN WO' : a.latest_date ? 'AKTIF' : 'BELUM ADA LAPORAN',a.changed ? 'woa-machine-state woa-machine-warning' : 'woa-machine-state'),
+                attentionNode('div',`Terakhir produksi WO: ${attentionText(a.previous_date)} S${attentionText(a.previous_shift)}`),
+                attentionNode('div',`Produk terbaru: ${attentionText(a.latest_code)} ${attentionText(a.latest_name)} · ${attentionText(a.latest_date)} S${attentionText(a.latest_shift)}`));
+            box.append(identity,data);
+            if (row.status !== 'CLOSED') {
+                const menu=attentionNode('details',null,'woa-menu'); menu.append(attentionNode('summary','Kelola Mesin ▾'));
+                const controls=attentionNode('div',null,'woa-menu-items'); controls.append(attentionButton('Tutup assignment',() => attentionAssignment(row,a,'END_ASSIGNMENT'),'woa-menu-button'),attentionButton('Pindah Mesin',() => attentionAssignment(row,a,'TRANSFER'),'woa-menu-button'),attentionButton('Tambah Mesin Paralel',() => attentionAssignment(row,a,'PARALLEL'),'woa-menu-button')); menu.append(controls); box.append(menu);
+            }
+            machines.append(box);
+        }); card.append(machines);
+    }
+    if (row.status !== 'CLOSED') {
+        const actions=attentionNode('div',null,'woa-actions');
+        if (row.status === 'OPEN') actions.append(attentionButton('Tambah WO / WO Lanjutan',() => attentionContinuation(row),'woa-button woa-button-primary'));
+        actions.append(attentionButton('Tunda / ON HOLD',() => attentionStatus(row,'ON_HOLD','HOLD'),'woa-button'),attentionButton('Tutup WO',() => attentionStatus(row,'CLOSED','CLOSE'),'woa-button woa-button-danger'));
+        const menu=attentionNode('details',null,'woa-more'); menu.append(attentionNode('summary','Aksi lainnya ▾')); const secondary=attentionNode('div',null,'woa-more-items'); secondary.append(attentionButton('Tetap Open',() => attentionStatus(row,'OPEN','KEEP_OPEN'),'woa-menu-button')); menu.append(secondary); actions.append(menu); card.append(actions);
+    } else card.append(attentionNode('div',`Ditutup: ${attentionText(row.closed_at)} · ${attentionText(row.reason)} · ${attentionText(row.note)}`,'woa-secondary'));
+    return card;
 }
 async function attentionStatus(row,status,action) {
     let reason = '', note = '';
