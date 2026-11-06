@@ -189,6 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if($('btnOpenInputFromTop')) $('btnOpenInputFromTop').onclick = () => { $('mEntry').classList.add('open'); resetEntryForm(); scrollEntryFormToTop('auto'); };
     $('btnRekap').onclick = fetchAndShowRekap;
     $('btnOpenLog').onclick = () => { $('vLaporan').classList.add('open'); renderTable(); };
+    $('tcOpenMonitoring').onclick = () => $('btnDashboard').click();
 
     // --- PROTECTED MENUS (BUTUH PIN) ---
     $('btnWoAttention').onclick = () => checkAdmin(() => { $('mWoAttention').classList.add('open'); loadWOAttention(); });
@@ -454,6 +455,22 @@ function makeAlertItem(r, opts = {}) {
         </article>`;
 }
 
+// Compact home presentation; the existing detailed renderer remains available on expansion.
+function makePriorityRow(r) {
+    const tg = extractLogTarget(r);
+    const escape = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    const product = `${r.kode || '-'} · ${r.nama || '-'}`;
+    const reason = r.under_target_reason || r.planned_stop_reason || r.cavity_adjust_reason || r.catatan || '-';
+    return `<details class="tc-v2-row"><summary>
+        <span class="tc-v2-machine">${escape(r.line || '-')}<small>Shift ${escape(r.shift || '-')}</small></span>
+        <span class="tc-v2-product" title="${escape(product)}">${escape(product)}</span>
+        <span class="tc-v2-achievement">${tg.targetActual ? fmtPct(tg.achActual) : '-'}</span>
+        <span class="tc-v2-gap ${tg.gapActual < 0 ? 'tc-v2-negative' : ''}">${tg.targetActual ? fmtSigned(tg.gapActual) : '-'}</span>
+        <span class="tc-v2-reason" title="${escape(reason)}">${escape(reason)}</span>
+        <span class="tc-v2-detail">Detail ▾</span></summary>
+        <div class="tc-v2-expanded">${makeAlertItem(r)}</div></details>`;
+}
+
 /* ═══════════════════════════════════════════════════════════
    LINE FOCUS PANEL — drill-down per mesin
 ═══════════════════════════════════════════════════════════ */
@@ -665,7 +682,7 @@ function renderTargetBoard() {
 
     if($('latestShiftAlerts')) {
         $('latestShiftAlerts').innerHTML = latestBad.length
-            ? latestBad.map(r => makeAlertItem(r)).join('')
+            ? latestBad.slice(0,5).map(makePriorityRow).join('') + (latestBad.length > 5 ? `<details class="tc-v2-more"><summary>+ ${latestBad.length - 5} line lainnya</summary>${latestBad.slice(5).map(makePriorityRow).join('')}</details>` : '')
             : `<div class="tc-safe-state">Semua line pada shift terbaru dalam kondisi aman.</div>`;
     }
 

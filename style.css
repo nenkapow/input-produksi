@@ -3919,3 +3919,51 @@ tbody tr:hover td {
     #targetControlBoard .lf-date-range { width: 100%; }
     #targetControlBoard .tc-secondary-panel > summary small { display: none; }
 }
+
+/* Target Control V2: compact home summary. */
+#targetControlBoard .kpi-strip { grid-template-columns: repeat(3,minmax(0,1fr)); }
+#targetControlBoard .kpi-strip-item { min-height: 80px; padding-top: 11px; padding-bottom: 11px; }
+#targetControlBoard .tc-v2-layout { display: grid; grid-template-columns: minmax(0, 2.2fr) minmax(260px, 1fr); gap: 14px; align-items: start; }
+#targetControlBoard .tc-v2-primary, #targetControlBoard .tc-v2-side { min-width: 0; background: #101e31; border-radius: 12px; padding: 16px; }
+#targetControlBoard .tc-v2-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
+#targetControlBoard .tc-v2-heading h3, #targetControlBoard .tc-v2-side-title h3 { margin: 0; font-size: .93rem; color: #eef4fd; }
+#targetControlBoard .tc-v2-heading p, #targetControlBoard .tc-v2-side-title p { margin: 4px 0 0; font-size: .69rem; color: #8fa1b9; }
+#targetControlBoard .tc-v2-monitor { border: 1px solid #344b69; color: #bfd1ee; background: #1b2d48; padding: 8px 10px; border-radius: 7px; font: inherit; font-size: .7rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+#targetControlBoard .tc-v2-columns, #targetControlBoard .tc-v2-row > summary { display: grid; grid-template-columns: minmax(60px,.6fr) minmax(120px,2.1fr) minmax(55px,.65fr) minmax(70px,.8fr) minmax(90px,1.15fr) auto; gap: 10px; align-items: center; }
+#targetControlBoard .tc-v2-columns { padding: 9px 10px; color: #7f93ae; font-size: .6rem; font-weight: 800; letter-spacing: .06em; }
+#targetControlBoard #latestShiftAlerts { display: block; }
+#targetControlBoard .tc-v2-row { border-top: 1px solid #24354b; min-width: 0; }
+#targetControlBoard .tc-v2-row > summary { padding: 9px 10px; min-height: 53px; cursor: pointer; color: #dce7f6; font-size: .74rem; list-style: none; }
+#targetControlBoard .tc-v2-row > summary::-webkit-details-marker, #targetControlBoard .tc-v2-more > summary::-webkit-details-marker { display: none; }
+#targetControlBoard .tc-v2-row > summary:hover { background: #17283d; }
+#targetControlBoard .tc-v2-machine { color: #eaf2fd; font-weight: 800; }
+#targetControlBoard .tc-v2-machine small { display: block; color: #8ca0bb; font-weight: 400; font-size: .62rem; margin-top: 2px; }
+#targetControlBoard .tc-v2-product, #targetControlBoard .tc-v2-reason { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#targetControlBoard .tc-v2-product { color: #c9d7e9; }
+#targetControlBoard .tc-v2-reason { color: #c1ae8a; }
+#targetControlBoard .tc-v2-gap { color: #dbe7f5; font-weight: 800; }
+#targetControlBoard .tc-v2-negative { color: #ff9b9e; }
+#targetControlBoard .tc-v2-detail { color: #9eb8e8; font-size: .68rem; white-space: nowrap; }
+#targetControlBoard .tc-v2-expanded { padding: 0 10px 10px; }
+#targetControlBoard .tc-v2-expanded .tc-alert { background: #15243a; }
+#targetControlBoard .tc-v2-more > summary { color: #a8bfee; cursor: pointer; padding: 12px 10px 2px; font-size: .72rem; font-weight: 700; list-style: none; }
+#targetControlBoard .tc-v2-side-title { margin: 0 0 14px; }
+#targetControlBoard .tc-v2-side .tc-secondary-panel { margin-bottom: 8px; background: #13243a; padding: 12px; }
+#targetControlBoard .tc-v2-side .tc-secondary-panel > summary { font-size: .77rem; }
+#targetControlBoard .tc-v2-side .line-focus-panel { margin: 14px 0 0 !important; }
+#targetControlBoard .tc-v2-side .lf-search-bar { flex-wrap: wrap; }
+#targetControlBoard .tc-v2-side .lf-date-range { flex-wrap: wrap; }
+@media (max-width: 1050px) {
+    #targetControlBoard .tc-v2-layout { grid-template-columns: minmax(0,1fr); }
+    #targetControlBoard .tc-v2-side { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
+    #targetControlBoard .tc-v2-side-title { grid-column: 1 / -1; }
+}
+@media (max-width: 700px) {
+    #targetControlBoard .kpi-strip { grid-template-columns: repeat(3,minmax(0,1fr)); }
+    #targetControlBoard .tc-v2-primary, #targetControlBoard .tc-v2-side { padding: 12px; }
+    #targetControlBoard .tc-v2-heading { align-items: flex-start; flex-wrap: wrap; }
+    #targetControlBoard .tc-v2-columns { display: none; }
+    #targetControlBoard .tc-v2-row > summary { grid-template-columns: minmax(55px,.65fr) minmax(100px,2fr) minmax(55px,.7fr) minmax(65px,.8fr); }
+    #targetControlBoard .tc-v2-reason { grid-column: 2 / 4; }
+    #targetControlBoard .tc-v2-side { grid-template-columns: minmax(0,1fr); }
+}

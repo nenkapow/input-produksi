@@ -69,7 +69,7 @@
                             <span id="targetBoardSync" class="cmd-sync-badge">Menunggu sync</span>
                         </div>
                         <div class="tc-header-description">Ringkasan performa produksi dan line yang perlu tindakan</div>
-                        <div id="targetBoardSubtitle" class="cmd-subtitle muted">-</div>
+                        <div class="cmd-subtitle muted"><span id="alertKpiShift">-</span> · <span id="targetBoardSubtitle">-</span></div>
                     </div>
                     <div class="cmd-header-right">
                         <button id="btnOpenInputFromAlert" class="btn primary sm">+ Input Laporan</button>
@@ -87,7 +87,7 @@
                     <div class="kpi-strip-item ksi-warning">
                         <span class="ksi-label">POTENSI LOSS</span>
                         <span id="alertKpiLoss" class="ksi-value">0</span>
-                        <span class="ksi-sub">pcs terdampak</span>
+                        <span class="ksi-sub">pcs · 7 hari terakhir</span>
                     </div>
                     <div class="kpi-strip-div"></div>
                     <div class="kpi-strip-item ksi-success">
@@ -95,36 +95,39 @@
                         <span id="alertKpiOk" class="ksi-value">0</span>
                         <span class="ksi-sub">di shift terbaru</span>
                     </div>
-                    <div class="kpi-strip-div"></div>
-                    <div class="kpi-strip-item ksi-info">
-                        <span class="ksi-label">SHIFT TERBARU</span>
-                        <span id="alertKpiShift" class="ksi-value">-</span>
-                        <span class="ksi-sub">data terakhir</span>
-                    </div>
+                </div>
                 </div>
 
-                <!-- LINE FOCUS PANEL -->
-                <div id="lineFocusPanel" class="line-focus-panel">
-                    <div class="lf-search-bar">
-                        <span class="lf-search-icon">🔍</span>
-                        <input type="text" id="lfLineInput" class="lf-input" placeholder="No. Line... (misal: 08)" maxlength="6">
-                        <div class="lf-date-range">
-                            <input type="date" id="lfFrom" class="lf-date">
-                            <span class="lf-date-sep">—</span>
-                            <input type="date" id="lfTo" class="lf-date">
-                        </div>
-                        <button id="btnLfLoad" class="btn primary sm">Tampilkan</button>
-                        <button id="btnLfReset" class="btn sm" style="display:none">✕ Reset</button>
-                    </div>
-                    <div id="lfContent" class="lf-content" style="display:none"></div>
-                </div>
-
-                <!-- Primary and secondary views share the existing data and filters. -->
-                <div class="tc-panels">
-                    <section class="tc-primary-panel">
-                        <div class="tc-panel-heading"><div><h3>Perlu Tindakan</h3><p>Diurutkan berdasarkan gap terbesar</p></div></div>
+                <div class="tc-v2-layout">
+                    <section class="tc-v2-primary">
+                        <div class="tc-v2-heading"><div><h3>Prioritas Hari Ini</h3><p>Diurutkan berdasarkan gap terbesar</p></div><button id="tcOpenMonitoring" class="tc-v2-monitor" type="button">Buka Monitoring Room ↗</button></div>
+                        <div class="tc-v2-columns" aria-hidden="true"><span>MESIN</span><span>PRODUK</span><span>ACHV</span><span>GAP</span><span>ALASAN</span><span></span></div>
                         <div id="latestShiftAlerts" class="alert-list muted">Belum ada data.</div>
                     </section>
+                    <aside class="tc-v2-side">
+                        <div class="tc-v2-side-title"><h3>Analisis Lanjutan</h3><p>Data tambahan bila diperlukan</p></div>
+                        <details class="tc-secondary-panel">
+                            <summary><span>Masalah Utama / Kapasitas</span></summary>
+                            <div id="cavityLossAlerts" class="alert-list muted">Belum ada data loss capacity.</div>
+                        </details>
+                        <details class="tc-secondary-panel">
+                            <summary><span>Lihat Perbandingan Harian</span></summary>
+                            <div id="yesterdayAlerts" class="alert-list muted">Belum ada data.</div>
+                        </details>
+                        <details class="tc-secondary-panel">
+                            <summary><span>Cari Line</span></summary>
+                            <div id="lineFocusPanel" class="line-focus-panel">
+                                <div class="lf-search-bar">
+                                    <input type="text" id="lfLineInput" class="lf-input" placeholder="No. Line... (misal: 08)" maxlength="6">
+                                    <div class="lf-date-range"><input type="date" id="lfFrom" class="lf-date"><span class="lf-date-sep">—</span><input type="date" id="lfTo" class="lf-date"></div>
+                                    <button id="btnLfLoad" class="btn primary sm">Tampilkan</button><button id="btnLfReset" class="btn sm" style="display:none">✕ Reset</button>
+                                </div>
+                                <div id="lfContent" class="lf-content" style="display:none"></div>
+                            </div>
+                        </details>
+                    </aside>
+                </div>
+            </section>
                     <details class="tc-secondary-panel">
                         <summary><span>Analisis Kapasitas</span><small>Stop, cavity, dan jam efektif</small></summary>
                         <div id="cavityLossAlerts" class="alert-list muted">Belum ada data loss capacity.</div>
@@ -134,12 +137,6 @@
                         <div id="yesterdayAlerts" class="alert-list muted">Belum ada data.</div>
                     </details>
                 </div>
-            </section>
-
-            <section class="quick-overview-grid">
-                <div class="quick-card"><span>01</span><div><b>Input akhir shift</b><small>Mandor cukup isi laporan final, halaman depan langsung baca status.</small></div></div>
-                <div class="quick-card"><span>02</span><div><b>CT dari master produk</b><small>Cycle time tetap standar, tidak diketik ulang di laporan.</small></div></div>
-                <div class="quick-card"><span>03</span><div><b>Target otomatis</b><small>Target mengikuti jam efektif, cavity aktif, dan data master.</small></div></div>
             </section>
 
             <div class="app-footer">&copy; 2026 Production System</div>
