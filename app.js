@@ -1455,6 +1455,7 @@ function renderWO(current) {
     if (card.hidden) return;
     const meta = $('woMeta'), label = $('woLabel'), balanceEl = $('woBalance'), caption = $('woCaption');
     $('woContributions').replaceChildren();
+    meta.hidden = woHistorical !== null && woHistorical !== false;
     if (woHistorical === null || woHistorical === false) { meta.textContent = woHistorical === null ? 'Menghitung histori WO…' : 'Histori WO tidak tersedia. Periksa koneksi dan tabel assignment.'; label.textContent = ''; balanceEl.textContent = ''; caption.textContent = ''; return; }
     const date = $('eTanggal').value, start = $('eWoDate').value;
     const inBoundary = date && start && (date > start || (date === start && +$('eShift').value >= +$('eWoShift').value));
