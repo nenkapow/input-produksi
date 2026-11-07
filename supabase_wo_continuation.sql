@@ -123,7 +123,7 @@ $$;
 -- Each parent can have one child; subsequent additions continue from that child.
 CREATE OR REPLACE FUNCTION public.wo_create_continuation(p_parent text,p_added_qty numeric,p_date date,p_shift integer,p_use_excess boolean,p_assignment_ids bigint[],p_note text DEFAULT NULL)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
-DECLARE meta record; a record; parent_actual numeric; excess numeric; carry numeric; child text; prev_date date; prev_shift integer; selected_count integer; info text;
+DECLARE meta record; assignment_rec record; parent_actual numeric; excess numeric; carry numeric; child text; prev_date date; prev_shift integer; selected_count integer; info text;
 BEGIN
  IF public.wo_normalize(p_parent)='' OR p_added_qty IS NULL OR p_added_qty<=0 OR p_date IS NULL OR p_shift IS NULL OR p_shift NOT BETWEEN 1 AND 3 OR coalesce(cardinality(p_assignment_ids),0)=0 THEN RAISE EXCEPTION 'Data WO lanjutan tidak lengkap'; END IF;
  PERFORM pg_advisory_xact_lock(hashtextextended(public.wo_normalize(p_parent),0));
@@ -142,19 +142,19 @@ BEGIN
  IF EXISTS (SELECT 1 FROM public.production_wo_assignments WHERE public.wo_normalize(wo_ref)=public.wo_normalize(p_parent) AND ((ended_date IS NULL AND (effective_date,effective_shift)>(prev_date,prev_shift)) OR (ended_date IS NOT NULL AND (ended_date,ended_shift)>=(p_date,p_shift)))) THEN RAISE EXCEPTION 'Boundary bertabrakan dengan assignment parent'; END IF;
  IF EXISTS (SELECT 1 FROM public.logs l WHERE (l.tanggal::date,l.shift::integer)>=(p_date,p_shift)
   AND (public.wo_normalize(l.wo_ref)=public.wo_normalize(p_parent) OR (public.wo_normalize(l.wo_ref)='' AND EXISTS (
-   SELECT 1 FROM public.production_wo_assignments a WHERE public.wo_normalize(a.wo_ref)=public.wo_normalize(p_parent)
-    AND public.wo_normalize(l.line)=public.wo_normalize(a.line_code) AND public.wo_normalize(l.kode)=public.wo_normalize(a.product_code) AND public.wo_normalize(l.nama)=public.wo_normalize(a.product_name)
-    AND (l.tanggal::date,l.shift::integer)>=(a.effective_date,a.effective_shift)
-    AND (a.ended_date IS NULL OR (l.tanggal::date,l.shift::integer)<=(a.ended_date,a.ended_shift))
+   SELECT 1 FROM public.production_wo_assignments pa WHERE public.wo_normalize(pa.wo_ref)=public.wo_normalize(p_parent)
+    AND public.wo_normalize(l.line)=public.wo_normalize(pa.line_code) AND public.wo_normalize(l.kode)=public.wo_normalize(pa.product_code) AND public.wo_normalize(l.nama)=public.wo_normalize(pa.product_name)
+    AND (l.tanggal::date,l.shift::integer)>=(pa.effective_date,pa.effective_shift)
+    AND (pa.ended_date IS NULL OR (l.tanggal::date,l.shift::integer)<=(pa.ended_date,pa.ended_shift))
   )))) THEN RAISE EXCEPTION 'Sudah ada laporan parent pada atau setelah boundary; pilih boundary setelah laporan tersebut'; END IF;
  parent_actual := (public.wo_progress(p_parent)->>'total_progress')::numeric; excess := greatest(parent_actual-meta.wo_qty,0); carry := CASE WHEN p_use_excess THEN least(excess,p_added_qty) ELSE 0 END;
  child := 'WO-'||to_char(p_date,'YYYYMMDD')||'-'||upper(replace(gen_random_uuid()::text,'-',''));
  IF EXISTS (SELECT 1 FROM public.wo_metadata(child)) OR EXISTS (SELECT 1 FROM public.production_wo_status WHERE public.wo_normalize(wo_ref)=public.wo_normalize(child)) THEN RAISE EXCEPTION 'Referensi child sudah dipakai'; END IF;
- FOR a IN SELECT * FROM public.production_wo_assignments WHERE public.wo_normalize(wo_ref)=public.wo_normalize(p_parent) AND ended_date IS NULL FOR UPDATE LOOP
-  IF a.id=ANY(p_assignment_ids) THEN
-   UPDATE public.production_wo_assignments SET ended_date=prev_date,ended_shift=prev_shift WHERE id=a.id;
-   PERFORM public.create_wo_assignment(child,a.line_code,a.product_code,a.product_name,p_date,p_shift::smallint,NULL);
-  ELSE UPDATE public.production_wo_assignments SET ended_date=prev_date,ended_shift=prev_shift WHERE id=a.id; END IF;
+ FOR assignment_rec IN SELECT * FROM public.production_wo_assignments WHERE public.wo_normalize(wo_ref)=public.wo_normalize(p_parent) AND ended_date IS NULL FOR UPDATE LOOP
+  IF assignment_rec.id=ANY(p_assignment_ids) THEN
+   UPDATE public.production_wo_assignments SET ended_date=prev_date,ended_shift=prev_shift WHERE id=assignment_rec.id;
+   PERFORM public.create_wo_assignment(child,assignment_rec.line_code,assignment_rec.product_code,assignment_rec.product_name,p_date,p_shift::smallint,NULL);
+  ELSE UPDATE public.production_wo_assignments SET ended_date=prev_date,ended_shift=prev_shift WHERE id=assignment_rec.id; END IF;
  END LOOP;
  INSERT INTO public.production_wo_continuations(parent_wo_ref,child_wo_ref,added_qty,carryover_qty,effective_date,effective_shift,note,parent_target,parent_actual,parent_excess)
  VALUES(meta.wo_ref,child,p_added_qty,carry,p_date,p_shift,p_note,meta.wo_qty,parent_actual,excess);
