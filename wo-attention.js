@@ -82,7 +82,7 @@ function renderWOAttentionCard(row) {
             box.append(identity,data);
             if (row.status !== 'CLOSED') {
                 const menu=attentionNode('details',null,'woa-menu'); menu.append(attentionNode('summary','Kelola Mesin ▾'));
-                const controls=attentionNode('div',null,'woa-menu-items'); controls.append(attentionButton('Tutup assignment',() => attentionAssignment(row,a,'END_ASSIGNMENT'),'woa-menu-button'),attentionButton('Pindah Mesin',() => attentionAssignment(row,a,'TRANSFER'),'woa-menu-button'),attentionButton('Tambah Mesin Paralel',() => attentionAssignment(row,a,'PARALLEL'),'woa-menu-button')); menu.append(controls); box.append(menu);
+                const controls=attentionNode('div',null,'woa-menu-items'); controls.append(attentionButton('Koreksi Produk Assignment',() => attentionCorrectAssignment(row,a),'woa-menu-button'),attentionButton('Tutup assignment',() => attentionAssignment(row,a,'END_ASSIGNMENT'),'woa-menu-button'),attentionButton('Pindah Mesin',() => attentionAssignment(row,a,'TRANSFER'),'woa-menu-button'),attentionButton('Tambah Mesin Paralel',() => attentionAssignment(row,a,'PARALLEL'),'woa-menu-button')); menu.append(controls); box.append(menu);
             }
             machines.append(box);
         }); card.append(machines);
@@ -108,6 +108,7 @@ async function attentionStatus(row,status,action) {
     catch(error) { Swal.fire({icon:'error',title:'Aksi gagal',text:error.message}); }
 }
 async function attentionAssignment(row,source,action) {
+    if (action === 'PARALLEL') return attentionParallelWithHistory(row);
     const form=document.createElement('div'), date=document.createElement('input'), shift=document.createElement('select'), line=document.createElement('input'), product=document.createElement('select'), note=document.createElement('input');
     date.type='date'; date.value=todayISO(); date.className='input'; shift.className='input'; ['1','2','3'].forEach(v => shift.add(new Option('Shift '+v,v)));
     line.className='input'; line.placeholder='Mesin baru'; product.className='input'; product.add(new Option('Pilih produk persis...', ''));
@@ -136,4 +137,66 @@ async function attentionContinuation(row) {
     if (!result.isConfirmed) return;
     try { const created=await woRpc('wo_create_continuation',{p_parent:row.wo_ref,p_added_qty:+qty.value,p_date:date.value,p_shift:+shift.value,p_use_excess:use.checked,p_assignment_ids:result.value.ids,p_note:note.value.trim() || null}); await Swal.fire({icon:'success',title:'WO lanjutan dibuat',text:`${created.child_wo_ref} · Carry-over ${fmtInt(created.carryover_qty)} · Sisa ${fmtInt(created.remaining)}`}); await loadWOAttention(); }
     catch(error) { Swal.fire({icon:'error',title:'WO lanjutan gagal dibuat',text:error.message}); }
+}
+
+// Repair dialogs use database previews; no production log is modified.
+function attentionProductSelect() {
+    const select=document.createElement('select'); select.className='input'; select.add(new Option('Pilih produk persis...', ''));
+    master.forEach((p,i) => select.add(new Option(`${p.kode} - ${p.nama}`,String(i)))); return select;
+}
+function attentionRepairSummary(preview) {
+    const panel=document.createElement('div');
+    const point=(d,s) => d ? `${d} S${s}` : '-';
+    panel.append(attentionNode('p',`Mesin ${preview.line} · ${preview.code} — ${preview.name}`),
+        attentionNode('p',`Produksi pertama: ${point(preview.first_date,preview.first_shift)} · Terakhir: ${point(preview.last_date,preview.last_shift)}`),
+        attentionNode('p',`OK kandidat: ${fmtInt(preview.candidate_ok)} PCS · ${preview.candidate_count} laporan`),
+        attentionNode('p',`Produksi saat ini: ${fmtInt(preview.production_before)} · Carry-over: ${fmtInt(preview.carryover_qty)} PCS`),
+        attentionNode('p',`Progress sebelum: ${fmtInt(preview.progress_before)} · Proyeksi: ${fmtInt(preview.progress_after)} · Sisa: ${fmtInt(preview.projected_remaining)} PCS`),
+        attentionNode('p',`Selisih progress: ${fmtSigned(preview.progress_delta)} PCS`));
+    if (+preview.protected_other_wo_count > 0) panel.append(attentionNode('p',`${preview.protected_other_wo_count} laporan (${fmtInt(preview.protected_other_wo_ok)} PCS) dikecualikan karena terkait WO lain.`));
+    if (+preview.blocking_protected_count > 0 || +preview.blocking_ownership_conflicts > 0) panel.append(attentionNode('p','Boundary bertabrakan dengan cakupan atau log WO lain dan tidak dapat disimpan. Pilih boundary lain.'));
+    if (preview.mode === 'PARALLEL') panel.append(attentionNode('p',`Boundary assignment: ${point(preview.effective_date,preview.effective_shift)} · Boundary normal: ${point(preview.normal_date,preview.normal_shift)}`));
+    return panel;
+}
+async function attentionConfirmRepair(params, preview, note) {
+    const result=await Swal.fire({title:'Konfirmasi preview WO',html:attentionRepairSummary(preview),showCancelButton:true,confirmButtonText:'Simpan perubahan'});
+    if (!result.isConfirmed) return;
+    try { await woRpc('wo_repair_apply',{...params,p_expected:preview,p_note:note || null}); await loadWOAttention(); }
+    catch(error) { Swal.fire({icon:'error',title:'Perubahan gagal',text:error.message}); }
+}
+async function attentionCorrectAssignment(row, assignment) {
+    const form=document.createElement('div'), product=attentionProductSelect(), note=document.createElement('input'); note.className='input'; note.placeholder='Catatan (opsional)';
+    form.append(attentionNode('p',`Mesin ${assignment.line_code} · WO ${row.wo_ref}`),
+        attentionNode('p',`Assignment sekarang: ${assignment.product_code} — ${assignment.product_name} · Mulai ${assignment.effective_date} S${assignment.effective_shift}`),
+        attentionNode('p',`Produk terbaru mesin: ${attentionText(assignment.latest_code)} ${attentionText(assignment.latest_name)}`),product,note);
+    const selection=await Swal.fire({title:'Koreksi Produk Assignment',html:form,showCancelButton:true,confirmButtonText:'Lihat preview',preConfirm:async () => {
+        if (product.value==='') { Swal.showValidationMessage('Pilih produk exact.'); return false; }
+        const p=master[+product.value], params={p_mode:'CORRECT',p_ref:row.wo_ref,p_assignment_id:assignment.assignment_id,p_line:assignment.line_code,p_code:p.kode,p_name:p.nama,p_date:null,p_shift:null,p_include_history:false};
+        try { return {params,preview:await woRpc('wo_repair_preview',params),note:note.value.trim()}; }
+        catch(error) { Swal.showValidationMessage(error.message || 'Preview gagal'); return false; }
+    }});
+    if (selection.isConfirmed) await attentionConfirmRepair(selection.value.params,selection.value.preview,selection.value.note);
+}
+async function attentionParallelWithHistory(row) {
+    const form=document.createElement('div'), line=document.createElement('input'), product=attentionProductSelect(), date=document.createElement('input'), shift=document.createElement('select'), note=document.createElement('input'), info=attentionNode('div','Pilih mesin dan produk untuk mencari produksi sebelumnya.'), include=document.createElement('input'), includeLabel=document.createElement('label');
+    line.className='input'; line.placeholder='Mesin baru'; date.type='date'; date.value=todayISO(); date.className='input'; shift.className='input'; ['1','2','3'].forEach(v => shift.add(new Option('Shift '+v,v))); note.className='input'; note.placeholder='Catatan (opsional)'; include.type='checkbox'; include.checked=false; include.disabled=true; includeLabel.append(include,document.createTextNode(' Sertakan produksi sebelumnya ke WO ini'));
+    form.append(line,product,date,shift,note,attentionNode('h4','Produksi Sebelum Terhubung'),info,includeLabel);
+    let timer, serial=0;
+    const paramsFor = withHistory => { const p=master[+product.value]; return {p_mode:'PARALLEL',p_ref:row.wo_ref,p_assignment_id:null,p_line:line.value.trim(),p_code:p.kode,p_name:p.nama,p_date:date.value,p_shift:+shift.value,p_include_history:withHistory}; };
+    const discover=() => {
+        const request=++serial; clearTimeout(timer); include.checked=false; include.disabled=true; info.textContent='Pilih mesin dan produk untuk mencari produksi sebelumnya.';
+        if (!line.value.trim() || product.value==='' || !date.value) return;
+        info.textContent='Mencari produksi sebelumnya…';
+        timer=setTimeout(async () => { try { const preview=await woRpc('wo_repair_preview',paramsFor(false)); if (request!==serial) return; info.replaceChildren(attentionRepairSummary(preview)); include.disabled=+preview.candidate_count===0; }
+            catch(error) { if(request===serial) info.textContent='Pencarian gagal: '+error.message; } },350);
+    };
+    [line,product,date,shift].forEach(el => { el.addEventListener('input',discover); el.addEventListener('change',discover); });
+    const selection=await Swal.fire({title:'Tambah Mesin Paralel',html:form,showCancelButton:true,confirmButtonText:'Lihat preview',preConfirm:async () => {
+        if (!line.value.trim() || product.value==='' || !date.value) { Swal.showValidationMessage('Lengkapi mesin, produk, tanggal dan shift.'); return false; }
+        ++serial; clearTimeout(timer);
+        const params=paramsFor(include.checked);
+        try { return {params,preview:await woRpc('wo_repair_preview',params),note:note.value.trim()}; }
+        catch(error) { Swal.showValidationMessage(error.message || 'Preview gagal'); return false; }
+    },willClose:() => { ++serial; clearTimeout(timer); }});
+    if (selection.isConfirmed) await attentionConfirmRepair(selection.value.params,selection.value.preview,selection.value.note);
 }
