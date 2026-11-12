@@ -95,16 +95,18 @@ inspection AS (
  ), machine_matches AS MATERIALIZED (
   SELECT l.lk,count(DISTINCT a.rk) FILTER(WHERE a.wo_status='OPEN') AS open_match,
    count(DISTINCT a.rk) FILTER(WHERE a.wo_status='ON_HOLD') AS on_hold_match,
-   count(DISTINCT a.rk) FILTER(WHERE a.wo_status='CLOSED') AS closed_match
+   count(DISTINCT a.rk) FILTER(WHERE a.wo_status='CLOSED') AS closed_match,
+   count(DISTINCT a.rk) FILTER(WHERE a.wo_status='OPEN' AND a.ended_date IS NULL
+    AND (l.tanggal::date,l.shift::integer)<(a.effective_date,a.effective_shift)) AS waiting_first_report_match
   FROM latest l LEFT JOIN assignment_rows a ON a.lk=l.lk AND a.ck=l.ck AND a.nk=l.nk
-   AND (l.tanggal::date,l.shift::integer)>=(a.effective_date,a.effective_shift)
-   AND (a.ended_date IS NULL OR (l.tanggal::date,l.shift::integer)<=(a.ended_date,a.ended_shift)) GROUP BY l.lk
+   AND (a.ended_date IS NULL OR ((l.tanggal::date,l.shift::integer)>=(a.effective_date,a.effective_shift)
+    AND (l.tanggal::date,l.shift::integer)<=(a.ended_date,a.ended_shift))) GROUP BY l.lk
  ), product_matches AS MATERIALIZED (
   SELECT a.ck,a.nk,count(DISTINCT a.rk) FILTER(WHERE a.wo_status='OPEN' AND a.ended_date IS NULL) AS matching_open_wo_count,
    count(DISTINCT a.rk) FILTER(WHERE a.wo_status='ON_HOLD' AND a.ended_date IS NULL) AS matching_on_hold_wo_count
   FROM assignment_rows a GROUP BY a.ck,a.nk
  ), classified AS MATERIALIZED (
-  SELECT l.*,m.open_match,m.on_hold_match,m.closed_match,coalesce(p.matching_open_wo_count,0) AS matching_open_wo_count,
+  SELECT l.*,m.open_match,m.on_hold_match,m.closed_match,m.waiting_first_report_match,coalesce(p.matching_open_wo_count,0) AS matching_open_wo_count,
    coalesce(p.matching_on_hold_wo_count,0) AS matching_on_hold_wo_count,
    EXISTS(SELECT 1 FROM changeovers c WHERE c.lk=l.lk) AS is_changeover
   FROM latest l JOIN machine_matches m USING(lk) LEFT JOIN product_matches p ON p.ck=l.ck AND p.nk=l.nk
@@ -142,12 +144,14 @@ inspection AS (
  violations AS (
   SELECT 'CHANGEOVER_IN_RADAR' AS reason FROM unassigned WHERE is_changeover
   UNION ALL SELECT 'ON_HOLD_IN_RADAR' FROM unassigned WHERE on_hold_match>0
+  UNION ALL SELECT 'WAITING_FIRST_REPORT_IN_RADAR' FROM unassigned WHERE waiting_first_report_match>0
   UNION ALL SELECT 'PROTECTED_LOG_IN_CANDIDATES' FROM simulation_rows WHERE protected OR (public.wo_normalize(log_wo_ref)<>'' AND public.wo_normalize(log_wo_ref)<>public.wo_normalize(wo_ref))
  )
  SELECT jsonb_build_object(
   'recent_shifts',coalesce((SELECT jsonb_agg(to_jsonb(r) ORDER BY tanggal DESC,shift DESC) FROM recent_shifts r),'[]'::jsonb),
   'latest_machine_logs',coalesce((SELECT jsonb_agg(to_jsonb(l)-'lk'-'ck'-'nk'-'created_sort'-'rn' ORDER BY line) FROM latest l),'[]'::jsonb),
   'assignment_matches',coalesce((SELECT jsonb_agg(jsonb_build_object('line',line,'product_code',kode,'product_name',nama,'open_match',open_match,'on_hold_match',on_hold_match,'closed_match',closed_match,'no_matching_assignment',(open_match=0 AND on_hold_match=0 AND closed_match=0)) ORDER BY line) FROM classified),'[]'::jsonb),
+  'waiting_first_report',coalesce((SELECT jsonb_agg(jsonb_build_object('line',line,'product_code',kode,'product_name',nama,'latest_date',tanggal,'latest_shift',shift,'open_assignment_count',waiting_first_report_match,'expected_classification','CONNECTED_WAITING_FIRST_REPORT','expected_radar_inclusion',false,'actual_radar_inclusion',EXISTS(SELECT 1 FROM unassigned u WHERE u.lk=c.lk)) ORDER BY line) FROM classified c WHERE waiting_first_report_match>0),'[]'::jsonb),
   'changeover_excluded',coalesce((SELECT jsonb_agg(to_jsonb(c) ORDER BY line,wo_ref) FROM changeovers c),'[]'::jsonb),
   'unassigned',coalesce((SELECT jsonb_agg(jsonb_build_object('line',line,'product_code',kode,'product_name',nama,'latest_date',tanggal,'latest_shift',shift,'latest_ok',okpcs,'recent_log_count',recent_log_count,'matching_open_wo_count',matching_open_wo_count,'matching_on_hold_wo_count',matching_on_hold_wo_count) ORDER BY line) FROM unassigned),'[]'::jsonb),
   'on_hold_match',coalesce((SELECT jsonb_agg(jsonb_build_object('line',line,'product_code',kode,'product_name',nama,'latest_date',tanggal,'latest_shift',shift,'on_hold_count',on_hold_match,'status','ON_HOLD_MATCH') ORDER BY line) FROM held),'[]'::jsonb),
@@ -185,7 +189,7 @@ warnings AS (
 SELECT section,result FROM (
  SELECT 1 AS ord,'DEPENDENCIES' AS section,jsonb_build_object('columns',(SELECT jsonb_agg(to_jsonb(c)||jsonb_build_object('result',CASE WHEN present THEN 'PASS' ELSE 'FAIL' END) ORDER BY table_name,column_name) FROM columns_check c),'functions',(SELECT jsonb_agg(jsonb_build_object('signature',signature,'result',CASE WHEN oid IS NULL THEN 'FAIL' ELSE 'PASS' END) ORDER BY signature) FROM functions_check),'history_link_columns',(SELECT jsonb_agg(to_jsonb(h) ORDER BY column_name) FROM optional_history_check h)) AS result
  UNION ALL SELECT 2,'RECENT SHIFTS AND LATEST LOGS',coalesce((SELECT jsonb_build_object('recent_shifts',doc->'recent_shifts','latest_machine_logs',doc->'latest_machine_logs') FROM inspection),jsonb_build_object('status','NOT CHECKED'))
- UNION ALL SELECT 3,'ASSIGNMENT MATCHES',coalesce((SELECT doc->'assignment_matches' FROM inspection),jsonb_build_object('status','NOT CHECKED'))
+ UNION ALL SELECT 3,'ASSIGNMENT MATCHES',coalesce((SELECT jsonb_build_object('matches',doc->'assignment_matches','connected_waiting_first_report',doc->'waiting_first_report') FROM inspection),jsonb_build_object('status','NOT CHECKED'))
  UNION ALL SELECT 4,'CHANGEOVER EXCLUDED',coalesce((SELECT doc->'changeover_excluded' FROM inspection),jsonb_build_object('status','NOT CHECKED'))
  UNION ALL SELECT 5,'UNASSIGNED AND ON HOLD',coalesce((SELECT jsonb_build_object('unassigned',doc->'unassigned','on_hold_match',doc->'on_hold_match') FROM inspection),jsonb_build_object('status','NOT CHECKED'))
  UNION ALL SELECT 6,'OPEN WO OPTIONS',coalesce((SELECT doc->'open_wo_options' FROM inspection),jsonb_build_object('status','NOT CHECKED'))

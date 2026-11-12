@@ -37,8 +37,10 @@ RETURNS jsonb LANGUAGE sql STABLE SECURITY INVOKER AS $$
    count(DISTINCT public.wo_normalize(a.wo_ref)) FILTER (WHERE a.status='OPEN') AS line_open_wo_count,
    count(DISTINCT public.wo_normalize(a.wo_ref)) FILTER (WHERE a.status='ON_HOLD') AS line_on_hold_wo_count
   FROM latest l LEFT JOIN relevant_assignments a ON a.line_key=l.line_key AND a.code_key=l.code_key AND a.name_key=l.name_key
-   AND (l.tanggal::date,l.shift::integer)>=(a.effective_date,a.effective_shift)
-   AND (a.ended_date IS NULL OR (l.tanggal::date,l.shift::integer)<=(a.ended_date,a.ended_shift))
+   -- An open-ended assignment is current even when its first report is pending.
+   AND (a.ended_date IS NULL OR
+    ((l.tanggal::date,l.shift::integer)>=(a.effective_date,a.effective_shift)
+     AND (l.tanggal::date,l.shift::integer)<=(a.ended_date,a.ended_shift)))
   GROUP BY l.line_key
  ), product_matches AS (
   SELECT a.code_key,a.name_key,
