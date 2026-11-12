@@ -1,5 +1,5 @@
 // Admin WO review. Database access follows the configured Supabase permissions.
-let woAttentionRows = [];
+let woAttentionRows = [], woRadarRows = null, woRadarError = '', woAttentionReady = false, woAttentionRequest = 0;
 const attentionText = value => value == null || value === '' ? '-' : String(value);
 function attentionNode(tag, text, cls) { const node = document.createElement(tag); if (text != null) node.textContent = text; if (cls) node.className = cls; return node; }
 function attentionButton(label, callback, cls = 'btn sm') { const button = attentionNode('button', label, cls); button.type = 'button'; button.addEventListener('click', callback); return button; }
@@ -14,9 +14,52 @@ function attentionPriority(row) {
 }
 async function loadWOAttention() {
     if (!client) { $('woAttentionList').textContent = 'Database belum terhubung.'; return; }
+    const request = ++woAttentionRequest; woAttentionReady = false; woRadarRows = null; woRadarError = '';
     $('woAttentionList').textContent = 'Memuat WO…';
-    try { woAttentionRows = await woRpc('wo_attention_list', {}) || []; renderWOAttention(); }
-    catch (error) { $('woAttentionList').textContent = 'Gagal memuat WO Attention: ' + error.message; }
+    // Independent requests keep existing WO data responsive if radar is slow.
+    woRpc('wo_unassigned_machines', {}).then(result => {
+        if (request !== woAttentionRequest) return;
+        woRadarRows = result || []; if (woAttentionReady) renderWOAttention();
+    }).catch(error => {
+        if (request !== woAttentionRequest) return;
+        woRadarError = error.message || 'Gagal memuat radar.'; if (woAttentionReady) renderWOAttention();
+    });
+    try { const rows = await woRpc('wo_attention_list', {}); if (request !== woAttentionRequest) return; woAttentionRows = rows || []; woAttentionReady = true; renderWOAttention(); }
+    catch (error) { if (request === woAttentionRequest) $('woAttentionList').textContent = 'Gagal memuat WO Attention: ' + error.message; }
+}
+function woRadarIsChangeover(machine) {
+    return woAttentionRows.some(row => attentionPriority(row) === 0 && (row.assignments || []).some(a => a.changed && woNorm(a.line_code) === woNorm(machine.line_code)));
+}
+function woRadarMachines() { return (woRadarRows || []).filter(machine => !woRadarIsChangeover(machine)); }
+function woRadarCandidates(machine) {
+    return woAttentionRows.filter(row => row.status === 'OPEN' && (row.assignments || []).some(a =>
+        woNorm(a.product_code) === woNorm(machine.product_code) && woNorm(a.product_name) === woNorm(machine.product_name)));
+}
+function renderWORadar(list,lineFilter,productFilter) {
+    const section=attentionNode('section',null,'woa-section woa-radar'); section.id='woUnassignedMachines';
+    const heading=attentionNode('div',null,'woa-section-heading'); heading.append(attentionNode('h3','Mesin Belum Terhubung WO')); section.append(heading);
+    if (woRadarError) { section.append(attentionNode('div','Radar gagal dimuat. Tekan Refresh untuk mencoba lagi.','woa-radar-note')); list.append(section); return; }
+    if (woRadarRows === null) { section.append(attentionNode('div','Memuat radar mesin…','woa-radar-note')); list.append(section); return; }
+    const machines=woRadarMachines().filter(m => (!lineFilter || woNorm(m.line_code).includes(lineFilter)) && (!productFilter || woNorm(`${m.product_code} ${m.product_name}`).includes(productFilter)));
+    const unassigned=machines.filter(m => !+m.line_on_hold_wo_count), held=machines.filter(m => +m.line_on_hold_wo_count > 0);
+    if (!unassigned.length) section.append(attentionNode('div',(lineFilter || productFilter) ? 'Tidak ada mesin tanpa WO pada filter ini.' : 'Semua mesin aktif sudah terhubung WO.','woa-radar-note'));
+    unassigned.forEach(machine => {
+        const row=attentionNode('div',null,'woa-radar-row'), identity=attentionNode('div',null,'woa-radar-identity');
+        identity.append(attentionNode('strong',`Mesin ${attentionText(machine.line_code)}`),attentionNode('span',`${attentionText(machine.product_code)} · ${attentionText(machine.product_name)}`));
+        const detail=attentionNode('div',null,'woa-radar-meta'); detail.append(attentionNode('span',`Terakhir: ${attentionText(machine.latest_date)} · S${attentionText(machine.latest_shift)}`),attentionNode('span',`OK terakhir: ${fmtInt(machine.latest_ok)} PCS`),attentionNode('span','BELUM ADA WO','woa-machine-state woa-machine-warning'));
+        row.append(identity,detail,attentionButton('Hubungkan WO',() => attentionLinkUnassigned(machine),'woa-button')); section.append(row);
+    });
+    if (held.length) section.append(attentionNode('div',`Ada WO tertunda pada mesin: ${held.map(m => m.line_code).join(', ')}. Kelola melalui WO On Hold.`,'woa-radar-note'));
+    list.append(section);
+}
+async function attentionLinkUnassigned(machine) {
+    const candidates=woRadarCandidates(machine);
+    if (!candidates.length) { Swal.fire({icon:'info',title:'WO OPEN tidak ditemukan',text:'Tidak ada WO OPEN dengan assignment produk exact ini.'}); return; }
+    const select=document.createElement('select'); select.className='input'; select.add(new Option('Pilih WO...', ''));
+    candidates.forEach((row,i) => { const machines=(row.assignments || []).map(a => a.line_code).filter(Boolean); select.add(new Option(`${row.wo_ref} · Target ${fmtInt(row.qty)} · Progress ${fmtInt(row.ok)} · Sisa ${fmtInt(row.remaining)} · Mesin ${[...new Set(machines)].join(', ') || '-'}${row.parent_ref ? ' · WO LANJUTAN' : ''}`,String(i))); });
+    const form=document.createElement('div'); form.append(attentionNode('p',`Mesin ${machine.line_code} · ${machine.product_code} — ${machine.product_name}`),select);
+    const result=await Swal.fire({title:'Hubungkan WO',html:form,showCancelButton:true,confirmButtonText:'Lanjutkan',preConfirm:() => { if (select.value==='') { Swal.showValidationMessage('Pilih WO.'); return false; } return +select.value; }});
+    if (result.isConfirmed) await attentionParallelWithHistory(candidates[result.value], machine);
 }
 function renderWOAttention() {
     const list = $('woAttentionList'), kpis = $('woAttentionKpis');
@@ -27,19 +70,23 @@ function renderWOAttention() {
         const item=attentionNode('div',null,'woa-kpi' + (i === 0 && value > 0 ? ' woa-kpi-alert' : '') + (value === 0 ? ' woa-kpi-zero' : ''));
         item.append(attentionNode('span',label),attentionNode('strong',value)); kpis.append(item);
     });
+    const radarCount = woRadarRows === null ? null : woRadarMachines().filter(m => !+m.line_on_hold_wo_count).length;
+    const radarKpi=attentionButton('',() => $('woUnassignedMachines')?.scrollIntoView({behavior:'smooth',block:'start'}),'woa-kpi woa-radar-kpi' + (radarCount ? ' woa-kpi-alert' : ''));
+    radarKpi.append(attentionNode('span','Belum Ada WO'),attentionNode('strong',woRadarError ? '!' : radarCount === null ? '…' : String(radarCount))); kpis.append(radarKpi);
     const line = woNorm($('woAttentionLine').value), product = woNorm($('woAttentionProduct').value), ref = woNorm($('woAttentionRef').value), status = $('woAttentionStatus').value;
     const rows = woAttentionRows.filter(r => (!status || r.status === status) && (!ref || woNorm(r.wo_ref).includes(ref)) && (!line || r.assignments.some(a => woNorm(a.line_code).includes(line))) && (!product || r.assignments.some(a => woNorm(a.product_code + ' ' + a.product_name).includes(product)))).sort((a,b) => attentionPriority(a)-attentionPriority(b));
-    if (!rows.length) { list.append(attentionNode('div','Tidak ada WO yang cocok.','woa-empty')); return; }
+    if (!rows.length) list.append(attentionNode('div','Tidak ada WO yang cocok.','woa-empty'));
     const sections = [
         {label:'Perlu Perhatian', rows:rows.filter(r => attentionPriority(r) === 0 || attentionPriority(r) === 1)},
         {label:'WO Aktif', rows:rows.filter(r => r.status === 'OPEN' && attentionPriority(r) > 1)},
         {label:'On Hold', rows:rows.filter(r => r.status === 'ON_HOLD')}
     ];
     sections.forEach(section => {
+        if (section.label === 'WO Aktif') renderWORadar(list,line,product);
         if (!section.rows.length) return;
         const container = attentionNode('section',null,'woa-section');
         const heading = attentionNode('div',null,'woa-section-heading'); heading.append(attentionNode('h3',section.label),attentionNode('span',String(section.rows.length),'woa-count')); container.append(heading);
-        section.rows.forEach(row => container.append(renderWOAttentionCard(row))); list.append(container);
+        if (section.rows.length) { section.rows.forEach(row => container.append(renderWOAttentionCard(row))); list.append(container); }
     });
     const closed = rows.filter(r => r.status === 'CLOSED');
     if (closed.length) {
@@ -180,9 +227,15 @@ async function attentionCorrectAssignment(row, assignment) {
     }});
     if (selection.isConfirmed) await attentionConfirmRepair(selection.value.params,selection.value.preview,selection.value.note);
 }
-async function attentionParallelWithHistory(row) {
+async function attentionParallelWithHistory(row, prefill = null) {
     const form=document.createElement('div'), line=document.createElement('input'), product=attentionProductSelect(), date=document.createElement('input'), shift=document.createElement('select'), note=document.createElement('input'), info=attentionNode('div','Pilih mesin dan produk untuk mencari produksi sebelumnya.'), include=document.createElement('input'), includeLabel=document.createElement('label');
     line.className='input'; line.placeholder='Mesin baru'; date.type='date'; date.value=todayISO(); date.className='input'; shift.className='input'; ['1','2','3'].forEach(v => shift.add(new Option('Shift '+v,v))); note.className='input'; note.placeholder='Catatan (opsional)'; include.type='checkbox'; include.checked=false; include.disabled=true; includeLabel.append(include,document.createTextNode(' Sertakan produksi sebelumnya ke WO ini'));
+    if (prefill) {
+        line.value=prefill.line_code || ''; date.value=prefill.latest_date || todayISO(); shift.value=String(prefill.latest_shift || '1');
+        const index=master.findIndex(p => woNorm(p.kode)===woNorm(prefill.product_code) && woNorm(p.nama)===woNorm(prefill.product_name));
+        if (index < 0) { Swal.fire({icon:'warning',title:'Produk tidak ada di master',text:'Produk exact mesin tidak ditemukan di master. Periksa master produk sebelum menghubungkan WO.'}); return; }
+        product.value=String(index);
+    }
     form.append(line,product,date,shift,note,attentionNode('h4','Produksi Sebelum Terhubung'),info,includeLabel);
     let timer, serial=0;
     const paramsFor = withHistory => { const p=master[+product.value]; return {p_mode:'PARALLEL',p_ref:row.wo_ref,p_assignment_id:null,p_line:line.value.trim(),p_code:p.kode,p_name:p.nama,p_date:date.value,p_shift:+shift.value,p_include_history:withHistory}; };
@@ -200,6 +253,6 @@ async function attentionParallelWithHistory(row) {
         const params=paramsFor(include.checked);
         try { return {params,preview:await woRpc('wo_repair_preview',params),note:note.value.trim()}; }
         catch(error) { Swal.showValidationMessage(error.message || 'Preview gagal'); return false; }
-    },willClose:() => { ++serial; clearTimeout(timer); }});
+    },didOpen:() => { if (prefill) discover(); },willClose:() => { ++serial; clearTimeout(timer); }});
     if (selection.isConfirmed) await attentionConfirmRepair(selection.value.params,selection.value.preview,selection.value.note);
 }

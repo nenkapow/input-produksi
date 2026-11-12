@@ -3967,3 +3967,21 @@ tbody tr:hover td {
     #targetControlBoard .tc-v2-reason { grid-column: 2 / 4; }
     #targetControlBoard .tc-v2-side { grid-template-columns: minmax(0,1fr); }
 }
+
+/* WO Attention unassigned-machine radar. */
+#mWoAttention .wo-attention-kpis { grid-template-columns: repeat(5,minmax(0,1fr)); }
+#mWoAttention .woa-radar-kpi { border: 0; width: 100%; text-align: left; font-family: inherit; cursor: pointer; }
+#mWoAttention .woa-radar-kpi:focus-visible { outline: 2px solid #9cbcff; outline-offset: 2px; }
+#mWoAttention .woa-radar { scroll-margin-top: 80px; }
+#mWoAttention .woa-radar-row { display: grid; grid-template-columns: minmax(0,1.5fr) minmax(0,1fr) auto; gap: 14px; align-items: center; padding: 13px 16px; margin-bottom: 8px; border: 1px solid #3c4050; border-left: 3px solid #d99a36; border-radius: 10px; background: #141f30; }
+#mWoAttention .woa-radar-identity, #mWoAttention .woa-radar-meta { display: grid; gap: 4px; min-width: 0; overflow-wrap: anywhere; }
+#mWoAttention .woa-radar-identity strong { color: #eaf2fd; font-size: .82rem; }
+#mWoAttention .woa-radar-identity span, #mWoAttention .woa-radar-meta { color: #a8b9cf; font-size: .74rem; }
+#mWoAttention .woa-radar-meta .woa-machine-state { justify-self: start; }
+#mWoAttention .woa-radar-note { padding: 10px 2px; color: #9db1c9; font-size: .75rem; }
+@media (max-width: 1100px) { #mWoAttention .wo-attention-kpis { grid-template-columns: repeat(3,minmax(0,1fr)); } }
+@media (max-width: 700px) {
+ #mWoAttention .wo-attention-kpis { grid-template-columns: repeat(2,minmax(0,1fr)); }
+ #mWoAttention .woa-radar-row { grid-template-columns: minmax(0,1fr); }
+ #mWoAttention .woa-radar-row .woa-button { justify-self: start; }
+}
