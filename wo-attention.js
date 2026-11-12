@@ -109,6 +109,9 @@ async function attentionStatus(row,status,action) {
 }
 async function attentionAssignment(row,source,action) {
     if (action === 'PARALLEL') return attentionParallelWithHistory(row);
+    if (source?.assignment_id == null || source.assignment_id === '') {
+        return Swal.fire({icon:'error',title:'Assignment tidak tersedia',text:'Assignment ID tidak tersedia. Refresh WO Attention lalu coba lagi.'});
+    }
     const form=document.createElement('div'), date=document.createElement('input'), shift=document.createElement('select'), line=document.createElement('input'), product=document.createElement('select'), note=document.createElement('input');
     date.type='date'; date.value=todayISO(); date.className='input'; shift.className='input'; ['1','2','3'].forEach(v => shift.add(new Option('Shift '+v,v)));
     line.className='input'; line.placeholder='Mesin baru'; product.className='input'; product.add(new Option('Pilih produk persis...', ''));
@@ -118,7 +121,7 @@ async function attentionAssignment(row,source,action) {
     const result=await Swal.fire({title:action === 'TRANSFER' ? 'Pindah Mesin' : action === 'PARALLEL' ? 'Tambah Mesin Paralel' : 'Tutup Assignment',html:form,showCancelButton:true,preConfirm:() => { if (!date.value || (action !== 'END_ASSIGNMENT' && (!line.value.trim() || product.value === ''))) { Swal.showValidationMessage('Lengkapi mesin, produk, tanggal dan shift.'); return false; } return true; }});
     if (!result.isConfirmed) return;
     const p=product.value === '' ? null : master[+product.value];
-    try { await woRpc('wo_admin_assignment',{p_ref:row.wo_ref,p_action:action,p_source:source.id,p_line:line.value.trim() || null,p_code:p?.kode || null,p_name:p?.nama || null,p_date:date.value,p_shift:+shift.value,p_note:note.value.trim() || null}); await loadWOAttention(); }
+    try { await woRpc('wo_admin_assignment',{p_ref:row.wo_ref,p_action:action,p_source:source.assignment_id,p_line:line.value.trim() || null,p_code:p?.kode || null,p_name:p?.nama || null,p_date:date.value,p_shift:+shift.value,p_note:note.value.trim() || null}); await loadWOAttention(); }
     catch(error) { Swal.fire({icon:'error',title:'Aksi gagal',text:error.message}); }
 }
 
